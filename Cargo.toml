@@ -6,6 +6,7 @@ edition = "2018"
 description = "Rusty Utility AI library"
 license-file = "LICENSE.md"
 readme = "README.md"
+keywords = ["utility-ai", "specs", "ecs"]
 categories = ["game-development"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
