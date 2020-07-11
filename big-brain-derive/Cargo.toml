@@ -6,6 +6,7 @@ edition = "2018"
 keywords = ["utility-ai", "specs", "ecs"]
 categories = ["game-development"]
 description = "Derive macros for the big-brain Utility AI library"
+license-file = "../LICENSE.md"
 
 [lib]
 proc-macro = true
