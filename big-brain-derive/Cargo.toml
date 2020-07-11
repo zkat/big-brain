@@ -1,12 +1,14 @@
 [package]
 name = "big-brain-derive"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Kat Marchán <kzm@zkat.tech>"]
 edition = "2018"
 keywords = ["utility-ai", "specs", "ecs"]
 categories = ["game-development"]
 description = "Derive macros for the big-brain Utility AI library"
 license-file = "../LICENSE.md"
+repository = "https://github.com/zkat/big-brain"
+homepage = "https://github.com/zkat/big-brain"
 
 [lib]
 proc-macro = true
@@ -14,6 +16,6 @@ proc-macro = true
 [dependencies]
 syn = "1.0.33"
 quote = "1.0.7"
-big-brain = "0.0.1"
+big-brain = "0.1.0"
 proc-macro2 = "1.0.18"
 darling = "0.10.2"
