@@ -12,7 +12,7 @@ categories = ["game-development"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-big-brain-derive = "*"
+big-brain-derive = "0.1"
 specs = { version = "0.16.1", features = ["parallel", "shred-derive", "specs-derive"] }
 serde = "1.0.111"
 typetag = "0.1.5"
