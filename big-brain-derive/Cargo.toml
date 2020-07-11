@@ -1,0 +1,17 @@
+[package]
+name = "big-brain-derive"
+version = "0.1.0"
+authors = ["Kat Marchán <kzm@zkat.tech>"]
+edition = "2018"
+categories = ["game-development"]
+description = "Derive macros for the big-brain Utility AI library"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1.0.33"
+quote = "1.0.7"
+big-brain = "*"
+proc-macro2 = "1.0.18"
+darling = "0.10.2"

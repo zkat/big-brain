@@ -1,0 +1,20 @@
+[package]
+name = "big-brain"
+version = "0.1.0"
+authors = ["Kat Marchán <kzm@zkat.tech>"]
+edition = "2018"
+description = "Rusty Utility AI library"
+license-file = "LICENSE.md"
+readme = "README.md"
+categories = ["game-development"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+big-brain-derive = "*"
+specs = { version = "0.16.1", features = ["parallel", "shred-derive", "specs-derive"] }
+serde = "1.0.111"
+typetag = "0.1.5"
+specs-derive = "0.4.1"
+ron = "0.6.0"
+
