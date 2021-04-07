@@ -73,7 +73,7 @@ impl ToTokens for Consideration {
             mod big_brain_builder {
                 use super::#ident as Comp;
 
-                use big_brain::{typetag, serde::Deserialize, Consideration, ecs::{Entity, Entities, LazyUpdate}, ConsiderationEnt};
+                use big_brain::{typetag, serde::Deserialize, Consideration, bevy::{Entity, Commands}, ConsiderationEnt};
 
                 #[derive(Debug, Deserialize)]
                 struct #ident {
@@ -81,10 +81,11 @@ impl ToTokens for Consideration {
                 }
                 #[typetag::deserialize]
                 impl Consideration for #ident {
-                    fn build(&self, actor: Entity, ents: &Entities, lazy: &LazyUpdate) -> ConsiderationEnt {
-                        let ent = ConsiderationEnt(ents.create());
-                        lazy.insert(ent.clone().0, big_brain::Utility::default());
-                        lazy.insert(ent.clone().0, Comp {
+                    fn build(&self, actor: Entity, cmd: &mut Commands) -> ConsiderationEnt {
+                        let ent = ConsiderationEnt(cmd.spawn().id());
+                        cmd.entity(ent.0)
+                        .insert(big_brain::Utility::default())
+                        .insert(Comp {
                             #(#field_assignments),*
                         });
                         ent

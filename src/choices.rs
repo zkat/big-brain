@@ -16,7 +16,7 @@ pub struct Choice {
     pub action_state: ActionEnt,
 }
 impl Choice {
-    pub fn calculate<'a>(&self, utilities: &Query<&Utility>) -> f32 {
+    pub fn calculate(&self, utilities: &Query<&Utility>) -> f32 {
         self.measure.calculate(
             self.utilities
                 .iter()
