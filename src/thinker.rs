@@ -30,7 +30,11 @@ pub struct Thinker {
 }
 
 impl Thinker {
-    pub fn load_from<P: AsRef<Path>>(path: P) -> builder::Thinker {
+    pub fn load_from_str<S: AsRef<str>>(string: S) -> builder::Thinker {
+        ron::de::from_str(string.as_ref()).expect("Failed to parse RON")
+    }
+
+    pub fn load_from_path<P: AsRef<Path>>(path: P) -> builder::Thinker {
         let f = File::open(&path).expect("Failed to open file");
         ron::de::from_reader(f).expect("Failed to read .ron file")
     }
@@ -120,7 +124,7 @@ impl Default for ThinkerIterations {
 }
 
 pub fn thinker_system(
-    cmd: &mut Commands,
+    mut cmd: Commands,
     mut iterations: Local<ThinkerIterations>,
     mut thinker_q: Query<(Entity, &mut Thinker, &ActiveThinker)>,
     utilities: Query<&Utility>,
@@ -166,7 +170,7 @@ pub fn thinker_system(
                     // every tick, because we might change our mind.
                     // ...and then execute it (details below).
                     exec_picked_action(
-                        cmd,
+                        &mut cmd,
                         thinker_ent,
                         &mut thinker,
                         &picked_action_ent,
@@ -177,7 +181,7 @@ pub fn thinker_system(
                     // Otherwise, let's just execute the default one! (if it's there)
                     let default_action_ent = default_action_ent.clone();
                     exec_picked_action(
-                        cmd,
+                        &mut cmd,
                         thinker_ent,
                         &mut thinker,
                         &default_action_ent,
@@ -195,7 +199,7 @@ pub fn thinker_system(
                         actions::ActionState::Init
                         | actions::ActionState::Success
                         | actions::ActionState::Failure => {
-                            factory.0.deactivate(current.clone(), cmd);
+                            factory.0.deactivate(current.clone(), &mut cmd);
                             *state = ActionState::Init;
                             thinker.current_action = None;
                         }

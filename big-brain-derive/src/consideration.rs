@@ -1,7 +1,6 @@
 use darling::{ast, FromDeriveInput, FromField, ToTokens};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn;
 
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(consideration), supports(struct_named))]
@@ -70,10 +69,11 @@ impl ToTokens for Consideration {
             }
         });
         let ts = quote! {
-            mod big_brain_builder {
+            mod big_brain_cons_builder {
                 use super::#ident as Comp;
 
-                use big_brain::{typetag, serde::Deserialize, Consideration, bevy::{Entity, Commands}, ConsiderationEnt};
+                use big_brain::{typetag, serde::Deserialize, Consideration, bevy::prelude::{Entity, Commands}, ConsiderationEnt};
+                // use typetag;
 
                 #[derive(Debug, Deserialize)]
                 struct #ident {

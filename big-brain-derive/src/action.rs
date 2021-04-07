@@ -1,7 +1,6 @@
 use darling::{ast, FromDeriveInput, FromField, ToTokens};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn;
 
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(action), supports(struct_named))]
@@ -70,10 +69,10 @@ impl ToTokens for Action {
             }
         });
         let ts = quote! {
-            mod big_brain_builder {
+            mod big_brain_action_builder {
                 use super::#ident as Comp;
 
-                use big_brain::{serde::Deserialize, Action, ActionManager, ecs::{Entity, Commands}, ActionEnt};
+                use big_brain::{typetag, serde::Deserialize, Action, ActionManager, bevy::prelude::{Entity, Commands}, ActionEnt};
 
                 #[derive(Debug, Deserialize)]
                 struct #ident {
