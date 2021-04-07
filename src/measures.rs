@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use typetag;
 
 use crate::Utility;
 

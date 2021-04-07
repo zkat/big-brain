@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use typetag;
 
 #[typetag::serde]
 pub trait Evaluator: std::fmt::Debug + Sync + Send {

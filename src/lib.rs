@@ -56,11 +56,8 @@
 //! });
 //! ```
 
-use specs::{World, WorldExt};
-
 pub use big_brain_derive::*;
 pub use serde;
-pub use specs as ecs;
 pub use typetag;
 
 pub use actions::*;
@@ -77,11 +74,3 @@ mod choices;
 mod considerations;
 mod stopwatch;
 mod thinker;
-
-pub fn register(world: &mut World) {
-    world.register::<Utility>();
-    world.register::<ActionState>();
-    world.register::<ActionManagerWrapper>();
-    world.register::<ActiveThinker>();
-    world.register::<Thinker>();
-}
