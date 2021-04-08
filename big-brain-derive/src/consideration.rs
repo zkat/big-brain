@@ -72,7 +72,7 @@ impl ToTokens for Consideration {
             mod big_brain_cons_builder {
                 use super::#ident as Comp;
 
-                use big_brain::{typetag, serde::Deserialize, Consideration, bevy::prelude::{Entity, Commands}, ConsiderationEnt};
+                use big_brain::{typetag, serde::Deserialize, Consideration, bevy::prelude::*, ConsiderationEnt};
                 // use typetag;
 
                 #[derive(Debug, Deserialize)]
@@ -88,6 +88,7 @@ impl ToTokens for Consideration {
                         .insert(Comp {
                             #(#field_assignments),*
                         });
+                        cmd.entity(actor).push_children(&[ent.0]);
                         ent
                     }
                 }

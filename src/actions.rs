@@ -26,6 +26,7 @@ impl ActionState {
         cmd.entity(action_ent.0)
             .insert(ActionState::default())
             .insert(manager_wrapper);
+        cmd.entity(actor).push_children(&[action_ent.0]);
         action_ent
     }
 }
