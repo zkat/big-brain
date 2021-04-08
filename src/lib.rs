@@ -16,3 +16,13 @@ mod actions;
 mod choices;
 mod considerations;
 mod thinker;
+
+use bevy::prelude::*;
+
+pub struct BigBrainPlugin;
+
+impl Plugin for BigBrainPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_system(thinker_system.system());
+    }
+}

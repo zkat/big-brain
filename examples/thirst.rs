@@ -154,11 +154,10 @@ fn main() {
     // Once all that's done, we just add our systems and off we go!
     App::build()
         .add_plugins(DefaultPlugins)
+        .add_plugin(BigBrainPlugin)
         .add_startup_system(init_entities.system())
         .add_system(thirst_system.system())
         .add_system(thirst_consideration_system.system())
         .add_system(drink_action_system.system())
-        // Don't forget the Thinker system itself! This is the heart of it all!
-        .add_system(big_brain::thinker_system.system())
         .run();
 }
