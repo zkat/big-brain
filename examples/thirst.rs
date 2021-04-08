@@ -30,16 +30,12 @@ pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
 // do it? This is the first bit involving Big Brain itself, and there's a few
 // pieces you need:
 
-// First, you need an Action struct, and derive Action. It *must* have a
-// public `actor` field that points to an Entity. I know it's smelly. Let me
-// know if you have any ideas for improving this! I'm sorry! I'm new to Bevy.
+// First, you need an Action struct, and derive Action.
 //
 // These actions will be spawned and queued by the game engine when their
 // conditions trigger (we'll configure what these are later).
 #[derive(Debug, Action)]
-pub struct DrinkAction {
-    pub actor: Entity, // The entity that will be taking the action.
-}
+pub struct DrinkAction {}
 
 // Associated with that DrinkAction, you then need to have a system that will
 // actually execute those actions when they're "spawned" by the Big Brain
@@ -51,11 +47,11 @@ pub struct DrinkAction {
 // *separate entity* from the owner of the Thirst component!
 fn drink_action_system(
     mut thirsts: Query<&mut Thirst>,
-    mut query: Query<(&DrinkAction, &mut ActionState)>,
+    mut query: Query<(&Parent, &DrinkAction, &mut ActionState)>,
 ) {
-    for (drink_action, mut state) in query.iter_mut() {
+    for (Parent(actor), _drink_action, mut state) in query.iter_mut() {
         // Use the drink_action's actor to look up the corresponding Thirst.
-        if let Ok(mut thirst) = thirsts.get_mut(drink_action.actor) {
+        if let Ok(mut thirst) = thirsts.get_mut(*actor) {
             match *state {
                 ActionState::Requested => {
                     thirst.thirst = 10.0;
@@ -75,16 +71,12 @@ fn drink_action_system(
 // components that run in the background, calculating a "Utility" value, which
 // is what Big Brain will use to pick which actions to execute.
 //
-// Just like Actions, you need to derive Consideration here, and you need to
-// have a `pub actor: Entity` field. Same shenanigans.
-//
 // Additionally, though, we pull in an evaluator and define a weight. Which is
 // just mathy stuff you can tweak to get the behavior you want. More on this
 // in the docs (later), but for now, just put them in there and trust the
 // system. :)
 #[derive(Debug, Consideration)]
 pub struct ThirstConsideration {
-    pub actor: Entity,
     #[consideration(default)]
     pub evaluator: PowerEvaluator,
     #[consideration(param)]
@@ -94,10 +86,10 @@ pub struct ThirstConsideration {
 // Look familiar? Similar dance to Actions here.
 pub fn thirst_consideration_system(
     thirsts: Query<&Thirst>,
-    mut query: Query<(&ThirstConsideration, &mut Utility)>,
+    mut query: Query<(&Parent, &ThirstConsideration, &mut Utility)>,
 ) {
-    for (conser, mut util) in query.iter_mut() {
-        if let Ok(thirst) = thirsts.get(conser.actor) {
+    for (Parent(actor), conser, mut util) in query.iter_mut() {
+        if let Ok(thirst) = thirsts.get(*actor) {
             // This is really what the job of a Consideration is. To calculate
             // a generic Utility value that the Big Brain engine will compare
             // against others, over time, and use to make decisions. This is

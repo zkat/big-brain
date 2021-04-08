@@ -23,7 +23,6 @@ pub struct Thinker {
     pub picker: Box<dyn Picker>,
     pub otherwise: Option<ActionEnt>,
     pub choices: Vec<Choice>,
-    pub actor: Entity,
     pub current_action: Option<ActionEnt>,
 }
 
@@ -76,11 +75,11 @@ impl Action for builder::Thinker {
             .map(|builder| ActionState::build(builder, actor, cmd));
         cmd.entity(action_ent.0).insert(Thinker {
             picker: self.picker,
-            actor,
             choices,
             otherwise,
             current_action: None,
         });
+        cmd.entity(actor).push_children(&[action_ent.0]);
         Box::new(ThinkerManager)
     }
 }
@@ -123,13 +122,13 @@ impl Default for ThinkerIterations {
 pub fn thinker_system(
     mut cmd: Commands,
     mut iterations: Local<ThinkerIterations>,
-    mut thinker_q: Query<(Entity, &mut Thinker, &ActiveThinker)>,
+    mut thinker_q: Query<(Entity, &Parent, &mut Thinker, &ActiveThinker)>,
     utilities: Query<&Utility>,
     mut action_states: Query<&mut actions::ActionState>,
     builder_wrappers: Query<&ActionManagerWrapper>,
 ) {
     let start = Instant::now();
-    for (thinker_ent, mut thinker, active_thinker) in thinker_q.iter_mut().skip(iterations.index) {
+    for (thinker_ent, Parent(actor), mut thinker, active_thinker) in thinker_q.iter_mut().skip(iterations.index) {
         iterations.index += 1;
 
         let thinker_state = action_states
@@ -169,6 +168,7 @@ pub fn thinker_system(
                     exec_picked_action(
                         &mut cmd,
                         thinker_ent,
+                        *actor,
                         &mut thinker,
                         &picked_action_ent,
                         &mut action_states,
@@ -180,6 +180,7 @@ pub fn thinker_system(
                     exec_picked_action(
                         &mut cmd,
                         thinker_ent,
+                        *actor,
                         &mut thinker,
                         &default_action_ent,
                         &mut action_states,
@@ -217,6 +218,7 @@ pub fn thinker_system(
 fn exec_picked_action(
     cmd: &mut Commands,
     thinker_ent: Entity,
+    actor: Entity,
     thinker: &mut Mut<Thinker>,
     picked_action_ent: &ActionEnt,
     states: &mut Query<&mut ActionState>,
@@ -273,7 +275,7 @@ fn exec_picked_action(
                 let picked_action_factory = builder_wrappers.get(picked_action_ent.0).expect("Couldn't find an Action component corresponding to an Action entity. This is definitely a bug.");
                 picked_action_factory
                     .0
-                    .activate(thinker.actor, *picked_action_ent, cmd);
+                    .activate(actor, *picked_action_ent, cmd);
                 *picked_action_state = ActionState::Requested;
             }
         }
@@ -286,7 +288,7 @@ fn exec_picked_action(
         let mut picked_action_state = states.get_mut(picked_action_ent.0).expect("Couldn't find an Action component corresponding to an Action entity. This is definitely a bug.");
         picked_action_factory
             .0
-            .activate(thinker.actor, *picked_action_ent, cmd);
+            .activate(actor, *picked_action_ent, cmd);
         thinker.current_action = Some(*picked_action_ent);
         *picked_action_state = ActionState::Requested;
     }
