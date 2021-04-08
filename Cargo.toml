@@ -1,6 +1,6 @@
 [package]
 name = "big-brain"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Kat Marchán <kzm@zkat.tech>"]
 edition = "2018"
 description = "Rusty Utility AI library"
