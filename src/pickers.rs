@@ -20,7 +20,7 @@ impl Picker for FirstToScore {
         for choice in choices {
             let value = choice.calculate(utilities);
             if value >= self.threshold {
-                return Some(choice.action_state.clone());
+                return Some(choice.action_state);
             }
         }
         None

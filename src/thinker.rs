@@ -12,10 +12,10 @@ use crate::{
     pickers::Picker,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct ActionEnt(pub Entity);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct ConsiderationEnt(pub Entity);
 
 #[derive(Debug)]
@@ -176,7 +176,7 @@ pub fn thinker_system(
                     );
                 } else if let Some(default_action_ent) = &thinker.otherwise {
                     // Otherwise, let's just execute the default one! (if it's there)
-                    let default_action_ent = default_action_ent.clone();
+                    let default_action_ent = *default_action_ent;
                     exec_picked_action(
                         &mut cmd,
                         thinker_ent,
@@ -196,7 +196,7 @@ pub fn thinker_system(
                         actions::ActionState::Init
                         | actions::ActionState::Success
                         | actions::ActionState::Failure => {
-                            factory.0.deactivate(current.clone(), &mut cmd);
+                            factory.0.deactivate(*current, &mut cmd);
                             *state = ActionState::Init;
                             thinker.current_action = None;
                         }
@@ -253,10 +253,10 @@ fn exec_picked_action(
                     let current_action_factory = builder_wrappers.get(current.0).expect("Couldn't find an Action component corresponding to an Action entity. This is definitely a bug.");
                     current_action_factory
                         .0
-                        .deactivate(picked_action_ent.clone(), cmd);
+                        .deactivate(*picked_action_ent, cmd);
                     let old_state = curr_action_state.clone();
                     *curr_action_state = ActionState::Init;
-                    *current = picked_action_ent.clone();
+                    *current = *picked_action_ent;
                     let mut thinker_state = states.get_mut(thinker_ent).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
                     *thinker_state = old_state;
                 }
@@ -273,7 +273,7 @@ fn exec_picked_action(
                 let picked_action_factory = builder_wrappers.get(picked_action_ent.0).expect("Couldn't find an Action component corresponding to an Action entity. This is definitely a bug.");
                 picked_action_factory
                     .0
-                    .activate(thinker.actor, picked_action_ent.clone(), cmd);
+                    .activate(thinker.actor, *picked_action_ent, cmd);
                 *picked_action_state = ActionState::Requested;
             }
         }
@@ -286,8 +286,8 @@ fn exec_picked_action(
         let mut picked_action_state = states.get_mut(picked_action_ent.0).expect("Couldn't find an Action component corresponding to an Action entity. This is definitely a bug.");
         picked_action_factory
             .0
-            .activate(thinker.actor, picked_action_ent.clone(), cmd);
-        thinker.current_action = Some(picked_action_ent.clone());
+            .activate(thinker.actor, *picked_action_ent, cmd);
+        thinker.current_action = Some(*picked_action_ent);
         *picked_action_state = ActionState::Requested;
     }
 }

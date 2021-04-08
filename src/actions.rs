@@ -22,9 +22,8 @@ impl ActionState {
 
     pub(crate) fn build(builder: Box<dyn Action>, actor: Entity, cmd: &mut Commands) -> ActionEnt {
         let action_ent = ActionEnt(cmd.spawn().id());
-        let ent_clone = action_ent.clone();
-        let manager_wrapper = ActionManagerWrapper(builder.build(actor, action_ent.clone(), cmd));
-        cmd.entity(ent_clone.0)
+        let manager_wrapper = ActionManagerWrapper(builder.build(actor, action_ent, cmd));
+        cmd.entity(action_ent.0)
             .insert(ActionState::default())
             .insert(manager_wrapper);
         action_ent
