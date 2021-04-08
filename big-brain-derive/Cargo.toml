@@ -3,7 +3,7 @@ name = "big-brain-derive"
 version = "0.1.1"
 authors = ["Kat Marchán <kzm@zkat.tech>"]
 edition = "2018"
-keywords = ["utility-ai", "specs", "ecs"]
+keywords = ["utility-ai", "ai", "bevy", "ecs"]
 categories = ["game-development"]
 description = "Derive macros for the big-brain Utility AI library"
 license-file = "../LICENSE.md"
@@ -16,6 +16,5 @@ proc-macro = true
 [dependencies]
 syn = "1.0.33"
 quote = "1.0.7"
-# big-brain = { path = "../", version = "0.1.0" }
 proc-macro2 = "1.0.18"
 darling = "0.10.2"
