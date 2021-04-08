@@ -1,7 +1,6 @@
 use darling::{ast, FromDeriveInput, FromField, ToTokens};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn;
 
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(consideration), supports(struct_named))]
@@ -70,10 +69,11 @@ impl ToTokens for Consideration {
             }
         });
         let ts = quote! {
-            mod big_brain_builder {
+            mod big_brain_cons_builder {
                 use super::#ident as Comp;
 
-                use big_brain::{typetag, serde::Deserialize, Consideration, ecs::{Entity, Entities, LazyUpdate}, ConsiderationEnt};
+                use big_brain::{typetag, serde::Deserialize, Consideration, bevy::prelude::{Entity, Commands}, ConsiderationEnt};
+                // use typetag;
 
                 #[derive(Debug, Deserialize)]
                 struct #ident {
@@ -81,10 +81,11 @@ impl ToTokens for Consideration {
                 }
                 #[typetag::deserialize]
                 impl Consideration for #ident {
-                    fn build(&self, actor: Entity, ents: &Entities, lazy: &LazyUpdate) -> ConsiderationEnt {
-                        let ent = ConsiderationEnt(ents.create());
-                        lazy.insert(ent.clone().0, big_brain::Utility::default());
-                        lazy.insert(ent.clone().0, Comp {
+                    fn build(&self, actor: Entity, cmd: &mut Commands) -> ConsiderationEnt {
+                        let ent = ConsiderationEnt(cmd.spawn().id());
+                        cmd.entity(ent.0)
+                        .insert(big_brain::Utility::default())
+                        .insert(Comp {
                             #(#field_assignments),*
                         });
                         ent

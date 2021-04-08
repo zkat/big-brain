@@ -1,7 +1,6 @@
 use darling::{ast, FromDeriveInput, FromField, ToTokens};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn;
 
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(action), supports(struct_named))]
@@ -70,10 +69,10 @@ impl ToTokens for Action {
             }
         });
         let ts = quote! {
-            mod big_brain_builder {
+            mod big_brain_action_builder {
                 use super::#ident as Comp;
 
-                use big_brain::{typetag, serde::Deserialize, Action, ActionManager, ecs::{Entity, Entities, LazyUpdate}, ActionEnt};
+                use big_brain::{typetag, serde::Deserialize, Action, ActionManager, bevy::prelude::{Entity, Commands}, ActionEnt};
 
                 #[derive(Debug, Deserialize)]
                 struct #ident {
@@ -82,19 +81,19 @@ impl ToTokens for Action {
 
                 #[typetag::deserialize]
                 impl Action for #ident {
-                    fn build(self: Box<Self>, actor: Entity, action_ent: ActionEnt, ents: &Entities, lazy: &LazyUpdate) -> Box<dyn ActionManager> {
+                    fn build(self: Box<Self>, actor: Entity, action_ent: ActionEnt, cmd: &mut Commands) -> Box<dyn ActionManager> {
                         self
                     }
                 }
 
                 impl ActionManager for #ident {
-                    fn activate(&self, actor: Entity, action_ent: ActionEnt, lazy: &LazyUpdate) {
-                        lazy.insert(action_ent.0.clone(), Comp {
+                    fn activate(&self, actor: Entity, action_ent: ActionEnt, cmd: &mut Commands) {
+                        cmd.entity(action_ent.0).insert(Comp {
                             #(#field_assignments),*
                         });
                     }
-                    fn deactivate(&self, action_ent: ActionEnt, lazy: &LazyUpdate) {
-                        lazy.remove::<Comp>(action_ent.0);
+                    fn deactivate(&self, action_ent: ActionEnt, cmd: &mut Commands) {
+                        cmd.entity(action_ent.0).remove::<Comp>();
                     }
                 }
             }

@@ -1,5 +1,5 @@
+use bevy::prelude::*;
 use serde::Deserialize;
-use specs::{Entities, Entity, LazyUpdate, ReadStorage};
 
 use crate::{
     actions::{Action, ActionState},
@@ -16,13 +16,13 @@ pub struct Choice {
     pub action_state: ActionEnt,
 }
 impl Choice {
-    pub fn calculate<'a>(&self, utilities: &ReadStorage<'a, Utility>) -> f32 {
+    pub fn calculate(&self, utilities: &Query<&Utility>) -> f32 {
         self.measure.calculate(
             self.utilities
                 .iter()
                 .map(|choice_cons| {
                     utilities
-                        .get(choice_cons.0.clone())
+                        .get(choice_cons.0)
                         .expect("Where did the utility go?")
                 })
                 .collect(),
@@ -36,16 +36,16 @@ pub struct ChoiceBuilder {
     pub then: Box<dyn Action>,
 }
 impl ChoiceBuilder {
-    pub fn build(self, actor: Entity, ents: &Entities, lazy: &LazyUpdate) -> Choice {
+    pub fn build(self, actor: Entity, cmd: &mut Commands) -> Choice {
         let action = self.then;
         Choice {
             measure: Box::new(WeightedMeasure),
             utilities: self
                 .consider
                 .iter()
-                .map(|cons| cons.build(actor.clone(), ents, lazy))
+                .map(|cons| cons.build(actor, cmd))
                 .collect(),
-            action_state: ActionState::build(action, actor, ents, lazy),
+            action_state: ActionState::build(action, actor, cmd),
         }
     }
 }

@@ -1,5 +1,5 @@
 `big-brain` is a [Utility AI](https://en.wikipedia.org/wiki/Utility_system)
-library for games, built on the [`specs` ECS](https://docs.rs/specs).
+library for games, built for the [Bevy Game Engine](https://bevyengine.org/)
 
 It lets you define complex, intricate AI behaviors for your entities based on
 their perception of the world. Definitions are almost entirely data-driven,
@@ -17,39 +17,30 @@ First, you define actions and considerations, which are just plain old `specs`
 
 ### Considerations
 
-`Consideration`s are entities that look at the world and evaluate into `Utility`s.
+`Consideration`s are entities that look at the world and evaluate into `Utility` values.
 
 ```rust
-use specs::{Component, Entity, ReadStorage, System, WriteStorage};
-use big_brain::{Consideration, Utility};
+use bevy::prelude::*;
+use big_brain::*;
 
-use crate::components;
-
-#[derive(Debug, Component, Consideration)]
-pub struct Hunger {
-    pub actor: Entity,
+#[derive(Debug, Consideration)]
+pub struct ThirstConsideration {
     #[consideration(default)]
     pub evaluator: PowerEvaluator,
     #[consideration(param)]
     pub weight: f32,
 }
 
-pub struct ConsiderHunger;
-impl<'a> System<'a> for ConsiderHunger {
-    type SystemData = (
-        ReadStorage<'a, components::Hunger>,
-        WriteStorage<'a, Hunger>,
-        WriteStorage<'a, Utility>,
-    );
-
-    fn run(&mut self, (hungers, mut considerers, mut utilities): Self::SystemData) {
-        for (conser, util) in (&mut considerers, &mut utilities).join() {
-            if let Some(hunger) = hungers.get(conser.actor.clone()) {
-                *util = Utility {
-                    value: conser.evaluator.evaluate(hunger.hunger),
-                    weight: conser.weight,
-                };
-            }
+pub fn thirst_consideration_system(
+    thirsts: Query<&Thirst>,
+    mut query: Query<(&Parent, &ThirstConsideration, &mut Utility)>,
+) {
+    for (Parent(actor), conser, mut util) in query.iter_mut() {
+        if let Ok(thirst) = thirsts.get(*actor) {
+            *util = Utility {
+                value: conser.evaluator.evaluate(thirst.thirst),
+                weight: conser.weight,
+            };
         }
     }
 }
@@ -60,40 +51,25 @@ impl<'a> System<'a> for ConsiderHunger {
 `Action`s are the actual things your entities will _do_.
 
 ```rust
-use specs::{Component, Entity, System, WriteStorage};
-use big_brain::{Action, ActionState};
+#[derive(Debug, Action)]
+pub struct DrinkAction {}
 
-use crate::components;
-
-#[derive(Debug, Clone, Component, Action)]
-pub struct Eat {
-    pub actor: Entity,
-    #[action(default)]
-    pub foo: f32,
-    #[action(param)]
-    pub reduce_by: f32,
-}
-
-pub struct EatSystem;
-impl<'a> System<'a> for EatSystem {
-    type SystemData = (
-        WriteStorage<'a, components::Hunger>,
-        WriteStorage<'a, Eat>,
-        WriteStorage<'a, ActionState>,
-    );
-    fn run(&mut self, (mut hungers, mut eat_actions, mut states): Self::SystemData) {
-        for (state, eat_action) in (&mut states, &mut eat_actions).join() {
-            if let Some(hunger) = hungers.get_mut(eat_action.actor.clone()) {
-                match state {
-                    ActionState::Requested => {
-                        hunger.hunger -= eat_action.reduce_by;
-                        *state = ActionState::Success;
-                    }
-                    ActionState::Cancelled => {
-                        *state = ActionState::Failure;
-                    }
-                    _ => {}
+fn drink_action_system(
+    mut thirsts: Query<&mut Thirst>,
+    mut query: Query<(&Parent, &DrinkAction, &mut ActionState)>,
+) {
+    for (Parent(actor), _drink_action, mut state) in query.iter_mut() {
+        if let Ok(mut thirst) = thirsts.get_mut(*actor) {
+            match *state {
+                ActionState::Requested => {
+                    thirst.thirst = 10.0;
+                    println!("drank some water");
+                    *state = ActionState::Success;
                 }
+                ActionState::Cancelled => {
+                    *state = ActionState::Failure;
+                }
+                _ => {}
             }
         }
     }
@@ -102,7 +78,7 @@ impl<'a> System<'a> for EatSystem {
 
 ### Thinker Definition
 
-Finally, you can define the `Thinker`:
+Finally, you can use it when define the `Thinker`:
 
 ```ron
 // behavior.ron
