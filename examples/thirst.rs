@@ -1,4 +1,3 @@
-use bevy::core::Stopwatch;
 use bevy::prelude::*;
 use big_brain::{evaluators::*, *};
 
@@ -11,24 +10,19 @@ use big_brain::{evaluators::*, *};
 pub struct Thirst {
     pub per_second: f32,
     pub thirst: f32,
-    pub timer: Stopwatch,
 }
 
 impl Thirst {
     pub fn new(thirst: f32, per_second: f32) -> Self {
-        Self {
-            thirst,
-            per_second,
-            timer: Stopwatch::new(),
-        }
+        Self { thirst, per_second }
     }
 }
 
-pub fn thirst_system(mut thirsts: Query<&mut Thirst>) {
+pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
     for mut thirst in thirsts.iter_mut() {
         thirst.thirst +=
-            thirst.per_second * (thirst.timer.elapsed().as_micros() as f32 / 1000000.0);
-        thirst.timer.reset();
+            thirst.per_second * (time.delta().as_micros() as f32 / 1000000.0);
+        println!("Getting thirstier...{}%", thirst.thirst);
     }
 }
 
@@ -140,8 +134,8 @@ pub fn init_entities(mut cmd: Commands) {
 (
     picker: {"FirstToScore": (threshold: 80.0)},
     choices: [(
-        consider: [{"Thirst": (weight: 2.0)}],
-        then: {"Drink": ()},
+        consider: [{"ThirstConsideration": (weight: 2.0)}],
+        then: {"DrinkAction": ()},
     )],
 )
 "#,

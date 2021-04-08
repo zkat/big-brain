@@ -73,5 +73,4 @@ pub mod pickers;
 mod actions;
 mod choices;
 mod considerations;
-mod stopwatch;
 mod thinker;

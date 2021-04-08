@@ -10,7 +10,6 @@ use crate::{
     choices::{Choice, ChoiceBuilder},
     considerations::Utility,
     pickers::Picker,
-    stopwatch::Stopwatch,
 };
 
 #[derive(Debug, Clone)]
@@ -26,7 +25,6 @@ pub struct Thinker {
     pub choices: Vec<Choice>,
     pub actor: Entity,
     pub current_action: Option<ActionEnt>,
-    pub timer: Stopwatch,
 }
 
 impl Thinker {
@@ -82,7 +80,6 @@ impl Action for builder::Thinker {
             choices,
             otherwise,
             current_action: None,
-            timer: Stopwatch::new(),
         });
         Box::new(ThinkerManager)
     }
@@ -210,8 +207,6 @@ pub fn thinker_system(
                 }
             }
         }
-        thinker.timer.reset();
-        thinker.timer.start();
         if iterations.index % 500 == 0 && start.elapsed() > iterations.max_duration {
             return;
         }
