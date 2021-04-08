@@ -47,6 +47,15 @@ pub struct DrinkAction {}
 // *separate entity* from the owner of the Thirst component!
 fn drink_action_system(
     mut thirsts: Query<&mut Thirst>,
+    // We grab the Parent here, because individual Actions are parented to the
+    // entity "doing" the action.
+    //
+    // ActionState is an enum that described the specific run-state the action
+    // is in. You can think of Actions as state machines. They get requested,
+    // they can be cancelled, they can run to completion, etc. Cancellations
+    // usually happen because the target action changed (due to a different
+    // Consideration winning). But you can also cancel the actions yourself by
+    // setting the state in the Action system.
     mut query: Query<(&Parent, &DrinkAction, &mut ActionState)>,
 ) {
     for (Parent(actor), _drink_action, mut state) in query.iter_mut() {
@@ -86,6 +95,7 @@ pub struct ThirstConsideration {
 // Look familiar? Similar dance to Actions here.
 pub fn thirst_consideration_system(
     thirsts: Query<&Thirst>,
+    // Same dance with the Parent here, but now we've added a Utility!
     mut query: Query<(&Parent, &ThirstConsideration, &mut Utility)>,
 ) {
     for (Parent(actor), conser, mut util) in query.iter_mut() {
@@ -96,6 +106,11 @@ pub fn thirst_consideration_system(
             // generally "the higher the better", and "first across the finish
             // line", but that's all configurable! You can customize that to
             // your heart's extent using Measures and Pickers.
+            //
+            // A note: You don't actually *need* evaluators/weights. You can
+            // literally just use linear values here and set thresholds
+            // accordingly. The evaluator is just there to give the value a
+            // bit of a curve.
             *util = Utility {
                 value: conser.evaluator.evaluate(thirst.thirst),
                 weight: conser.weight,
