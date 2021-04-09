@@ -9,14 +9,22 @@ pub trait Evaluator: std::fmt::Debug + Sync + Send {
 pub struct LinearEvaluator {
     xa: f32,
     ya: f32,
+    yb: f32,
     dy_over_dx: f32,
 }
 
 impl LinearEvaluator {
-    pub fn new(xa: f32, ya: f32, xb: f32, yb: f32) -> Self {
+    pub fn new() -> Self {
+        Self::new_full(0.0, 0.0, 100.0, 100.0)
+    }
+    pub fn new_ranged(min: f32, max: f32) -> Self {
+        Self::new_full(min, 0.0, max, 100.0)
+    }
+    fn new_full(xa: f32, ya: f32, xb: f32, yb: f32) -> Self {
         Self {
             xa,
             ya,
+            yb,
             dy_over_dx: (yb - ya) / (xb - xa),
         }
     }
@@ -24,14 +32,14 @@ impl LinearEvaluator {
 
 impl Default for LinearEvaluator {
     fn default() -> Self {
-        Self::new(0.0, 0.0, 100.0, 100.0)
+        Self::new()
     }
 }
 
 #[typetag::serde]
 impl Evaluator for LinearEvaluator {
     fn evaluate(&self, value: f32) -> f32 {
-        clamp(self.ya + self.dy_over_dx * (value - self.xa), 0.0, 1.0)
+        clamp(self.ya + self.dy_over_dx * (value - self.xa), self.ya, self.yb)
     }
 }
 
@@ -45,7 +53,13 @@ pub struct PowerEvaluator {
 }
 
 impl PowerEvaluator {
-    pub fn new(power: f32, xa: f32, ya: f32, xb: f32, yb: f32) -> Self {
+    pub fn new(power: f32) -> Self {
+        Self::new_full(power, 0.0, 0.0, 100.0, 100.0)
+    }
+    pub fn new_ranged(power: f32, min: f32, max: f32) -> Self {
+        Self::new_full(power, min, 0.0, max, 100.0)
+    }
+    fn new_full(power: f32, xa: f32, ya: f32, xb: f32, yb: f32) -> Self {
         Self {
             power: clamp(power, 0.0, 10000.0),
             dy: yb - ya,
@@ -58,7 +72,7 @@ impl PowerEvaluator {
 
 impl Default for PowerEvaluator {
     fn default() -> Self {
-        Self::new(2.0, 0.0, 0.0, 100.0, 100.0)
+        Self::new(2.0)
     }
 }
 
@@ -74,6 +88,8 @@ impl Evaluator for PowerEvaluator {
 pub struct SigmoidEvaluator {
     xa: f32,
     xb: f32,
+    ya: f32,
+    yb: f32,
     k: f32,
     two_over_dx: f32,
     x_mean: f32,
@@ -83,11 +99,21 @@ pub struct SigmoidEvaluator {
 }
 
 impl SigmoidEvaluator {
-    pub fn new(k: f32, xa: f32, ya: f32, xb: f32, yb: f32) -> Self {
+    pub fn new(k: f32) -> Self {
+        Self::new_full(k, 0.0, 0.0, 100.0, 100.0)
+    }
+
+    pub fn new_ranged(k: f32, min: f32, max: f32) -> Self {
+        Self::new_full(k, min, 0.0, max, 100.0)
+    }
+
+    fn new_full(k: f32, xa: f32, ya: f32, xb: f32, yb: f32) -> Self {
         let k = clamp(k, -0.99999, 0.99999);
         Self {
             xa,
             xb,
+            ya,
+            yb,
             two_over_dx: (2.0 / (xb - ya)).abs(),
             x_mean: (xa + xb) / 2.0,
             y_mean: (ya + yb) / 2.0,
@@ -104,13 +130,13 @@ impl Evaluator for SigmoidEvaluator {
         let cx_minus_x_mean = clamp(x, self.xa, self.xb) - self.x_mean;
         let numerator = self.two_over_dx * cx_minus_x_mean * self.one_minus_k;
         let denominator = self.k * (1.0 - 2.0 * (self.two_over_dx * cx_minus_x_mean)).abs() + 1.0;
-        self.dy_over_two * (numerator / denominator) + self.y_mean
+        clamp(self.dy_over_two * (numerator / denominator) + self.y_mean, self.ya, self.yb)
     }
 }
 
 impl Default for SigmoidEvaluator {
     fn default() -> Self {
-        Self::new(-0.5, 0.0, 0.0, 100.0, 100.0)
+        Self::new(-0.5)
     }
 }
 
