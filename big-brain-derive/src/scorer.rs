@@ -3,16 +3,16 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 #[derive(Debug, FromDeriveInput)]
-#[darling(attributes(consideration), supports(struct_named))]
-pub struct Consideration {
+#[darling(attributes(scorer))]
+pub struct Scorer {
     ident: syn::Ident,
     generics: syn::Generics,
-    data: ast::Data<(), ConsiderationField>,
+    data: ast::Data<(), ScorerField>,
 }
 
 #[derive(Debug, FromField)]
-#[darling(attributes(consideration))]
-struct ConsiderationField {
+#[darling(attributes(scorer))]
+struct ScorerField {
     ident: Option<syn::Ident>,
     ty: syn::Type,
     #[darling(default)]
@@ -21,9 +21,9 @@ struct ConsiderationField {
     default: bool,
 }
 
-impl ToTokens for Consideration {
+impl ToTokens for Scorer {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Consideration {
+        let Scorer {
             ref ident,
             ref data,
             ..
@@ -34,7 +34,7 @@ impl ToTokens for Consideration {
             .expect("Enums not supported")
             .fields;
         let field_defs = fields.clone().into_iter().filter_map(|field| {
-            let ConsiderationField {
+            let ScorerField {
                 ident, ty, param, ..
             } = field;
             let ident = ident.clone().unwrap();
@@ -45,7 +45,7 @@ impl ToTokens for Consideration {
             }
         });
         let field_assignments = fields.into_iter().map(|field| {
-            let ConsiderationField {
+            let ScorerField {
                 ident,
                 param,
                 default,
@@ -69,10 +69,10 @@ impl ToTokens for Consideration {
             }
         });
         let ts = quote! {
-            mod big_brain_cons_builder {
+            mod big_brain_scorer_builder {
                 use super::#ident as Comp;
 
-                use big_brain::{typetag, serde::Deserialize, Consideration, bevy::prelude::*, ConsiderationEnt};
+                use big_brain::{typetag, serde::Deserialize, Scorer, bevy::prelude::*, ScorerEnt};
                 // use typetag;
 
                 #[derive(Debug, Deserialize)]
@@ -80,11 +80,11 @@ impl ToTokens for Consideration {
                     #(#field_defs),*
                 }
                 #[typetag::deserialize]
-                impl Consideration for #ident {
-                    fn build(&self, actor: Entity, cmd: &mut Commands) -> ConsiderationEnt {
-                        let ent = ConsiderationEnt(cmd.spawn().id());
+                impl Scorer for #ident {
+                    fn build(&self, actor: Entity, cmd: &mut Commands) -> ScorerEnt {
+                        let ent = ScorerEnt(cmd.spawn().id());
                         cmd.entity(ent.0)
-                        .insert(big_brain::Utility::default())
+                        .insert(big_brain::Score::default())
                         .insert(Comp {
                             #(#field_assignments),*
                         });

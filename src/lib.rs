@@ -5,7 +5,7 @@ pub use typetag;
 
 pub use actions::*;
 pub use choices::*;
-pub use considerations::*;
+pub use scorers::*;
 pub use thinker::*;
 
 pub mod evaluators;
@@ -14,7 +14,7 @@ pub mod pickers;
 
 mod actions;
 mod choices;
-mod considerations;
+mod scorers;
 mod thinker;
 
 use bevy::prelude::*;

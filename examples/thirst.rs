@@ -20,9 +20,7 @@ impl Thirst {
 
 pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
     for mut thirst in thirsts.iter_mut() {
-        thirst.thirst +=
-            thirst.per_second * (time.delta().as_micros() as f32 / 1000000.0);
-        println!("Getting thirstier...{}%", thirst.thirst);
+        thirst.thirst += thirst.per_second * (time.delta().as_micros() as f32 / 1000000.0);
     }
 }
 
@@ -76,29 +74,29 @@ fn drink_action_system(
     }
 }
 
-// Then, we have something called "Considerations". These are special
-// components that run in the background, calculating a "Utility" value, which
-// is what Big Brain will use to pick which actions to execute.
+// Then, we have something called "Scorers". These are special components that
+// run in the background, calculating a "Score" value, which is what Big Brain
+// will use to pick which actions to execute.
 //
 // Additionally, though, we pull in an evaluator and define a weight. Which is
 // just mathy stuff you can tweak to get the behavior you want. More on this
 // in the docs (later), but for now, just put them in there and trust the
 // system. :)
-#[derive(Debug, Consideration)]
-pub struct ThirstConsideration {
-    #[consideration(default)]
+#[derive(Debug, Scorer)]
+pub struct ScoreThirst {
+    #[scorer(default)]
     pub evaluator: PowerEvaluator,
-    #[consideration(param)]
+    #[scorer(param)]
     pub weight: f32,
 }
 
 // Look familiar? Similar dance to Actions here.
-pub fn thirst_consideration_system(
+pub fn score_thirst_system(
     thirsts: Query<&Thirst>,
     // Same dance with the Parent here, but now we've added a Utility!
-    mut query: Query<(&Parent, &ThirstConsideration, &mut Utility)>,
+    mut query: Query<(&Parent, &ScoreThirst, &mut Score)>,
 ) {
-    for (Parent(actor), conser, mut util) in query.iter_mut() {
+    for (Parent(actor), scorer, mut score) in query.iter_mut() {
         if let Ok(thirst) = thirsts.get(*actor) {
             // This is really what the job of a Consideration is. To calculate
             // a generic Utility value that the Big Brain engine will compare
@@ -111,9 +109,9 @@ pub fn thirst_consideration_system(
             // literally just use linear values here and set thresholds
             // accordingly. The evaluator is just there to give the value a
             // bit of a curve.
-            *util = Utility {
-                value: conser.evaluator.evaluate(thirst.thirst),
-                weight: conser.weight,
+            *score = Score {
+                value: scorer.evaluator.evaluate(thirst.thirst),
+                weight: scorer.weight,
             };
         }
     }
@@ -157,7 +155,7 @@ fn main() {
         .add_plugin(BigBrainPlugin)
         .add_startup_system(init_entities.system())
         .add_system(thirst_system.system())
-        .add_system(thirst_consideration_system.system())
+        .add_system(score_thirst_system.system())
         .add_system(drink_action_system.system())
         .run();
 }

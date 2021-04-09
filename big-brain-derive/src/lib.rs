@@ -3,10 +3,10 @@ use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
 use action::Action;
-use consideration::Consideration;
+use scorer::Scorer;
 
 mod action;
-mod consideration;
+mod scorer;
 
 /**
 `Action`s in `big-brain` are defined through this derive macro. Once defined,
@@ -198,9 +198,9 @@ impl<'a> System<'a> for ConsiderHunger {
 )
 ```
 */
-#[proc_macro_derive(Consideration, attributes(consideration))]
-pub fn derive_consideration_builder(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+#[proc_macro_derive(Scorer, attributes(scorer))]
+pub fn derive_scorer_builder(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    let consideration = Consideration::from_derive_input(&input).unwrap();
-    (quote!(#consideration)).into()
+    let scorer = Scorer::from_derive_input(&input).unwrap();
+    (quote!(#scorer)).into()
 }

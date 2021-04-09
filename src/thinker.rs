@@ -8,7 +8,7 @@ use serde::Deserialize;
 use crate::{
     actions::{self, Action, ActionManager, ActionManagerWrapper, ActionState},
     choices::{Choice, ChoiceBuilder},
-    considerations::Utility,
+    scorers::Score,
     pickers::Picker,
 };
 
@@ -16,7 +16,7 @@ use crate::{
 pub struct ActionEnt(pub Entity);
 
 #[derive(Debug, Clone, Copy)]
-pub struct ConsiderationEnt(pub Entity);
+pub struct ScorerEnt(pub Entity);
 
 #[derive(Debug)]
 pub struct Thinker {
@@ -123,7 +123,7 @@ pub fn thinker_system(
     mut cmd: Commands,
     mut iterations: Local<ThinkerIterations>,
     mut thinker_q: Query<(Entity, &Parent, &mut Thinker, &ActiveThinker)>,
-    utilities: Query<&Utility>,
+    utilities: Query<&Score>,
     mut action_states: Query<&mut actions::ActionState>,
     builder_wrappers: Query<&ActionManagerWrapper>,
 ) {

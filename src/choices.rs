@@ -3,20 +3,20 @@ use serde::Deserialize;
 
 use crate::{
     actions::{Action, ActionState},
-    considerations::{Consideration, Utility},
+    scorers::{Scorer, Score},
     measures::{Measure, WeightedMeasure},
-    thinker::{ActionEnt, ConsiderationEnt},
+    thinker::{ActionEnt, ScorerEnt},
 };
 
 // Contains different types of Considerations and Actions
 #[derive(Debug)]
 pub struct Choice {
     pub measure: Box<dyn Measure>,
-    pub utilities: Vec<ConsiderationEnt>,
+    pub utilities: Vec<ScorerEnt>,
     pub action_state: ActionEnt,
 }
 impl Choice {
-    pub fn calculate(&self, utilities: &Query<&Utility>) -> f32 {
+    pub fn calculate(&self, utilities: &Query<&Score>) -> f32 {
         self.measure.calculate(
             self.utilities
                 .iter()
@@ -32,7 +32,7 @@ impl Choice {
 
 #[derive(Debug, Deserialize)]
 pub struct ChoiceBuilder {
-    pub consider: Vec<Box<dyn Consideration>>,
+    pub consider: Vec<Box<dyn Scorer>>,
     pub then: Box<dyn Action>,
 }
 impl ChoiceBuilder {
