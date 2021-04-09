@@ -23,5 +23,8 @@ pub struct BigBrainPlugin;
 impl Plugin for BigBrainPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system(thinker_system.system());
+        app.add_system(fixed_score_system.system());
+        app.add_system(all_or_nothing_system.system());
+        app.add_system(sum_of_scorers_system.system());
     }
 }

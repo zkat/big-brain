@@ -140,7 +140,7 @@ impl Default for SigmoidEvaluator {
     }
 }
 
-fn clamp<T: PartialOrd>(val: T, min: T, max: T) -> T {
+pub(crate) fn clamp<T: PartialOrd>(val: T, min: T, max: T) -> T {
     let val = if val > max { max } else { val };
     if val < min {
         min

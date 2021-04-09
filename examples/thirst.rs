@@ -24,7 +24,6 @@ pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
         if thirst.thirst >= 100.0 {
             thirst.thirst = 100.0;
         }
-        println!("Thirst: {}", thirst.thirst);
     }
 }
 
@@ -105,6 +104,7 @@ pub fn thirsty_scorer_system(
             //
             // The score here must be between 0.0 and 100.0.
             score.set(thirst.thirst);
+            println!("Thirst: {}", thirst.thirst);
         }
     }
 }
