@@ -3,44 +3,35 @@ library for games, built for the [Bevy Game Engine](https://bevyengine.org/)
 
 It lets you define complex, intricate AI behaviors for your entities based on
 their perception of the world. Definitions are almost entirely data-driven,
-using plain `.ron` files, and you only need to program considerations
-(entities that look at your game world), and actions (entities that perform
-actual behaviors upon the world). No other code is needed for actual AI
-behavior.
+using plain `.ron` files, and you only need to program Scorers (entities that
+look at your game world), and Actions (entities that perform actual behaviors
+upon the world). No other code is needed for actual AI behavior.
 
 See [the documentation](https://docs.rs/big-brain) for more details.
 
 ## Example
 
-First, you define actions and considerations, which are just plain old `specs`
+First, you define actions and considerations, which are just plain old `Bevy`
 `Component`s and `System`s.
 
-### Considerations
+### Scorers
 
-`Consideration`s are entities that look at the world and evaluate into `Utility` values.
+`Scorers`s are entities that look at the world and evaluate into `Score` values.
 
 ```rust
 use bevy::prelude::*;
 use big_brain::*;
 
-#[derive(Debug, Consideration)]
-pub struct ThirstConsideration {
-    #[consideration(default)]
-    pub evaluator: PowerEvaluator,
-    #[consideration(param)]
-    pub weight: f32,
-}
+#[derive(Debug, Scorer)]
+pub struct Thirsty;
 
-pub fn thirst_consideration_system(
+pub fn score_thirst_system(
     thirsts: Query<&Thirst>,
-    mut query: Query<(&Parent, &ThirstConsideration, &mut Utility)>,
+    mut query: Query<(&Parent, &mut Score), With<Thirsty>>,
 ) {
-    for (Parent(actor), conser, mut util) in query.iter_mut() {
+    for (Parent(actor), mut score) in query.iter_mut() {
         if let Ok(thirst) = thirsts.get(*actor) {
-            *util = Utility {
-                value: conser.evaluator.evaluate(thirst.thirst),
-                weight: conser.weight,
-            };
+            *score = Score(thirst.thirst);
         }
     }
 }
@@ -51,14 +42,17 @@ pub fn thirst_consideration_system(
 `Action`s are the actual things your entities will _do_.
 
 ```rust
+use bevy::prelude::*;
+use big_brain::*;
+
 #[derive(Debug, Action)]
-pub struct DrinkAction {}
+pub struct Drink;
 
 fn drink_action_system(
     mut thirsts: Query<&mut Thirst>,
-    mut query: Query<(&Parent, &DrinkAction, &mut ActionState)>,
+    mut query: Query<(&Parent, &mut ActionState), With<Drink>>,
 ) {
-    for (Parent(actor), _drink_action, mut state) in query.iter_mut() {
+    for (Parent(actor), mut state) in query.iter_mut() {
         if let Ok(mut thirst) = thirsts.get_mut(*actor) {
             match *state {
                 ActionState::Requested => {
@@ -81,28 +75,28 @@ fn drink_action_system(
 Finally, you can use it when define the `Thinker`:
 
 ```ron
-// behavior.ron
 (
     picker: {"FirstToScore": (threshold: 80.0)},
-    otherwise: Some({"Meander": ()}),
     choices: [(
-        consider: [{"Bladder": (weight: 3.0)}],
-        // Thinkers are infinitely nestable! They're actually Actions themselves.
+        when: {"Bladder": ()},
         then: {"Thinker": (
             picker: {"FirstToScore": (threshold: 80.0)},
             choices: [(
-                consider: [{"Bladder": (weight: 3.0)}],
+                when: [{"Bladder": ()}],
                 then: {"Pee": ()}
             )]
         )}
     ), (
-        consider: [{"Thirst": (weight: 2.0)}],
+        // Here you go!
+        when: {"Thirsty": ()},
         then: {"Drink": ()},
     ), (
-        consider: [{"Hunger": (weight: 2.0)}],
+        when: {"Hungry": ()},
         then: {"Eat": ()},
     )],
+    otherwise: Some({"Meander": ()}),
 )
+
 ```
 
 ## License
