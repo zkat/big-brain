@@ -107,7 +107,7 @@ pub fn thirsty_scorer_system(
             // calculation here, possibly to clamp the value to a range, add a
             // curve, etc. In our case, we'll just assume thirst goes from
             // 0.0..100.0, to keep things simple.
-            *score = Score(thirst.thirst);
+            score.0 = thirst.thirst;
         }
     }
 }
