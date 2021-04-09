@@ -103,11 +103,8 @@ pub fn thirsty_scorer_system(
             // generally "the higher the better", and "first across the finish
             // line", but that's all configurable using Pickers!
             //
-            // In a real-world application, you might want to do a fancier
-            // calculation here, possibly to clamp the value to a range, add a
-            // curve, etc. In our case, we'll just assume thirst goes from
-            // 0.0..100.0, to keep things simple.
-            score.0 = thirst.thirst;
+            // The score here must be between 0.0 and 100.0.
+            score.set(thirst.thirst);
         }
     }
 }

@@ -31,7 +31,7 @@ pub fn score_thirst_system(
 ) {
     for (Parent(actor), mut score) in query.iter_mut() {
         if let Ok(thirst) = thirsts.get(*actor) {
-            score.0 = thirst.thirst;
+            score.set(thirst.thirst);
         }
     }
 }
