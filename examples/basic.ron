@@ -1,0 +1,21 @@
+(
+    picker: {"FirstToScore": (threshold: 80.0)},
+    choices: [(
+        consider: [{"Bladder": (weight: 3.0)}],
+        then: {"Thinker": (
+            picker: {"FirstToScore": (threshold: 80.0)},
+            choices: [(
+                consider: [{"Bladder": (weight: 3.0)}],
+                then: {"Pee": ()}
+            )]
+        )}
+    ), (
+        consider: [{"Thirst": (weight: 2.0)}],
+        then: {"Drink": ()},
+    ), (
+        consider: [{"Hunger": (weight: 2.0)}],
+        then: {"Eat": ()},
+    )],
+    otherwise: Some({"Meander": ()}),
+)
+
