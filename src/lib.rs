@@ -9,7 +9,6 @@ pub use scorers::*;
 pub use thinker::*;
 
 pub mod evaluators;
-pub mod measures;
 pub mod pickers;
 
 mod actions;

@@ -1,19 +1,23 @@
 (
+    // We have to use these special "externally tagged" specifiers instead of,
+    // say, `FirstToScore(threshold: 80.0)` due to a bug in RON itself:
+    // https://github.com/ron-rs/ron/issues/123
     picker: {"FirstToScore": (threshold: 80.0)},
     choices: [(
-        consider: [{"Bladder": (weight: 3.0)}],
+        when: {"Bladder": ()},
+        // Thinkers happen to also be actions, so you can nest theem!
         then: {"Thinker": (
             picker: {"FirstToScore": (threshold: 80.0)},
             choices: [(
-                consider: [{"Bladder": (weight: 3.0)}],
+                when: [{"Bladder": ()}],
                 then: {"Pee": ()}
             )]
         )}
     ), (
-        consider: [{"Thirst": (weight: 2.0)}],
+        when: {"Thirst": ()},
         then: {"Drink": ()},
     ), (
-        consider: [{"Hunger": (weight: 2.0)}],
+        when: {"Hunger": ()},
         then: {"Eat": ()},
     )],
     otherwise: Some({"Meander": ()}),

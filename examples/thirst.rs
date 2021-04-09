@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use big_brain::{evaluators::*, *};
+use big_brain::*;
 
 // First, we define a "Thirst" component and associated system. This is NOT
 // THE AI. It's a plain old system that just makes an entity "thirstier" over
@@ -21,6 +21,7 @@ impl Thirst {
 pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
     for mut thirst in thirsts.iter_mut() {
         thirst.thirst += thirst.per_second * (time.delta().as_micros() as f32 / 1000000.0);
+        println!("Thirst: {}", thirst.thirst);
     }
 }
 
@@ -33,7 +34,7 @@ pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
 // These actions will be spawned and queued by the game engine when their
 // conditions trigger (we'll configure what these are later).
 #[derive(Debug, Action)]
-pub struct DrinkAction {}
+pub struct DrinkAction;
 
 // Associated with that DrinkAction, you then need to have a system that will
 // actually execute those actions when they're "spawned" by the Big Brain
@@ -52,7 +53,7 @@ fn drink_action_system(
     // is in. You can think of Actions as state machines. They get requested,
     // they can be cancelled, they can run to completion, etc. Cancellations
     // usually happen because the target action changed (due to a different
-    // Consideration winning). But you can also cancel the actions yourself by
+    // Scorer winning). But you can also cancel the actions yourself by
     // setting the state in the Action system.
     mut query: Query<(&Parent, &DrinkAction, &mut ActionState)>,
 ) {
@@ -83,36 +84,22 @@ fn drink_action_system(
 // in the docs (later), but for now, just put them in there and trust the
 // system. :)
 #[derive(Debug, Scorer)]
-pub struct ScoreThirst {
-    #[scorer(default)]
-    pub evaluator: PowerEvaluator,
-    #[scorer(param)]
-    pub weight: f32,
-}
+pub struct ScoreThirst;
 
 // Look familiar? Similar dance to Actions here.
 pub fn score_thirst_system(
     thirsts: Query<&Thirst>,
     // Same dance with the Parent here, but now we've added a Utility!
-    mut query: Query<(&Parent, &ScoreThirst, &mut Score)>,
+    mut query: Query<(&Parent, &mut Score), With<ScoreThirst>>,
 ) {
-    for (Parent(actor), scorer, mut score) in query.iter_mut() {
+    for (Parent(actor), mut score) in query.iter_mut() {
         if let Ok(thirst) = thirsts.get(*actor) {
-            // This is really what the job of a Consideration is. To calculate
+            // This is really what the job of a Scorer is. To calculate
             // a generic Utility value that the Big Brain engine will compare
             // against others, over time, and use to make decisions. This is
             // generally "the higher the better", and "first across the finish
-            // line", but that's all configurable! You can customize that to
-            // your heart's extent using Measures and Pickers.
-            //
-            // A note: You don't actually *need* evaluators/weights. You can
-            // literally just use linear values here and set thresholds
-            // accordingly. The evaluator is just there to give the value a
-            // bit of a curve.
-            *score = Score {
-                value: scorer.evaluator.evaluate(thirst.thirst),
-                weight: scorer.weight,
-            };
+            // line", but that's all configurable using Pickers!
+            *score = Score(thirst.thirst);
         }
     }
 }
@@ -123,15 +110,15 @@ pub fn score_thirst_system(
 // Thinkers are configured using RON right now, with a DSL that makes it easy
 // to define, in data, the actual behavior you want.
 pub fn init_entities(mut cmd: Commands) {
-    let actor = cmd.spawn().insert(Thirst::new(80.0, 2.0)).id();
+    let actor = cmd.spawn().insert(Thirst::new(70.0, 2.0)).id();
 
-    // Here's a very simple one that only has one consideration and one
+    // Here's a very simple one that only has one scorer and one
     // associated action. But you can have more of them, and even nest them by
     // using more Thinkers (which are actually themselves Actions). See
     // basic.ron in examples/ for a more involved Thinker definition.
     //
     // Ultimately, these Thinkers are meant to be usable by non-programmers:
-    // You, the developer, create Actions and Considerations, and someone else
+    // You, the developer, create Actions and Scorers, and someone else
     // is then able to put them all together like LEGOs into all sorts of
     // intricate logic.
     Thinker::load_from_str(
@@ -139,7 +126,8 @@ pub fn init_entities(mut cmd: Commands) {
 (
     picker: {"FirstToScore": (threshold: 80.0)},
     choices: [(
-        consider: [{"ThirstConsideration": (weight: 2.0)}],
+        when: {"ScoreThirst": ()},
+        // This action will fire when (and as long as) ScoreThirst scores >=80.0.
         then: {"DrinkAction": ()},
     )],
 )

@@ -3,7 +3,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 #[derive(Debug, FromDeriveInput)]
-#[darling(attributes(action), supports(struct_named))]
+#[darling(attributes(action))]
 pub struct Action {
     ident: syn::Ident,
     generics: syn::Generics,
