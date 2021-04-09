@@ -21,6 +21,9 @@ impl Thirst {
 pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
     for mut thirst in thirsts.iter_mut() {
         thirst.thirst += thirst.per_second * (time.delta().as_micros() as f32 / 1000000.0);
+        if thirst.thirst >= 100.0 {
+            thirst.thirst = 100.0;
+        }
         println!("Thirst: {}", thirst.thirst);
     }
 }
@@ -34,15 +37,15 @@ pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
 // These actions will be spawned and queued by the game engine when their
 // conditions trigger (we'll configure what these are later).
 #[derive(Debug, Action)]
-pub struct DrinkAction;
+pub struct Drink;
 
-// Associated with that DrinkAction, you then need to have a system that will
+// Associated with that Drink Action, you then need to have a system that will
 // actually execute those actions when they're "spawned" by the Big Brain
 // engine.
 //
 // In our case, we want the Thirst components, since we'll be changing those.
 // Additionally, we want to pick up the DrinkAction components, as well as
-// their associated ActionState. Note that the DrinkAction belongs to a
+// their associated ActionState. Note that the Drink Action belongs to a
 // *separate entity* from the owner of the Thirst component!
 fn drink_action_system(
     mut thirsts: Query<&mut Thirst>,
@@ -55,9 +58,9 @@ fn drink_action_system(
     // usually happen because the target action changed (due to a different
     // Scorer winning). But you can also cancel the actions yourself by
     // setting the state in the Action system.
-    mut query: Query<(&Parent, &DrinkAction, &mut ActionState)>,
+    mut query: Query<(&Parent, &mut ActionState), With<Drink>>,
 ) {
-    for (Parent(actor), _drink_action, mut state) in query.iter_mut() {
+    for (Parent(actor), mut state) in query.iter_mut() {
         // Use the drink_action's actor to look up the corresponding Thirst.
         if let Ok(mut thirst) = thirsts.get_mut(*actor) {
             match *state {
@@ -84,21 +87,26 @@ fn drink_action_system(
 // in the docs (later), but for now, just put them in there and trust the
 // system. :)
 #[derive(Debug, Scorer)]
-pub struct ScoreThirst;
+pub struct Thirsty;
 
 // Look familiar? Similar dance to Actions here.
-pub fn score_thirst_system(
+pub fn thirsty_scorer_system(
     thirsts: Query<&Thirst>,
-    // Same dance with the Parent here, but now we've added a Utility!
-    mut query: Query<(&Parent, &mut Score), With<ScoreThirst>>,
+    // Same dance with the Parent here, but now we've added a Score!
+    mut query: Query<(&Parent, &mut Score), With<Thirsty>>,
 ) {
     for (Parent(actor), mut score) in query.iter_mut() {
         if let Ok(thirst) = thirsts.get(*actor) {
-            // This is really what the job of a Scorer is. To calculate
-            // a generic Utility value that the Big Brain engine will compare
+            // This is really what the job of a Scorer is. To calculate a
+            // generic Utility value that the Big Brain engine will compare
             // against others, over time, and use to make decisions. This is
             // generally "the higher the better", and "first across the finish
             // line", but that's all configurable using Pickers!
+            //
+            // In a real-world application, you might want to do a fancier
+            // calculation here, possibly to clamp the value to a range, add a
+            // curve, etc. In our case, we'll just assume thirst goes from
+            // 0.0..100.0, to keep things simple.
             *score = Score(thirst.thirst);
         }
     }
@@ -126,9 +134,9 @@ pub fn init_entities(mut cmd: Commands) {
 (
     picker: {"FirstToScore": (threshold: 80.0)},
     choices: [(
-        when: {"ScoreThirst": ()},
-        // This action will fire when (and as long as) ScoreThirst scores >=80.0.
-        then: {"DrinkAction": ()},
+        when: {"Thirsty": ()},
+        // This action will fire when (and as long as) Thirsty scores >=80.0.
+        then: {"Drink": ()},
     )],
 )
 "#,
@@ -143,7 +151,7 @@ fn main() {
         .add_plugin(BigBrainPlugin)
         .add_startup_system(init_entities.system())
         .add_system(thirst_system.system())
-        .add_system(score_thirst_system.system())
         .add_system(drink_action_system.system())
+        .add_system(thirsty_scorer_system.system())
         .run();
 }
