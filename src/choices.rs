@@ -31,7 +31,7 @@ impl ChoiceBuilder {
     pub fn build(self, actor: Entity, cmd: &mut Commands) -> Choice {
         let action = self.then;
         Choice {
-            scorer: self.when.build(actor, cmd),
+            scorer: self.when.attach(actor, cmd),
             action_state: ActionState::attach(action, actor, cmd),
         }
     }

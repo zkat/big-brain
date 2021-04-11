@@ -22,7 +22,7 @@ impl ActionState {
 
     pub(crate) fn attach(builder: Box<dyn Action>, actor: Entity, cmd: &mut Commands) -> ActionEnt {
         let action_ent = ActionEnt(cmd.spawn().id());
-        let manager_wrapper = ActionRunnerWrapper(builder.build(actor, action_ent, cmd));
+        let manager_wrapper = ActionRunnerWrapper(builder.attach(actor, action_ent, cmd));
         cmd.entity(action_ent.0)
             .insert(ActionState::default())
             .insert(manager_wrapper);
@@ -42,7 +42,7 @@ This trait defines new actions. In general, you should use the [derive macro](de
 */
 #[typetag::deserialize]
 pub trait Action: std::fmt::Debug + Send + Sync {
-    fn build(
+    fn attach(
         self: Box<Self>,
         actor: Entity,
         action_ent: ActionEnt,
@@ -152,7 +152,7 @@ mod seq_action {
 
     #[typetag::deserialize]
     impl Action for Steps {
-        fn build(
+        fn attach(
             self: Box<Self>,
             actor: Entity,
             _action_ent: ActionEnt,

@@ -62,7 +62,7 @@ impl ThinkerBuilder {
 
 #[typetag::deserialize]
 impl Action for ThinkerBuilder {
-    fn build(
+    fn attach(
         self: Box<Self>,
         actor: Entity,
         action_ent: ActionEnt,

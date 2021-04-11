@@ -22,7 +22,7 @@ This trait defines new Scorers. In general, you should use the [derive macro](de
 */
 #[typetag::deserialize]
 pub trait Scorer: std::fmt::Debug + Sync + Send {
-    fn build(&self, entity: Entity, cmd: &mut Commands) -> ScorerEnt;
+    fn attach(&self, entity: Entity, cmd: &mut Commands) -> ScorerEnt;
 }
 
 #[derive(Debug)]
@@ -44,7 +44,7 @@ mod fixed_score {
 
     #[typetag::deserialize]
     impl Scorer for FixedScore {
-        fn build(&self, actor: Entity, cmd: &mut Commands) -> ScorerEnt {
+        fn attach(&self, actor: Entity, cmd: &mut Commands) -> ScorerEnt {
             let ent = ScorerEnt(cmd.spawn().id());
             cmd.entity(ent.0)
                 .insert(Score::default())
@@ -98,12 +98,12 @@ mod all_or_nothing {
 
     #[typetag::deserialize]
     impl Scorer for AllOrNothing {
-        fn build(&self, actor: Entity, cmd: &mut Commands) -> ScorerEnt {
+        fn attach(&self, actor: Entity, cmd: &mut Commands) -> ScorerEnt {
             let ent = ScorerEnt(cmd.spawn().id());
             let scorers: Vec<_> = self
                 .scorers
                 .iter()
-                .map(|scorer| scorer.build(actor, cmd).0)
+                .map(|scorer| scorer.attach(actor, cmd).0)
                 .collect();
             cmd.entity(ent.0)
                 .insert(Score::default())
@@ -158,12 +158,12 @@ mod sum_of_scorers {
 
     #[typetag::deserialize]
     impl Scorer for SumOfScorers {
-        fn build(&self, actor: Entity, cmd: &mut Commands) -> ScorerEnt {
+        fn attach(&self, actor: Entity, cmd: &mut Commands) -> ScorerEnt {
             let ent = ScorerEnt(cmd.spawn().id());
             let scorers: Vec<_> = self
                 .scorers
                 .iter()
-                .map(|scorer| scorer.build(actor, cmd).0)
+                .map(|scorer| scorer.attach(actor, cmd).0)
                 .collect();
             cmd.entity(ent.0)
                 .insert(Score::default())
