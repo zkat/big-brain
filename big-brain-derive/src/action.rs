@@ -72,7 +72,7 @@ impl ToTokens for Action {
             mod big_brain_action_builder {
                 use super::#ident as Comp;
 
-                use big_brain::{typetag, serde::Deserialize, Action, ActionManager, bevy::prelude::{Entity, Commands}, ActionEnt};
+                use big_brain::{typetag, serde::Deserialize, Action, ActionRunner, bevy::prelude::{Entity, Commands}, ActionEnt};
 
                 #[derive(Debug, Deserialize)]
                 struct #ident {
@@ -81,12 +81,12 @@ impl ToTokens for Action {
 
                 #[typetag::deserialize]
                 impl Action for #ident {
-                    fn build(self: Box<Self>, actor: Entity, action_ent: ActionEnt, cmd: &mut Commands) -> Box<dyn ActionManager> {
+                    fn build(self: Box<Self>, actor: Entity, action_ent: ActionEnt, cmd: &mut Commands) -> Box<dyn ActionRunner> {
                         self
                     }
                 }
 
-                impl ActionManager for #ident {
+                impl ActionRunner for #ident {
                     fn activate(&self, actor: Entity, action_ent: ActionEnt, cmd: &mut Commands) {
                         cmd.entity(action_ent.0).insert(Comp {
                             #(#field_assignments),*

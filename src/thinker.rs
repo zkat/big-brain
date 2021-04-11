@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use serde::Deserialize;
 
 use crate::{
-    actions::{self, Action, ActionManager, ActionManagerWrapper, ActionState},
+    actions::{self, Action, ActionRunner, ActionRunnerWrapper, ActionState},
     choices::{Choice, ChoiceBuilder},
     scorers::Score,
     pickers::Picker,
@@ -64,7 +64,7 @@ impl Action for builder::Thinker {
         actor: Entity,
         action_ent: ActionEnt,
         cmd: &mut Commands,
-    ) -> Box<dyn ActionManager> {
+    ) -> Box<dyn ActionRunner> {
         let choices = self
             .choices
             .into_iter()
@@ -80,7 +80,7 @@ impl Action for builder::Thinker {
             current_action: None,
         });
         cmd.entity(actor).push_children(&[action_ent.0]);
-        Box::new(ThinkerManager)
+        Box::new(ThinkerRunner)
     }
 }
 
@@ -88,9 +88,9 @@ impl Action for builder::Thinker {
 pub struct ActiveThinker(bool);
 
 #[derive(Debug)]
-pub struct ThinkerManager;
+pub struct ThinkerRunner;
 
-impl ActionManager for ThinkerManager {
+impl ActionRunner for ThinkerRunner {
     fn activate(&self, _: Entity, action_ent: ActionEnt, cmd: &mut Commands) {
         cmd.entity(action_ent.0)
             .insert(ActiveThinker(false))
@@ -125,7 +125,7 @@ pub fn thinker_system(
     mut thinker_q: Query<(Entity, &Parent, &mut Thinker, &ActiveThinker)>,
     utilities: Query<&Score>,
     mut action_states: Query<&mut actions::ActionState>,
-    builder_wrappers: Query<&ActionManagerWrapper>,
+    builder_wrappers: Query<&ActionRunnerWrapper>,
 ) {
     let start = Instant::now();
     for (thinker_ent, Parent(actor), mut thinker, active_thinker) in thinker_q.iter_mut().skip(iterations.index) {
@@ -222,7 +222,7 @@ fn exec_picked_action(
     thinker: &mut Mut<Thinker>,
     picked_action_ent: &ActionEnt,
     states: &mut Query<&mut ActionState>,
-    builder_wrappers: &Query<&ActionManagerWrapper>,
+    builder_wrappers: &Query<&ActionRunnerWrapper>,
 ) {
     // If we do find one, then we need to grab the corresponding
     // component for it. The "action" that `picker.pick()` returns
