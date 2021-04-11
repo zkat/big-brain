@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 use crate::{
     actions::{Action, ActionState},
-    scorers::{Scorer, Score},
+    scorers::{Score, Scorer},
     thinker::{ActionEnt, ScorerEnt},
 };
 
@@ -15,7 +15,10 @@ pub struct Choice {
 }
 impl Choice {
     pub fn calculate(&self, scores: &Query<&Score>) -> f32 {
-        scores.get(self.scorer.0).expect("Where did the score go?").0
+        scores
+            .get(self.scorer.0)
+            .expect("Where did the score go?")
+            .0
     }
 }
 
@@ -29,7 +32,7 @@ impl ChoiceBuilder {
         let action = self.then;
         Choice {
             scorer: self.when.build(actor, cmd),
-            action_state: ActionState::build(action, actor, cmd),
+            action_state: ActionState::attach(action, actor, cmd),
         }
     }
 }

@@ -20,7 +20,7 @@ impl ActionState {
         Self::default()
     }
 
-    pub(crate) fn build(builder: Box<dyn Action>, actor: Entity, cmd: &mut Commands) -> ActionEnt {
+    pub(crate) fn attach(builder: Box<dyn Action>, actor: Entity, cmd: &mut Commands) -> ActionEnt {
         let action_ent = ActionEnt(cmd.spawn().id());
         let manager_wrapper = ActionRunnerWrapper(builder.build(actor, action_ent, cmd));
         cmd.entity(action_ent.0)
@@ -162,7 +162,7 @@ mod seq_action {
                 steps: self
                     .steps
                     .into_iter()
-                    .map(|builder| ActionState::build(builder, actor, cmd))
+                    .map(|builder| ActionState::attach(builder, actor, cmd))
                     .collect(),
             };
             let children: Vec<_> = runner.steps.iter().map(|x| x.0).collect();

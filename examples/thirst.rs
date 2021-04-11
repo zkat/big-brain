@@ -121,11 +121,6 @@ pub fn init_entities(mut cmd: Commands) {
     // associated action. But you can have more of them, and even nest them by
     // using more Thinkers (which are actually themselves Actions). See
     // basic.ron in examples/ for a more involved Thinker definition.
-    //
-    // Ultimately, these Thinkers are meant to be usable by non-programmers:
-    // You, the developer, create Actions and Scorers, and someone else
-    // is then able to put them all together like LEGOs into all sorts of
-    // intricate logic.
     Thinker::load_from_str(
         r#"
 (

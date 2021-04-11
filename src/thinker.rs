@@ -1,5 +1,3 @@
-use std::fs::File;
-use std::path::Path;
 use std::time::{Duration, Instant};
 
 use bevy::prelude::*;
@@ -8,8 +6,8 @@ use serde::Deserialize;
 use crate::{
     actions::{self, Action, ActionRunner, ActionRunnerWrapper, ActionState},
     choices::{Choice, ChoiceBuilder},
-    scorers::Score,
     pickers::Picker,
+    scorers::Score,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -27,29 +25,34 @@ pub struct Thinker {
 }
 
 impl Thinker {
-    pub fn load_from_str<S: AsRef<str>>(string: S) -> builder::Thinker {
-        ron::de::from_str(string.as_ref()).expect("Failed to parse RON")
-    }
-
-    pub fn load_from_path<P: AsRef<Path>>(path: P) -> builder::Thinker {
-        let f = File::open(&path).expect("Failed to open file");
-        ron::de::from_reader(f).expect("Failed to read .ron file")
+    pub fn build() -> ThinkerBuilder {
+        ThinkerBuilder::new()
     }
 }
 
-mod builder {
-    use super::*;
-    #[derive(Debug, Deserialize)]
-    pub struct Thinker {
-        pub picker: Box<dyn Picker>,
-        pub otherwise: Option<Box<dyn Action>>,
-        pub choices: Vec<ChoiceBuilder>,
-    }
+#[derive(Debug, Default, Deserialize)]
+pub struct ThinkerBuilder {
+    pub picker: Option<Box<dyn Picker>>,
+    pub otherwise: Option<Box<dyn Action>>,
+    pub choices: Vec<ChoiceBuilder>,
 }
 
-impl builder::Thinker {
-    pub fn build(self, actor: Entity, cmd: &mut Commands) -> ActionEnt {
-        let action_ent = ActionState::build(Box::new(self), actor, cmd);
+impl ThinkerBuilder {
+    pub(crate) fn new() -> Self {
+        Self {
+            picker: None,
+            otherwise: None,
+            choices: Vec::new(),
+        }
+    }
+
+    pub fn picker(&mut self, picker: impl Picker + 'static) -> &mut Self {
+        self.picker = Some(Box::new(picker));
+        self
+    }
+
+    pub fn attach(self, actor: Entity, cmd: &mut Commands) -> ActionEnt {
+        let action_ent = ActionState::attach(Box::new(self), actor, cmd);
         cmd.entity(action_ent.0)
             .insert(ActiveThinker(true))
             .insert(ActionState::Requested);
@@ -58,7 +61,7 @@ impl builder::Thinker {
 }
 
 #[typetag::deserialize]
-impl Action for builder::Thinker {
+impl Action for ThinkerBuilder {
     fn build(
         self: Box<Self>,
         actor: Entity,
@@ -72,9 +75,10 @@ impl Action for builder::Thinker {
             .collect();
         let otherwise = self
             .otherwise
-            .map(|builder| ActionState::build(builder, actor, cmd));
+            .map(|builder| ActionState::attach(builder, actor, cmd));
         cmd.entity(action_ent.0).insert(Thinker {
-            picker: self.picker,
+            // TODO: reasonable default?...
+            picker: self.picker.expect("ThinkerBuilder must have a Picker"),
             choices,
             otherwise,
             current_action: None,
@@ -128,7 +132,9 @@ pub fn thinker_system(
     builder_wrappers: Query<&ActionRunnerWrapper>,
 ) {
     let start = Instant::now();
-    for (thinker_ent, Parent(actor), mut thinker, active_thinker) in thinker_q.iter_mut().skip(iterations.index) {
+    for (thinker_ent, Parent(actor), mut thinker, active_thinker) in
+        thinker_q.iter_mut().skip(iterations.index)
+    {
         iterations.index += 1;
 
         let thinker_state = action_states
@@ -253,9 +259,7 @@ fn exec_picked_action(
                 }
                 ActionState::Init | ActionState::Success | ActionState::Failure => {
                     let current_action_factory = builder_wrappers.get(current.0).expect("Couldn't find an Action component corresponding to an Action entity. This is definitely a bug.");
-                    current_action_factory
-                        .0
-                        .deactivate(*picked_action_ent, cmd);
+                    current_action_factory.0.deactivate(*picked_action_ent, cmd);
                     let old_state = curr_action_state.clone();
                     *curr_action_state = ActionState::Init;
                     *current = *picked_action_ent;
