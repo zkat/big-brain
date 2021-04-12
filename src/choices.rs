@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use serde::Deserialize;
 
 use crate::{
-    actions::{Action, ActionState},
+    actions::{ActionBuilder, ActionState},
     scorers::{Score, Scorer},
     thinker::{ActionEnt, ScorerEnt},
 };
@@ -25,10 +25,10 @@ impl Choice {
 #[derive(Debug, Deserialize)]
 pub struct ChoiceBuilder {
     pub when: Box<dyn Scorer>,
-    pub then: Box<dyn Action>,
+    pub then: Box<dyn ActionBuilder>,
 }
 impl ChoiceBuilder {
-    pub fn build(self, actor: Entity, cmd: &mut Commands) -> Choice {
+    pub fn build(self, cmd: &mut Commands, actor: Entity) -> Choice {
         let action = self.then;
         Choice {
             scorer: self.when.attach(actor, cmd),

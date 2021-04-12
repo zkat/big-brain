@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use serde::Deserialize;
 
 use crate::{
-    actions::{self, Action, ActionRunner, ActionRunnerWrapper, ActionState},
+    actions::{self, ActionBuilder, ActionState},
     choices::{Choice, ChoiceBuilder},
     pickers::Picker,
     scorers::Score,
@@ -33,7 +33,7 @@ impl Thinker {
 #[derive(Debug, Default, Deserialize)]
 pub struct ThinkerBuilder {
     pub picker: Option<Box<dyn Picker>>,
-    pub otherwise: Option<Box<dyn Action>>,
+    pub otherwise: Option<Box<dyn ActionBuilder>>,
     pub choices: Vec<ChoiceBuilder>,
 }
 
@@ -60,8 +60,7 @@ impl ThinkerBuilder {
     }
 }
 
-#[typetag::deserialize]
-impl Action for ThinkerBuilder {
+impl ActionBuilder for ThinkerBuilder {
     fn attach(
         self: Box<Self>,
         actor: Entity,

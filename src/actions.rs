@@ -1,9 +1,8 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
 
 use crate::ActionEnt;
-
-#[derive(Debug)]
-pub struct ActionRunnerWrapper(pub(crate) Box<dyn ActionRunner>);
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ActionState {
@@ -15,57 +14,73 @@ pub enum ActionState {
     Failure,
 }
 
-impl ActionState {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub(crate) fn attach(builder: Box<dyn Action>, actor: Entity, cmd: &mut Commands) -> ActionEnt {
-        let action_ent = ActionEnt(cmd.spawn().id());
-        let manager_wrapper = ActionRunnerWrapper(builder.attach(actor, action_ent, cmd));
-        cmd.entity(action_ent.0)
-            .insert(ActionState::default())
-            .insert(manager_wrapper);
-        cmd.entity(actor).push_children(&[action_ent.0]);
-        action_ent
-    }
-}
-
 impl Default for ActionState {
     fn default() -> Self {
         Self::Init
     }
 }
 
-/**
-This trait defines new actions. In general, you should use the [derive macro](derive.Action.html) instead.
-*/
-#[typetag::deserialize]
-pub trait Action: std::fmt::Debug + Send + Sync {
-    fn attach(
-        self: Box<Self>,
-        actor: Entity,
-        action_ent: ActionEnt,
+impl ActionState {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub(crate) fn spawn(
         cmd: &mut Commands,
-    ) -> Box<dyn ActionRunner>;
+        builder: &Arc<dyn ActionBuilder>,
+        actor: Entity,
+    ) -> ActionEnt {
+        let action_ent = ActionEnt(cmd.spawn().id());
+        cmd.entity(action_ent.0).insert(ActionState::new());
+        cmd.entity(actor).push_children(&[action_ent.0]);
+        builder.build(cmd, actor, action_ent.0);
+        action_ent
+    }
 }
 
-pub trait ActionRunner: std::fmt::Debug + Send + Sync {
-    fn activate(&self, actor: Entity, action: ActionEnt, cmd: &mut Commands);
-    fn deactivate(&self, action: ActionEnt, cmd: &mut Commands);
+pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
+    fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity);
 }
 
 #[derive(Debug)]
+struct StepsBuilder {
+    steps: Vec<Arc<dyn ActionBuilder>>,
+}
+
+impl StepsBuilder {
+    pub fn step(&mut self, action_builder: impl ActionBuilder + 'static) -> &mut Self {
+        self.steps.push(Arc::new(action_builder));
+        self
+    }
+}
+
+impl ActionBuilder for StepsBuilder {
+    fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity) {
+        let child_action = ActionState::spawn(cmd, &self.steps[0], actor);
+        cmd.entity(action).insert(Steps {
+            active_step: 0,
+            active_ent: child_action,
+            steps: self.steps.clone(),
+        });
+    }
+}
+#[derive(Debug)]
 pub struct Steps {
-    steps: Vec<ActionEnt>,
+    steps: Vec<Arc<dyn ActionBuilder>>,
     active_step: usize,
+    active_ent: ActionEnt,
+}
+
+impl Steps {
+    pub fn build() -> StepsBuilder {
+        StepsBuilder { steps: Vec::new() }
+    }
 }
 
 pub fn steps_system(
     mut cmd: Commands,
     mut steps_q: Query<(Entity, &Parent, &mut Steps)>,
     mut states: Query<&mut ActionState>,
-    runners: Query<&ActionRunnerWrapper>,
 ) {
     use ActionState::*;
     for (seq_ent, Parent(actor), mut steps_action) in steps_q.iter_mut() {
@@ -73,17 +88,14 @@ pub fn steps_system(
         match current_state {
             Requested => {
                 // Begin at the beginning
-                let step_ent = steps_action.steps[steps_action.active_step];
-                let step_runner = runners.get(step_ent.0).expect("oops");
-                let mut step_state = states.get_mut(step_ent.0).expect("oops");
-                step_runner.0.activate(*actor, step_ent, &mut cmd);
+                let mut step_state = states.get_mut(steps_action.active_ent.0).expect("oops");
                 *step_state = Requested;
                 let mut current_state = states.get_mut(seq_ent).expect("uh oh");
                 *current_state = Executing;
             }
             Executing => {
                 let mut step_state = states
-                    .get_mut(steps_action.steps[steps_action.active_step].0)
+                    .get_mut(steps_action.active_ent.0)
                     .expect("bug");
                 match *step_state {
                     Init => {
@@ -95,96 +107,38 @@ pub fn steps_system(
                     }
                     Cancelled | Failure => {
                         // Cancel ourselves
-                        let step_ent = steps_action.steps[steps_action.active_step];
                         let step_state = step_state.clone();
-                        let step_runner = runners.get(step_ent.0).expect("oops");
-                        step_runner.0.deactivate(step_ent, &mut cmd);
                         let mut seq_state = states.get_mut(seq_ent).expect("idk");
                         *seq_state = step_state;
+                        cmd.entity(steps_action.active_ent.0).despawn_recursive();
                     }
                     Success if steps_action.active_step == steps_action.steps.len() - 1 => {
                         // We're done! Let's just be successful
-                        let step_ent = steps_action.steps[steps_action.active_step];
                         let step_state = step_state.clone();
-                        let step_runner = runners.get(step_ent.0).expect("oops");
-                        step_runner.0.deactivate(step_ent, &mut cmd);
                         let mut seq_state = states.get_mut(seq_ent).expect("idk");
                         *seq_state = step_state;
+                        cmd.entity(steps_action.active_ent.0).despawn_recursive();
                     }
                     Success => {
                         // Deactivate current step and go to the next step
-                        let step_ent = steps_action.steps[steps_action.active_step];
-                        let step_runner = runners.get(step_ent.0).expect("oops");
-                        step_runner.0.deactivate(step_ent, &mut cmd);
+                        cmd.entity(steps_action.active_ent.0).despawn_recursive();
 
                         steps_action.active_step += 1;
-                        let step_ent = steps_action.steps[steps_action.active_step];
-                        let step_runner = runners.get(step_ent.0).expect("oops");
+                        let step_builder = steps_action.steps[steps_action.active_step];
+                        let step_ent = ActionState::spawn(&mut cmd, &step_builder, *actor);
                         let mut step_state = states.get_mut(step_ent.0).expect("oops");
-                        step_runner.0.activate(*actor, step_ent, &mut cmd);
                         *step_state = ActionState::Requested;
                     }
                 }
             }
             Cancelled => {
                 // Cancel current action
-                let step_ent = steps_action.steps[steps_action.active_step];
-                let step_runner = runners.get(step_ent.0).expect("oops");
-                let mut step_state = states.get_mut(step_ent.0).expect("oops");
-                step_runner.0.activate(*actor, step_ent, &mut cmd);
+                let mut step_state = states.get_mut(steps_action.active_ent.0).expect("oops");
                 *step_state = ActionState::Cancelled;
             }
             Init | Success | Failure => {
                 // Do nothing.
             }
-        }
-    }
-}
-
-mod seq_action {
-    use super::*;
-    use serde::Deserialize;
-
-    #[derive(Debug, Deserialize)]
-    struct Steps {
-        steps: Vec<Box<dyn Action>>,
-    }
-
-    #[typetag::deserialize]
-    impl Action for Steps {
-        fn attach(
-            self: Box<Self>,
-            actor: Entity,
-            _action_ent: ActionEnt,
-            cmd: &mut Commands,
-        ) -> Box<dyn ActionRunner> {
-            let runner = StepsRunner {
-                steps: self
-                    .steps
-                    .into_iter()
-                    .map(|builder| ActionState::attach(builder, actor, cmd))
-                    .collect(),
-            };
-            let children: Vec<_> = runner.steps.iter().map(|x| x.0).collect();
-            cmd.entity(actor).push_children(&children[..]);
-            Box::new(runner)
-        }
-    }
-
-    #[derive(Debug)]
-    struct StepsRunner {
-        steps: Vec<ActionEnt>,
-    }
-
-    impl ActionRunner for StepsRunner {
-        fn activate(&self, _actor: Entity, action_ent: ActionEnt, cmd: &mut Commands) {
-            cmd.entity(action_ent.0).insert(super::Steps {
-                active_step: 0,
-                steps: self.steps.clone(),
-            });
-        }
-        fn deactivate(&self, action_ent: ActionEnt, cmd: &mut Commands) {
-            cmd.entity(action_ent.0).remove::<super::Steps>();
         }
     }
 }
