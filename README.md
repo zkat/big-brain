@@ -48,7 +48,6 @@ pub fn thirsty_scorer_system(
     for (Actor(actor), mut score) in query.iter_mut() {
         if let Ok(thirst) = thirsts.get(*actor) {
             score.set(thirst.thirst);
-            println!("Thirst: {}", thirst.thirst);
         }
     }
 }
@@ -89,7 +88,6 @@ fn drink_action_system(
             match *state {
                 ActionState::Requested => {
                     thirst.thirst = 10.0;
-                    println!("drank some water");
                     *state = ActionState::Success;
                 }
                 ActionState::Cancelled => {
