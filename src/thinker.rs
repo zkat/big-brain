@@ -13,6 +13,9 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy)]
+pub struct Actor(pub Entity);
+
+#[derive(Debug, Clone, Copy)]
 pub struct ActionEnt(pub Entity);
 
 #[derive(Debug, Clone, Copy)]
@@ -74,7 +77,7 @@ impl ActionBuilder for ThinkerBuilder {
         let choices = self
             .choices
             .iter()
-            .map(|choice| choice.build(cmd, actor))
+            .map(|choice| choice.build(cmd, actor, action_ent))
             .collect();
         cmd.entity(action_ent)
             .insert(Thinker {
@@ -116,12 +119,12 @@ impl Default for ThinkerIterations {
 pub fn thinker_system(
     mut cmd: Commands,
     mut iterations: Local<ThinkerIterations>,
-    mut thinker_q: Query<(Entity, &Parent, &mut Thinker, &ActiveThinker)>,
+    mut thinker_q: Query<(Entity, &Actor, &mut Thinker, &ActiveThinker)>,
     utilities: Query<&Score>,
     mut action_states: Query<&mut actions::ActionState>,
 ) {
     let start = Instant::now();
-    for (thinker_ent, Parent(actor), mut thinker, active_thinker) in
+    for (thinker_ent, Actor(actor), mut thinker, active_thinker) in
         thinker_q.iter_mut().skip(iterations.index)
     {
         iterations.index += 1;
@@ -189,7 +192,7 @@ pub fn thinker_system(
                         actions::ActionState::Init
                         | actions::ActionState::Success
                         | actions::ActionState::Failure => {
-                            cmd.entity(current.0 .0).despawn_recursive();
+                            cmd.entity(current.0.0).despawn_recursive();
                             thinker.current_action = None;
                         }
                         _ => {

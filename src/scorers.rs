@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 
-use crate::ScorerEnt;
+use crate::{Actor, ScorerEnt};
 
 #[derive(Debug, Clone, Default)]
 pub struct Score(pub(crate) f32);
@@ -23,8 +23,9 @@ pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity);
     fn attach(&self, cmd: &mut Commands, actor: Entity) -> Entity {
         let scorer_ent = cmd.spawn().id();
-        cmd.entity(scorer_ent).insert(Score::default());
-        cmd.entity(actor).push_children(&[scorer_ent]);
+        cmd.entity(scorer_ent)
+            .insert(Score::default())
+            .insert(Actor(actor));
         self.build(cmd, scorer_ent, actor);
         scorer_ent
     }
@@ -114,6 +115,7 @@ impl ScorerBuilder for AllOrNothingBuilder {
             .collect();
         cmd.entity(scorer)
             .insert(Score::default())
+            .push_children(&scorers[..])
             .insert(super::AllOrNothing {
                 threshold: self.threshold,
                 scorers: scorers.into_iter().map(ScorerEnt).collect(),

@@ -78,9 +78,9 @@ fn drink_action_system(
     // usually happen because the target action changed (due to a different
     // Scorer winning). But you can also cancel the actions yourself by
     // setting the state in the Action system.
-    mut query: Query<(&Parent, &mut ActionState), With<Drink>>,
+    mut query: Query<(&Actor, &mut ActionState), With<Drink>>,
 ) {
-    for (Parent(actor), mut state) in query.iter_mut() {
+    for (Actor(actor), mut state) in query.iter_mut() {
         // Use the drink_action's actor to look up the corresponding Thirst.
         if let Ok(mut thirst) = thirsts.get_mut(*actor) {
             match *state {
@@ -128,9 +128,9 @@ impl ScorerBuilder for ThirstyBuilder {
 pub fn thirsty_scorer_system(
     thirsts: Query<&Thirst>,
     // Same dance with the Parent here, but now Big Brain has added a Score component!
-    mut query: Query<(&Parent, &mut Score), With<Thirsty>>,
+    mut query: Query<(&Actor, &mut Score), With<Thirsty>>,
 ) {
-    for (Parent(actor), mut score) in query.iter_mut() {
+    for (Actor(actor), mut score) in query.iter_mut() {
         if let Ok(thirst) = thirsts.get(*actor) {
             // This is really what the job of a Scorer is. To calculate a
             // generic Utility value that the Big Brain engine will compare
@@ -153,13 +153,15 @@ pub fn init_entities(mut cmd: Commands) {
     let actor = cmd.spawn().insert(Thirst::new(70.0, 2.0)).id();
 
     // And finally, we put all the pieces together!
-    Thinker::build()
+    let thinker = Thinker::build()
         .picker(FirstToScore { threshold: 80.0 })
         // Note that what we pass in are _builders_, not components!
         .when(Thirsty::build(), Drink::build())
         // .attach will do all the necessary work of attaching this component
         // and hooking it up to the AI system.
         .attach(&mut cmd, actor);
+    // TODO: this is a footgun and a pita. Please ignore.
+    cmd.entity(actor).push_children(&[thinker]);
 }
 
 fn main() {

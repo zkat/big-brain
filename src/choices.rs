@@ -36,7 +36,9 @@ impl ChoiceBuilder {
         }
     }
 
-    pub fn build(&self, cmd: &mut Commands, actor: Entity) -> Choice {
+    pub fn build(&self, cmd: &mut Commands, actor: Entity, parent: Entity) -> Choice {
+        let scorer_ent = self.when.attach(cmd, actor);
+        cmd.entity(parent).push_children(&[scorer_ent]);
         Choice {
             scorer: ScorerEnt(self.when.attach(cmd, actor)),
             action: ActionBuilderWrapper::new(self.then.clone()),

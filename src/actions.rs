@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 
-use crate::ActionEnt;
+use crate::{ActionEnt, Actor};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ActionState {
@@ -42,8 +42,7 @@ pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
     fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity);
     fn attach(&self, cmd: &mut Commands, actor: Entity) -> Entity {
         let action_ent = ActionEnt(cmd.spawn().id());
-        cmd.entity(action_ent.0).insert(ActionState::new());
-        cmd.entity(actor).push_children(&[action_ent.0]);
+        cmd.entity(action_ent.0).insert(ActionState::new()).insert(Actor(actor));
         self.build(cmd, action_ent.0, actor);
         action_ent.0
     }
@@ -68,7 +67,7 @@ impl ActionBuilder for StepsBuilder {
             active_step: 0,
             active_ent: ActionEnt(child_action),
             steps: self.steps.clone(),
-        });
+        }).push_children(&[child_action]);
     }
 }
 #[derive(Debug)]
@@ -86,11 +85,11 @@ impl Steps {
 
 pub fn steps_system(
     mut cmd: Commands,
-    mut steps_q: Query<(Entity, &Parent, &mut Steps)>,
+    mut steps_q: Query<(Entity, &Actor, &mut Steps)>,
     mut states: Query<&mut ActionState>,
 ) {
     use ActionState::*;
-    for (seq_ent, Parent(actor), mut steps_action) in steps_q.iter_mut() {
+    for (seq_ent, Actor(actor), mut steps_action) in steps_q.iter_mut() {
         let current_state = states.get_mut(seq_ent).expect("uh oh").clone();
         match current_state {
             Requested => {
@@ -131,6 +130,7 @@ pub fn steps_system(
                         steps_action.active_step += 1;
                         let step_builder = steps_action.steps[steps_action.active_step].clone();
                         let step_ent = step_builder.attach(&mut cmd, *actor);
+                        cmd.entity(seq_ent).push_children(&[step_ent]);
                         let mut step_state = states.get_mut(step_ent).expect("oops");
                         *step_state = ActionState::Requested;
                     }
