@@ -232,9 +232,7 @@ fn exec_picked_action(
             // actual Action component (and we assume it exists).
             let mut curr_action_state = states.get_mut(action_ent.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
             // If the action is executing, or was requested, we
-            // need to cancel it to make sure it stops. The Action
-            // system will take care of resetting its state as
-            // needed.
+            // need to cancel it to make sure it stops.
             match *curr_action_state {
                 ActionState::Executing | ActionState::Requested => {
                     *curr_action_state = ActionState::Cancelled;
@@ -243,6 +241,8 @@ fn exec_picked_action(
                 }
                 ActionState::Init | ActionState::Success | ActionState::Failure => {
                     let old_state = curr_action_state.clone();
+                    // Despawn the action itself.
+                    cmd.entity(action_ent.0).despawn_recursive();
                     thinker.current_action = Some((
                         ActionEnt(picked_action.1.attach(cmd, actor)),
                         picked_action.clone(),
