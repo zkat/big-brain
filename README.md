@@ -2,10 +2,11 @@
 library for games, built for the [Bevy Game Engine](https://bevyengine.org/)
 
 It lets you define complex, intricate AI behaviors for your entities based on
-their perception of the world. Definitions are almost entirely data-driven,
-using plain `.ron` files, and you only need to program Scorers (entities that
-look at your game world), and Actions (entities that perform actual behaviors
-upon the world). No other code is needed for actual AI behavior.
+their perception of the world. Definitions are heavily data-driven, using
+plain Rust, and you only need to program Scorers (entities that look at your
+game world and come up with a Score), and Actions (entities that perform
+actual behaviors upon the world). No other code is needed for actual AI
+behavior.
 
 See [the documentation](https://docs.rs/big-brain) for more details.
 
@@ -22,16 +23,32 @@ First, you define actions and considerations, which are just plain old `Bevy`
 use bevy::prelude::*;
 use big_brain::*;
 
-#[derive(Debug, Scorer)]
+#[derive(Debug, Clone)]
 pub struct Thirsty;
 
-pub fn score_thirst_system(
+impl Thirsty {
+    fn build() -> ThirstyBuilder {
+        ThirstyBuilder
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ThirstyBuilder;
+
+impl ScorerBuilder for ThirstyBuilder {
+    fn build(&self, cmd: &mut Commands, scorer: Entity, _actor: Entity) {
+        cmd.entity(scorer).insert(Thirsty);
+    }
+}
+
+pub fn thirsty_scorer_system(
     thirsts: Query<&Thirst>,
-    mut query: Query<(&Parent, &mut Score), With<Thirsty>>,
+    mut query: Query<(&Actor, &mut Score), With<Thirsty>>,
 ) {
-    for (Parent(actor), mut score) in query.iter_mut() {
+    for (Actor(actor), mut score) in query.iter_mut() {
         if let Ok(thirst) = thirsts.get(*actor) {
             score.set(thirst.thirst);
+            println!("Thirst: {}", thirst.thirst);
         }
     }
 }
@@ -45,14 +62,29 @@ pub fn score_thirst_system(
 use bevy::prelude::*;
 use big_brain::*;
 
-#[derive(Debug, Action)]
+#[derive(Debug, Clone)]
 pub struct Drink;
+
+impl Drink {
+    pub fn build() -> DrinkBuilder {
+        DrinkBuilder
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DrinkBuilder;
+
+impl ActionBuilder for DrinkBuilder {
+    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
+        cmd.entity(action).insert(Drink);
+    }
+}
 
 fn drink_action_system(
     mut thirsts: Query<&mut Thirst>,
-    mut query: Query<(&Parent, &mut ActionState), With<Drink>>,
+    mut query: Query<(&Actor, &mut ActionState), With<Drink>>,
 ) {
-    for (Parent(actor), mut state) in query.iter_mut() {
+    for (Actor(actor), mut state) in query.iter_mut() {
         if let Ok(mut thirst) = thirsts.get_mut(*actor) {
             match *state {
                 ActionState::Requested => {
@@ -74,29 +106,14 @@ fn drink_action_system(
 
 Finally, you can use it when define the `Thinker`:
 
-```ron
-(
-    picker: {"FirstToScore": (threshold: 80.0)},
-    choices: [(
-        when: {"Bladder": ()},
-        then: {"Thinker": (
-            picker: {"FirstToScore": (threshold: 80.0)},
-            choices: [(
-                when: [{"Bladder": ()}],
-                then: {"Pee": ()}
-            )]
-        )}
-    ), (
-        // Here you go!
-        when: {"Thirsty": ()},
-        then: {"Drink": ()},
-    ), (
-        when: {"Hungry": ()},
-        then: {"Eat": ()},
-    )],
-    otherwise: Some({"Meander": ()}),
-)
+```rust
+let actor = cmd.spawn().insert(Thirst::new(70.0, 2.0)).id();
 
+let thinker = Thinker::build()
+    .picker(FirstToScore { threshold: 80.0 })
+    .when(Thirsty::build(), Drink::build())
+    .attach(&mut cmd, actor);
+cmd.entity(actor).push_children(&[thinker]);
 ```
 
 ## License
