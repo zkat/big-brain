@@ -24,26 +24,33 @@ impl ActionState {
     pub fn new() -> Self {
         Self::default()
     }
+}
 
-    pub(crate) fn spawn(
-        cmd: &mut Commands,
-        builder: &Arc<dyn ActionBuilder>,
-        actor: Entity,
-    ) -> ActionEnt {
-        let action_ent = ActionEnt(cmd.spawn().id());
-        cmd.entity(action_ent.0).insert(ActionState::new());
-        cmd.entity(actor).push_children(&[action_ent.0]);
-        builder.build(cmd, actor, action_ent.0);
-        action_ent
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct ActionBuilderId;
+
+#[derive(Debug, Clone)]
+pub struct ActionBuilderWrapper(pub ActionBuilderId, pub Arc<dyn ActionBuilder>);
+
+impl ActionBuilderWrapper {
+    pub fn new(builder: Arc<dyn ActionBuilder>) -> Self {
+        ActionBuilderWrapper(ActionBuilderId, builder)
     }
 }
 
 pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
     fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity);
+    fn attach(&self, cmd: &mut Commands, actor: Entity) -> Entity {
+        let action_ent = ActionEnt(cmd.spawn().id());
+        cmd.entity(action_ent.0).insert(ActionState::new());
+        cmd.entity(actor).push_children(&[action_ent.0]);
+        self.build(cmd, action_ent.0, actor);
+        action_ent.0
+    }
 }
 
 #[derive(Debug)]
-struct StepsBuilder {
+pub struct StepsBuilder {
     steps: Vec<Arc<dyn ActionBuilder>>,
 }
 
@@ -56,10 +63,10 @@ impl StepsBuilder {
 
 impl ActionBuilder for StepsBuilder {
     fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity) {
-        let child_action = ActionState::spawn(cmd, &self.steps[0], actor);
+        let child_action = self.steps[0].attach(cmd, actor);
         cmd.entity(action).insert(Steps {
             active_step: 0,
-            active_ent: child_action,
+            active_ent: ActionEnt(child_action),
             steps: self.steps.clone(),
         });
     }
@@ -94,9 +101,7 @@ pub fn steps_system(
                 *current_state = Executing;
             }
             Executing => {
-                let mut step_state = states
-                    .get_mut(steps_action.active_ent.0)
-                    .expect("bug");
+                let mut step_state = states.get_mut(steps_action.active_ent.0).expect("bug");
                 match *step_state {
                     Init => {
                         // Request it! This... should not really happen? But just in case I'm missing something... :)
@@ -124,9 +129,9 @@ pub fn steps_system(
                         cmd.entity(steps_action.active_ent.0).despawn_recursive();
 
                         steps_action.active_step += 1;
-                        let step_builder = steps_action.steps[steps_action.active_step];
-                        let step_ent = ActionState::spawn(&mut cmd, &step_builder, *actor);
-                        let mut step_state = states.get_mut(step_ent.0).expect("oops");
+                        let step_builder = steps_action.steps[steps_action.active_step].clone();
+                        let step_ent = step_builder.attach(&mut cmd, *actor);
+                        let mut step_state = states.get_mut(step_ent).expect("oops");
                         *step_state = ActionState::Requested;
                     }
                 }

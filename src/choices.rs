@@ -1,17 +1,18 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
-use serde::Deserialize;
 
 use crate::{
-    actions::{ActionBuilder, ActionState},
-    scorers::{Score, Scorer},
-    thinker::{ActionEnt, ScorerEnt},
+    actions::{ActionBuilder, ActionBuilderWrapper},
+    scorers::{Score, ScorerBuilder},
+    thinker::ScorerEnt,
 };
 
 // Contains different types of Considerations and Actions
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Choice {
     pub scorer: ScorerEnt,
-    pub action_state: ActionEnt,
+    pub action: ActionBuilderWrapper,
 }
 impl Choice {
     pub fn calculate(&self, scores: &Query<&Score>) -> f32 {
@@ -22,17 +23,23 @@ impl Choice {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct ChoiceBuilder {
-    pub when: Box<dyn Scorer>,
-    pub then: Box<dyn ActionBuilder>,
+    pub when: Arc<dyn ScorerBuilder>,
+    pub then: Arc<dyn ActionBuilder>,
 }
 impl ChoiceBuilder {
-    pub fn build(self, cmd: &mut Commands, actor: Entity) -> Choice {
-        let action = self.then;
+    pub fn new(scorer: Arc<dyn ScorerBuilder>, action: Arc<dyn ActionBuilder>) -> Self {
+        Self {
+            when: scorer,
+            then: action,
+        }
+    }
+
+    pub fn build(&self, cmd: &mut Commands, actor: Entity) -> Choice {
         Choice {
-            scorer: self.when.attach(actor, cmd),
-            action_state: ActionState::attach(action, actor, cmd),
+            scorer: ScorerEnt(self.when.attach(cmd, actor)),
+            action: ActionBuilderWrapper::new(self.then.clone()),
         }
     }
 }
