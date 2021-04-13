@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use big_brain::*;
+use big_brain::prelude::*;
 
 // First, we define a "Thirst" component and associated system. This is NOT
 // THE AI. It's a plain old system that just makes an entity "thirstier" over
@@ -156,7 +156,7 @@ pub fn init_entities(mut cmd: Commands) {
         Thinker::build()
             .picker(FirstToScore { threshold: 80.0 })
             // Note that what we pass in are _builders_, not components!
-            .when(Thirsty::build(), Drink::build())
+            .when(Thirsty::build(), Drink::build()),
     );
 }
 

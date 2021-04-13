@@ -21,7 +21,7 @@ First, you define actions and considerations, which are just plain old `Bevy`
 
 ```rust
 use bevy::prelude::*;
-use big_brain::*;
+use big_brain::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct Thirsty;
@@ -59,7 +59,7 @@ pub fn thirsty_scorer_system(
 
 ```rust
 use bevy::prelude::*;
-use big_brain::*;
+use big_brain::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct Drink;

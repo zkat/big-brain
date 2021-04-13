@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 
-use crate::{ActionEnt, Actor};
+use crate::thinker::{ActionEnt, Actor};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ActionState {

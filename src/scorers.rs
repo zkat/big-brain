@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 
-use crate::{Actor, ScorerEnt};
+use crate::thinker::{Actor, ScorerEnt};
 
 #[derive(Debug, Clone, Default)]
 pub struct Score(pub(crate) f32);
@@ -116,7 +116,7 @@ impl ScorerBuilder for AllOrNothingBuilder {
         cmd.entity(scorer)
             .insert(Score::default())
             .push_children(&scorers[..])
-            .insert(super::AllOrNothing {
+            .insert(AllOrNothing {
                 threshold: self.threshold,
                 scorers: scorers.into_iter().map(ScorerEnt).collect(),
             });
