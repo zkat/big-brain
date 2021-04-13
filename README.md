@@ -104,16 +104,16 @@ fn drink_action_system(
 
 ### Thinker Definition
 
-Finally, you can use it when define the `Thinker`:
+Finally, you can use it when define the `Thinker`, which you can attach as a
+regular Component:
 
 ```rust
-let actor = cmd.spawn().insert(Thirst::new(70.0, 2.0)).id();
-
-let thinker = Thinker::build()
-    .picker(FirstToScore { threshold: 80.0 })
-    .when(Thirsty::build(), Drink::build())
-    .attach(&mut cmd, actor);
-cmd.entity(actor).push_children(&[thinker]);
+cmd.spawn().insert(Thirst::new(70.0, 2.0)).insert(
+    Thinker::build()
+        .picker(FirstToScore { threshold: 80.0 })
+        .when(Thirsty::build(), Drink::build())
+        .component(),
+);
 ```
 
 ## License

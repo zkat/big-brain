@@ -51,23 +51,28 @@ impl ThinkerBuilder {
         }
     }
 
-    pub fn picker(&mut self, picker: impl Picker + 'static) -> &mut Self {
+    pub fn picker(mut self, picker: impl Picker + 'static) -> Self {
         self.picker = Some(Arc::new(picker));
         self
     }
 
     pub fn when(
-        &mut self,
+        mut self,
         scorer: impl ScorerBuilder + 'static,
         action: impl ActionBuilder + 'static,
-    ) -> &mut Self {
-        self.choices.push(ChoiceBuilder::new(Arc::new(scorer), Arc::new(action)));
+    ) -> Self {
+        self.choices
+            .push(ChoiceBuilder::new(Arc::new(scorer), Arc::new(action)));
         self
     }
 
-    pub fn otherwise(&mut self, otherwise: impl ActionBuilder + 'static) -> &mut Self {
+    pub fn otherwise(mut self, otherwise: impl ActionBuilder + 'static) -> Self {
         self.otherwise = Some(ActionBuilderWrapper::new(Arc::new(otherwise)));
         self
+    }
+
+    pub fn component(self) -> ThinkerComponent {
+        ThinkerComponent(self)
     }
 }
 
@@ -94,6 +99,34 @@ impl ActionBuilder for ThinkerBuilder {
             .insert(ActionState::Requested);
     }
 }
+
+#[derive(Debug)]
+pub struct ThinkerComponent(ThinkerBuilder);
+
+pub fn thinker_component_attach_system(
+    mut cmd: Commands,
+    q: Query<(Entity, &ThinkerComponent), Without<HasThinker>>,
+) {
+    for (entity, thinker_comp) in q.iter() {
+        let thinker = thinker_comp.0.attach(&mut cmd, entity);
+        cmd.entity(entity)
+            .insert(HasThinker(thinker))
+            .push_children(&[thinker]);
+    }
+}
+
+pub fn thinker_component_detach_system(
+    mut cmd: Commands,
+    q: Query<(Entity, &HasThinker), Without<ThinkerComponent>>,
+) {
+    for (actor, HasThinker(thinker)) in q.iter() {
+        cmd.entity(*thinker).despawn_recursive();
+        cmd.entity(actor).remove::<HasThinker>();
+    }
+}
+
+#[derive(Debug)]
+pub struct HasThinker(Entity);
 
 #[derive(Debug)]
 pub struct ActiveThinker(bool);
@@ -192,7 +225,7 @@ pub fn thinker_system(
                         actions::ActionState::Init
                         | actions::ActionState::Success
                         | actions::ActionState::Failure => {
-                            cmd.entity(current.0.0).despawn_recursive();
+                            cmd.entity(current.0 .0).despawn_recursive();
                             thinker.current_action = None;
                         }
                         _ => {

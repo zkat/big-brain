@@ -150,18 +150,15 @@ pub fn thirsty_scorer_system(
 // to have AI behavior should have one *or more* Thinkers attached to it.
 pub fn init_entities(mut cmd: Commands) {
     // Create the entity and throw the Thirst component in there. Nothing special here.
-    let actor = cmd.spawn().insert(Thirst::new(70.0, 2.0)).id();
-
-    // And finally, we put all the pieces together!
-    let thinker = Thinker::build()
-        .picker(FirstToScore { threshold: 80.0 })
-        // Note that what we pass in are _builders_, not components!
-        .when(Thirsty::build(), Drink::build())
-        // .attach will do all the necessary work of attaching this component
-        // and hooking it up to the AI system.
-        .attach(&mut cmd, actor);
-    // TODO: this is a footgun and a pita. Please ignore.
-    cmd.entity(actor).push_children(&[thinker]);
+    cmd.spawn().insert(Thirst::new(70.0, 2.0)).insert(
+        // Thinker::build().component() will return a regular component you
+        // can attach normally!
+        Thinker::build()
+            .picker(FirstToScore { threshold: 80.0 })
+            // Note that what we pass in are _builders_, not components!
+            .when(Thirsty::build(), Drink::build())
+            .component(),
+    );
 }
 
 fn main() {
