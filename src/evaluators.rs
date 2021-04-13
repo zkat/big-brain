@@ -1,11 +1,8 @@
-use serde::{Deserialize, Serialize};
-
-#[typetag::serde]
 pub trait Evaluator: std::fmt::Debug + Sync + Send {
     fn evaluate(&self, value: f32) -> f32;
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct LinearEvaluator {
     xa: f32,
     ya: f32,
@@ -36,14 +33,13 @@ impl Default for LinearEvaluator {
     }
 }
 
-#[typetag::serde]
 impl Evaluator for LinearEvaluator {
     fn evaluate(&self, value: f32) -> f32 {
         clamp(self.ya + self.dy_over_dx * (value - self.xa), self.ya, self.yb)
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct PowerEvaluator {
     xa: f32,
     ya: f32,
@@ -76,7 +72,6 @@ impl Default for PowerEvaluator {
     }
 }
 
-#[typetag::serde]
 impl Evaluator for PowerEvaluator {
     fn evaluate(&self, value: f32) -> f32 {
         let cx = clamp(value, self.xa, self.xb);
@@ -84,7 +79,7 @@ impl Evaluator for PowerEvaluator {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct SigmoidEvaluator {
     xa: f32,
     xb: f32,
@@ -124,7 +119,6 @@ impl SigmoidEvaluator {
     }
 }
 
-#[typetag::serde]
 impl Evaluator for SigmoidEvaluator {
     fn evaluate(&self, x: f32) -> f32 {
         let cx_minus_x_mean = clamp(x, self.xa, self.xb) - self.x_mean;

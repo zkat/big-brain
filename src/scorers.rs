@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
 
 use crate::ScorerEnt;
@@ -17,16 +19,25 @@ impl Score {
     }
 }
 
-/**
-This trait defines new Scorers. In general, you should use the [derive macro](derive.Scorer.html) instead.
-*/
-#[typetag::deserialize]
-pub trait Scorer: std::fmt::Debug + Sync + Send {
-    fn build(&self, entity: Entity, cmd: &mut Commands) -> ScorerEnt;
+pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
+    fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity);
+    fn attach(&self, cmd: &mut Commands, actor: Entity) -> Entity {
+        let scorer_ent = cmd.spawn().id();
+        cmd.entity(scorer_ent).insert(Score::default());
+        cmd.entity(actor).push_children(&[scorer_ent]);
+        self.build(cmd, scorer_ent, actor);
+        scorer_ent
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FixedScore(f32);
+
+impl FixedScore {
+    pub fn build(score: f32) -> FixedScoreBuilder {
+        FixedScoreBuilder(score)
+    }
+}
 
 pub fn fixed_score_system(mut query: Query<(&FixedScore, &mut Score)>) {
     for (FixedScore(fixed), mut score) in query.iter_mut() {
@@ -34,24 +45,12 @@ pub fn fixed_score_system(mut query: Query<(&FixedScore, &mut Score)>) {
     }
 }
 
-mod fixed_score {
-    use super::*;
+#[derive(Debug, Clone)]
+pub struct FixedScoreBuilder(f32);
 
-    use serde::Deserialize;
-
-    #[derive(Debug, Deserialize)]
-    struct FixedScore(f32);
-
-    #[typetag::deserialize]
-    impl Scorer for FixedScore {
-        fn build(&self, actor: Entity, cmd: &mut Commands) -> ScorerEnt {
-            let ent = ScorerEnt(cmd.spawn().id());
-            cmd.entity(ent.0)
-                .insert(Score::default())
-                .insert(super::FixedScore(self.0));
-            cmd.entity(actor).push_children(&[ent.0]);
-            ent
-        }
+impl ScorerBuilder for FixedScoreBuilder {
+    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
+        cmd.entity(action).insert(FixedScore(self.0));
     }
 }
 
@@ -59,6 +58,15 @@ mod fixed_score {
 pub struct AllOrNothing {
     threshold: f32,
     scorers: Vec<ScorerEnt>,
+}
+
+impl AllOrNothing {
+    pub fn build(threshold: f32) -> AllOrNothingBuilder {
+        AllOrNothingBuilder {
+            threshold,
+            scorers: Vec::new(),
+        }
+    }
 }
 
 pub fn all_or_nothing_system(query: Query<(Entity, &AllOrNothing)>, mut scores: Query<&mut Score>) {
@@ -84,36 +92,32 @@ pub fn all_or_nothing_system(query: Query<(Entity, &AllOrNothing)>, mut scores: 
         score.set(crate::evaluators::clamp(sum, 0.0, 100.0));
     }
 }
+#[derive(Debug, Clone)]
+pub struct AllOrNothingBuilder {
+    threshold: f32,
+    scorers: Vec<Arc<dyn ScorerBuilder>>,
+}
 
-mod all_or_nothing {
-    use super::*;
-
-    use serde::Deserialize;
-
-    #[derive(Debug, Deserialize)]
-    struct AllOrNothing {
-        threshold: f32,
-        scorers: Vec<Box<dyn Scorer>>,
+impl AllOrNothingBuilder {
+    pub fn when(&mut self, scorer: impl ScorerBuilder + 'static) -> &mut Self {
+        self.scorers.push(Arc::new(scorer));
+        self
     }
+}
 
-    #[typetag::deserialize]
-    impl Scorer for AllOrNothing {
-        fn build(&self, actor: Entity, cmd: &mut Commands) -> ScorerEnt {
-            let ent = ScorerEnt(cmd.spawn().id());
-            let scorers: Vec<_> = self
-                .scorers
-                .iter()
-                .map(|scorer| scorer.build(actor, cmd).0)
-                .collect();
-            cmd.entity(ent.0)
-                .insert(Score::default())
-                .insert(super::AllOrNothing {
-                    threshold: self.threshold,
-                    scorers: scorers.into_iter().map(ScorerEnt).collect(),
-                });
-            cmd.entity(actor).push_children(&[ent.0]);
-            ent
-        }
+impl ScorerBuilder for AllOrNothingBuilder {
+    fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
+        let scorers: Vec<_> = self
+            .scorers
+            .iter()
+            .map(|scorer| scorer.attach(cmd, actor))
+            .collect();
+        cmd.entity(scorer)
+            .insert(Score::default())
+            .insert(super::AllOrNothing {
+                threshold: self.threshold,
+                scorers: scorers.into_iter().map(ScorerEnt).collect(),
+            });
     }
 }
 
@@ -121,6 +125,15 @@ mod all_or_nothing {
 pub struct SumOfScorers {
     threshold: f32,
     scorers: Vec<ScorerEnt>,
+}
+
+impl SumOfScorers {
+    pub fn build(threshold: f32) -> SumOfScorersBuilder {
+        SumOfScorersBuilder {
+            threshold,
+            scorers: Vec::new(),
+        }
+    }
 }
 
 pub fn sum_of_scorers_system(query: Query<(Entity, &SumOfScorers)>, mut scores: Query<&mut Score>) {
@@ -145,34 +158,29 @@ pub fn sum_of_scorers_system(query: Query<(Entity, &SumOfScorers)>, mut scores: 
     }
 }
 
-mod sum_of_scorers {
-    use super::*;
+#[derive(Debug, Clone)]
+pub struct SumOfScorersBuilder {
+    threshold: f32,
+    scorers: Vec<Arc<dyn ScorerBuilder>>,
+}
 
-    use serde::Deserialize;
-
-    #[derive(Debug, Deserialize)]
-    struct SumOfScorers {
-        threshold: f32,
-        scorers: Vec<Box<dyn Scorer>>,
+impl SumOfScorersBuilder {
+    pub fn when(&mut self, scorer: impl ScorerBuilder + 'static) -> &mut Self {
+        self.scorers.push(Arc::new(scorer));
+        self
     }
+}
 
-    #[typetag::deserialize]
-    impl Scorer for SumOfScorers {
-        fn build(&self, actor: Entity, cmd: &mut Commands) -> ScorerEnt {
-            let ent = ScorerEnt(cmd.spawn().id());
-            let scorers: Vec<_> = self
-                .scorers
-                .iter()
-                .map(|scorer| scorer.build(actor, cmd).0)
-                .collect();
-            cmd.entity(ent.0)
-                .insert(Score::default())
-                .insert(super::AllOrNothing {
-                    threshold: self.threshold,
-                    scorers: scorers.into_iter().map(ScorerEnt).collect(),
-                });
-            cmd.entity(actor).push_children(&[ent.0]);
-            ent
-        }
+impl ScorerBuilder for SumOfScorersBuilder {
+    fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
+        let scorers: Vec<_> = self
+            .scorers
+            .iter()
+            .map(|scorer| scorer.attach(cmd, actor))
+            .collect();
+        cmd.entity(scorer).insert(AllOrNothing {
+            threshold: self.threshold,
+            scorers: scorers.into_iter().map(ScorerEnt).collect(),
+        });
     }
 }

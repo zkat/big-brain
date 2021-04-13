@@ -1,15 +1,15 @@
-use std::fs::File;
-use std::path::Path;
-use std::time::{Duration, Instant};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use bevy::prelude::*;
-use serde::Deserialize;
 
 use crate::{
-    actions::{self, Action, ActionRunner, ActionRunnerWrapper, ActionState},
+    actions::{self, ActionBuilder, ActionBuilderWrapper, ActionState},
     choices::{Choice, ChoiceBuilder},
-    scorers::Score,
     pickers::Picker,
+    scorers::{Score, ScorerBuilder},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -20,86 +20,80 @@ pub struct ScorerEnt(pub Entity);
 
 #[derive(Debug)]
 pub struct Thinker {
-    pub picker: Box<dyn Picker>,
-    pub otherwise: Option<ActionEnt>,
-    pub choices: Vec<Choice>,
-    pub current_action: Option<ActionEnt>,
+    picker: Arc<dyn Picker>,
+    otherwise: Option<ActionBuilderWrapper>,
+    choices: Vec<Choice>,
+    current_action: Option<(ActionEnt, ActionBuilderWrapper)>,
 }
 
 impl Thinker {
-    pub fn load_from_str<S: AsRef<str>>(string: S) -> builder::Thinker {
-        ron::de::from_str(string.as_ref()).expect("Failed to parse RON")
-    }
-
-    pub fn load_from_path<P: AsRef<Path>>(path: P) -> builder::Thinker {
-        let f = File::open(&path).expect("Failed to open file");
-        ron::de::from_reader(f).expect("Failed to read .ron file")
+    pub fn build() -> ThinkerBuilder {
+        ThinkerBuilder::new()
     }
 }
 
-mod builder {
-    use super::*;
-    #[derive(Debug, Deserialize)]
-    pub struct Thinker {
-        pub picker: Box<dyn Picker>,
-        pub otherwise: Option<Box<dyn Action>>,
-        pub choices: Vec<ChoiceBuilder>,
+#[derive(Debug, Default)]
+pub struct ThinkerBuilder {
+    pub picker: Option<Arc<dyn Picker>>,
+    pub otherwise: Option<ActionBuilderWrapper>, // Arc<dyn ActionBuilder>?
+    pub choices: Vec<ChoiceBuilder>,
+}
+
+impl ThinkerBuilder {
+    pub(crate) fn new() -> Self {
+        Self {
+            picker: None,
+            otherwise: None,
+            choices: Vec::new(),
+        }
+    }
+
+    pub fn picker(&mut self, picker: impl Picker + 'static) -> &mut Self {
+        self.picker = Some(Arc::new(picker));
+        self
+    }
+
+    pub fn when(
+        &mut self,
+        scorer: impl ScorerBuilder + 'static,
+        action: impl ActionBuilder + 'static,
+    ) -> &mut Self {
+        self.choices.push(ChoiceBuilder::new(Arc::new(scorer), Arc::new(action)));
+        self
+    }
+
+    pub fn otherwise(&mut self, otherwise: impl ActionBuilder + 'static) -> &mut Self {
+        self.otherwise = Some(ActionBuilderWrapper::new(Arc::new(otherwise)));
+        self
     }
 }
 
-impl builder::Thinker {
-    pub fn build(self, actor: Entity, cmd: &mut Commands) -> ActionEnt {
-        let action_ent = ActionState::build(Box::new(self), actor, cmd);
-        cmd.entity(action_ent.0)
-            .insert(ActiveThinker(true))
-            .insert(ActionState::Requested);
-        action_ent
-    }
-}
-
-#[typetag::deserialize]
-impl Action for builder::Thinker {
-    fn build(
-        self: Box<Self>,
-        actor: Entity,
-        action_ent: ActionEnt,
-        cmd: &mut Commands,
-    ) -> Box<dyn ActionRunner> {
+impl ActionBuilder for ThinkerBuilder {
+    fn build(&self, cmd: &mut Commands, action_ent: Entity, actor: Entity) {
+        println!("building thinker");
         let choices = self
             .choices
-            .into_iter()
-            .map(|choice| choice.build(actor, cmd))
+            .iter()
+            .map(|choice| choice.build(cmd, actor))
             .collect();
-        let otherwise = self
-            .otherwise
-            .map(|builder| ActionState::build(builder, actor, cmd));
-        cmd.entity(action_ent.0).insert(Thinker {
-            picker: self.picker,
-            choices,
-            otherwise,
-            current_action: None,
-        });
-        cmd.entity(actor).push_children(&[action_ent.0]);
-        Box::new(ThinkerRunner)
+        cmd.entity(action_ent)
+            .insert(Thinker {
+                // TODO: reasonable default?...
+                picker: self
+                    .picker
+                    .clone()
+                    .expect("ThinkerBuilder must have a Picker"),
+                choices,
+                otherwise: self.otherwise.clone(),
+                current_action: None,
+            })
+            .insert(ActiveThinker(false))
+            .insert(ActionState::Requested);
     }
 }
 
 #[derive(Debug)]
 pub struct ActiveThinker(bool);
-
-#[derive(Debug)]
-pub struct ThinkerRunner;
-
-impl ActionRunner for ThinkerRunner {
-    fn activate(&self, _: Entity, action_ent: ActionEnt, cmd: &mut Commands) {
-        cmd.entity(action_ent.0)
-            .insert(ActiveThinker(false))
-            .insert(ActionState::Requested);
-    }
-    fn deactivate(&self, action_ent: ActionEnt, cmd: &mut Commands) {
-        cmd.entity(action_ent.0).remove::<ActiveThinker>();
-    }
-}
 
 pub struct ThinkerIterations {
     index: usize,
@@ -125,10 +119,11 @@ pub fn thinker_system(
     mut thinker_q: Query<(Entity, &Parent, &mut Thinker, &ActiveThinker)>,
     utilities: Query<&Score>,
     mut action_states: Query<&mut actions::ActionState>,
-    builder_wrappers: Query<&ActionRunnerWrapper>,
 ) {
     let start = Instant::now();
-    for (thinker_ent, Parent(actor), mut thinker, active_thinker) in thinker_q.iter_mut().skip(iterations.index) {
+    for (thinker_ent, Parent(actor), mut thinker, active_thinker) in
+        thinker_q.iter_mut().skip(iterations.index)
+    {
         iterations.index += 1;
 
         let thinker_state = action_states
@@ -144,24 +139,24 @@ pub fn thinker_system(
             }
             ActionState::Cancelled => {
                 if let Some(current) = &mut thinker.current_action {
-                    let state = action_states.get_mut(current.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.").clone();
+                    let state = action_states.get_mut(current.0.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.").clone();
                     match state {
                         ActionState::Success | ActionState::Failure => {
                             let mut act_state = action_states.get_mut(thinker_ent).expect("???");
                             *act_state = state.clone();
-                            let mut state = action_states.get_mut(current.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
+                            let mut state = action_states.get_mut(current.0.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
                             *state = ActionState::Init;
                             thinker.current_action = None;
                         }
                         _ => {
-                            let mut state = action_states.get_mut(current.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
+                            let mut state = action_states.get_mut(current.0.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
                             *state = ActionState::Cancelled;
                         }
                     }
                 }
             }
             ActionState::Requested | ActionState::Executing => {
-                if let Some(picked_action_ent) = thinker.picker.pick(&thinker.choices, &utilities) {
+                if let Some(choice) = thinker.picker.pick(&thinker.choices, &utilities) {
                     // Think about what action we're supposed to be taking. We do this
                     // every tick, because we might change our mind.
                     // ...and then execute it (details below).
@@ -170,13 +165,12 @@ pub fn thinker_system(
                         thinker_ent,
                         *actor,
                         &mut thinker,
-                        &picked_action_ent,
+                        &choice.action,
                         &mut action_states,
-                        &builder_wrappers,
                     );
                 } else if let Some(default_action_ent) = &thinker.otherwise {
                     // Otherwise, let's just execute the default one! (if it's there)
-                    let default_action_ent = *default_action_ent;
+                    let default_action_ent = default_action_ent.clone();
                     exec_picked_action(
                         &mut cmd,
                         thinker_ent,
@@ -184,21 +178,18 @@ pub fn thinker_system(
                         &mut thinker,
                         &default_action_ent,
                         &mut action_states,
-                        &builder_wrappers,
                     );
                 } else if let Some(current) = &mut thinker.current_action {
                     // If we didn't pick anything, and there's no default action,
                     // we need to see if there's any action currently executing,
                     // and cancel it. We also use this opportunity to clean up
                     // stale action components so they don't slow down joins.
-                    let mut state = action_states.get_mut(current.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
-                    let factory = builder_wrappers.get(current.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
+                    let mut state = action_states.get_mut(current.0.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
                     match *state {
                         actions::ActionState::Init
                         | actions::ActionState::Success
                         | actions::ActionState::Failure => {
-                            factory.0.deactivate(*current, &mut cmd);
-                            *state = ActionState::Init;
+                            cmd.entity(current.0 .0).despawn_recursive();
                             thinker.current_action = None;
                         }
                         _ => {
@@ -220,9 +211,8 @@ fn exec_picked_action(
     thinker_ent: Entity,
     actor: Entity,
     thinker: &mut Mut<Thinker>,
-    picked_action_ent: &ActionEnt,
+    picked_action: &ActionBuilderWrapper,
     states: &mut Query<&mut ActionState>,
-    builder_wrappers: &Query<&ActionRunnerWrapper>,
 ) {
     // If we do find one, then we need to grab the corresponding
     // component for it. The "action" that `picker.pick()` returns
@@ -235,12 +225,12 @@ fn exec_picked_action(
     // (maybe not in this logic), but we do need some kind of
     // oscillation protection so we're not just bouncing back and
     // forth between the same couple of actions.
-    if let Some(current) = &mut thinker.current_action {
-        if current.0 != picked_action_ent.0 {
+    if let Some((action_ent, ActionBuilderWrapper(current_id, _))) = &mut thinker.current_action {
+        if *current_id != picked_action.0 {
             // So we've picked a different action than we were
             // currently executing. Just like before, we grab the
             // actual Action component (and we assume it exists).
-            let mut curr_action_state = states.get_mut(current.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
+            let mut curr_action_state = states.get_mut(action_ent.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
             // If the action is executing, or was requested, we
             // need to cancel it to make sure it stops. The Action
             // system will take care of resetting its state as
@@ -252,13 +242,11 @@ fn exec_picked_action(
                     *thinker_state = ActionState::Cancelled;
                 }
                 ActionState::Init | ActionState::Success | ActionState::Failure => {
-                    let current_action_factory = builder_wrappers.get(current.0).expect("Couldn't find an Action component corresponding to an Action entity. This is definitely a bug.");
-                    current_action_factory
-                        .0
-                        .deactivate(*picked_action_ent, cmd);
                     let old_state = curr_action_state.clone();
-                    *curr_action_state = ActionState::Init;
-                    *current = *picked_action_ent;
+                    thinker.current_action = Some((
+                        ActionEnt(picked_action.1.attach(cmd, actor)),
+                        picked_action.clone(),
+                    ));
                     let mut thinker_state = states.get_mut(thinker_ent).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
                     *thinker_state = old_state;
                 }
@@ -270,13 +258,9 @@ fn exec_picked_action(
             // it as Requested if for some reason it had finished
             // but the Action System hasn't gotten around to
             // cleaning it up.
-            let mut picked_action_state = states.get_mut(picked_action_ent.0).expect("Couldn't find an Action component corresponding to an Action entity. This is definitely a bug.");
-            if *picked_action_state == ActionState::Init {
-                let picked_action_factory = builder_wrappers.get(picked_action_ent.0).expect("Couldn't find an Action component corresponding to an Action entity. This is definitely a bug.");
-                picked_action_factory
-                    .0
-                    .activate(actor, *picked_action_ent, cmd);
-                *picked_action_state = ActionState::Requested;
+            let mut curr_action_state = states.get_mut(action_ent.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
+            if *curr_action_state == ActionState::Init {
+                *curr_action_state = ActionState::Requested;
             }
         }
     } else {
@@ -284,12 +268,7 @@ fn exec_picked_action(
         // current_action in the thinker. The logic here is pretty
         // straightforward -- we set the action, Request it, and
         // that's it.
-        let picked_action_factory = builder_wrappers.get(picked_action_ent.0).expect("Couldn't find an Action component corresponding to an Action entity. This is definitely a bug.");
-        let mut picked_action_state = states.get_mut(picked_action_ent.0).expect("Couldn't find an Action component corresponding to an Action entity. This is definitely a bug.");
-        picked_action_factory
-            .0
-            .activate(actor, *picked_action_ent, cmd);
-        thinker.current_action = Some(*picked_action_ent);
-        *picked_action_state = ActionState::Requested;
+        let new_action = picked_action.1.attach(cmd, actor);
+        thinker.current_action = Some((ActionEnt(new_action), picked_action.clone()));
     }
 }

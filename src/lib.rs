@@ -1,15 +1,13 @@
 pub use bevy;
-pub use big_brain_derive::*;
-pub use serde;
-pub use typetag;
 
 pub use actions::*;
 pub use choices::*;
 pub use scorers::*;
 pub use thinker::*;
+pub use pickers::*;
 
 pub mod evaluators;
-pub mod pickers;
+mod pickers;
 
 mod actions;
 mod choices;

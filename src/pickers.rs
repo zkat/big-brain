@@ -1,26 +1,22 @@
 use bevy::prelude::*;
 
-use serde::{Deserialize, Serialize};
+use crate::{choices::Choice, scorers::Score};
 
-use crate::{choices::Choice, scorers::Score, thinker::ActionEnt};
-
-#[typetag::serde]
 pub trait Picker: std::fmt::Debug + Sync + Send {
-    fn pick(&self, _choices: &[Choice], _utilities: &Query<&Score>) -> Option<ActionEnt>;
+    fn pick(&self, _choices: &[Choice], _utilities: &Query<&Score>) -> Option<Choice>;
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default)]
 pub struct FirstToScore {
     pub threshold: f32,
 }
 
-#[typetag::serde]
 impl Picker for FirstToScore {
-    fn pick(&self, choices: &[Choice], utilities: &Query<&Score>) -> Option<ActionEnt> {
+    fn pick(&self, choices: &[Choice], utilities: &Query<&Score>) -> Option<Choice> {
         for choice in choices {
             let value = choice.calculate(utilities);
             if value >= self.threshold {
-                return Some(choice.action_state);
+                return Some(choice.clone());
             }
         }
         None

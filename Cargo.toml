@@ -12,10 +12,5 @@ repository = "https://github.com/zkat/big-brain"
 homepage = "https://github.com/zkat/big-brain"
 
 [dependencies]
-big-brain-derive = { path = "./big-brain-derive", version = "0.2" }
-serde = "1.0.111"
-typetag = "0.1.5"
-specs-derive = "0.4.1"
-ron = "0.6.0"
 bevy = "0.5.0"
 

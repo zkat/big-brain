@@ -31,16 +31,37 @@ pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
 // do it? This is the first bit involving Big Brain itself, and there's a few
 // pieces you need:
 
-// First, you need an Action struct, and derive Action.
+// First, you need an Action and an ActionBuilder struct.
 //
 // These actions will be spawned and queued by the game engine when their
 // conditions trigger (we'll configure what these are later).
-#[derive(Debug, Action)]
+#[derive(Debug, Clone)]
 pub struct Drink;
+
+// The convention is to attach a `::build()` function to the Action type.
+impl Drink {
+    pub fn build() -> DrinkBuilder {
+        DrinkBuilder
+    }
+}
+
+// Then we define an ActionBuilder, which is responsible for making new
+// Action components for us.
+#[derive(Debug, Clone)]
+pub struct DrinkBuilder;
+
+// All you need to implement heree is the `build()` method, which requires
+// that you attach your actual component to the action Entity that was created
+// and configured for you.
+impl ActionBuilder for DrinkBuilder {
+    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
+        cmd.entity(action).insert(Drink);
+    }
+}
 
 // Associated with that Drink Action, you then need to have a system that will
 // actually execute those actions when they're "spawned" by the Big Brain
-// engine.
+// engine. This is the actual "act" part of the Action.
 //
 // In our case, we want the Thirst components, since we'll be changing those.
 // Additionally, we want to pick up the DrinkAction components, as well as
@@ -81,17 +102,32 @@ fn drink_action_system(
 // run in the background, calculating a "Score" value, which is what Big Brain
 // will use to pick which actions to execute.
 //
-// Additionally, though, we pull in an evaluator and define a weight. Which is
-// just mathy stuff you can tweak to get the behavior you want. More on this
-// in the docs (later), but for now, just put them in there and trust the
-// system. :)
-#[derive(Debug, Scorer)]
+// Just like with Actions, we use the convention of having separate
+// ScorerBuilder and Scorer components. While it might seem like a lot of
+// boilerplate, in a "real" application, you will almost certainly have data
+// and configuration concerns. This pattern separates those nicely.
+#[derive(Debug, Clone)]
 pub struct Thirsty;
 
-// Look familiar? Similar dance to Actions here.
+impl Thirsty {
+    fn build() -> ThirstyBuilder {
+        ThirstyBuilder
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ThirstyBuilder;
+
+impl ScorerBuilder for ThirstyBuilder {
+    fn build(&self, cmd: &mut Commands, scorer: Entity, _actor: Entity) {
+        cmd.entity(scorer).insert(Thirsty);
+    }
+}
+
+// Looks familiar? It's a lot likee Actions!
 pub fn thirsty_scorer_system(
     thirsts: Query<&Thirst>,
-    // Same dance with the Parent here, but now we've added a Score!
+    // Same dance with the Parent here, but now Big Brain has added a Score component!
     mut query: Query<(&Parent, &mut Score), With<Thirsty>>,
 ) {
     for (Parent(actor), mut score) in query.iter_mut() {
@@ -109,36 +145,21 @@ pub fn thirsty_scorer_system(
     }
 }
 
-// Now that we hav eall that defined, it's time to add a Thinker to an entity!
+// Now that we have all that defined, it's time to add a Thinker to an entity!
 // The Thinker is the actual "brain" behind all the AI. Every entity you want
 // to have AI behavior should have one *or more* Thinkers attached to it.
-// Thinkers are configured using RON right now, with a DSL that makes it easy
-// to define, in data, the actual behavior you want.
 pub fn init_entities(mut cmd: Commands) {
+    // Create the entity and throw the Thirst component in there. Nothing special here.
     let actor = cmd.spawn().insert(Thirst::new(70.0, 2.0)).id();
 
-    // Here's a very simple one that only has one scorer and one
-    // associated action. But you can have more of them, and even nest them by
-    // using more Thinkers (which are actually themselves Actions). See
-    // basic.ron in examples/ for a more involved Thinker definition.
-    //
-    // Ultimately, these Thinkers are meant to be usable by non-programmers:
-    // You, the developer, create Actions and Scorers, and someone else
-    // is then able to put them all together like LEGOs into all sorts of
-    // intricate logic.
-    Thinker::load_from_str(
-        r#"
-(
-    picker: {"FirstToScore": (threshold: 80.0)},
-    choices: [(
-        when: {"Thirsty": ()},
-        // This action will fire when (and as long as) Thirsty scores >=80.0.
-        then: {"Drink": ()},
-    )],
-)
-"#,
-    )
-    .build(actor, &mut cmd);
+    // And finally, we put all the pieces together!
+    Thinker::build()
+        .picker(FirstToScore { threshold: 80.0 })
+        // Note that what we pass in are _builders_, not components!
+        .when(Thirsty::build(), Drink::build())
+        // .attach will do all the necessary work of attaching this component
+        // and hooking it up to the AI system.
+        .attach(&mut cmd, actor);
 }
 
 fn main() {
