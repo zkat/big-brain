@@ -70,10 +70,6 @@ impl ThinkerBuilder {
         self.otherwise = Some(ActionBuilderWrapper::new(Arc::new(otherwise)));
         self
     }
-
-    pub fn component(self) -> ThinkerComponent {
-        ThinkerComponent(self)
-    }
 }
 
 impl ActionBuilder for ThinkerBuilder {
@@ -100,15 +96,12 @@ impl ActionBuilder for ThinkerBuilder {
     }
 }
 
-#[derive(Debug)]
-pub struct ThinkerComponent(ThinkerBuilder);
-
 pub fn thinker_component_attach_system(
     mut cmd: Commands,
-    q: Query<(Entity, &ThinkerComponent), Without<HasThinker>>,
+    q: Query<(Entity, &ThinkerBuilder), Without<HasThinker>>,
 ) {
-    for (entity, thinker_comp) in q.iter() {
-        let thinker = thinker_comp.0.attach(&mut cmd, entity);
+    for (entity, thinker_builder) in q.iter() {
+        let thinker = thinker_builder.attach(&mut cmd, entity);
         cmd.entity(entity)
             .insert(HasThinker(thinker))
             .push_children(&[thinker]);
@@ -117,7 +110,7 @@ pub fn thinker_component_attach_system(
 
 pub fn thinker_component_detach_system(
     mut cmd: Commands,
-    q: Query<(Entity, &HasThinker), Without<ThinkerComponent>>,
+    q: Query<(Entity, &HasThinker), Without<ThinkerBuilder>>,
 ) {
     for (actor, HasThinker(thinker)) in q.iter() {
         cmd.entity(*thinker).despawn_recursive();

@@ -111,8 +111,7 @@ regular Component:
 cmd.spawn().insert(Thirst::new(70.0, 2.0)).insert(
     Thinker::build()
         .picker(FirstToScore { threshold: 80.0 })
-        .when(Thirsty::build(), Drink::build())
-        .component(),
+        .when(Thirsty::build(), Drink::build()),
 );
 ```
 

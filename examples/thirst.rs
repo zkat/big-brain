@@ -157,7 +157,6 @@ pub fn init_entities(mut cmd: Commands) {
             .picker(FirstToScore { threshold: 80.0 })
             // Note that what we pass in are _builders_, not components!
             .when(Thirsty::build(), Drink::build())
-            .component(),
     );
 }
 
