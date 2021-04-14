@@ -1,16 +1,33 @@
+/*!
+Scorers look at the world and boil down arbitrary characteristics into a range of 0.0..=100.0. This module includes the ScorerBuilder trait and some built-in Composite Scorers.
+*/
+
 use std::sync::Arc;
 
 use bevy::prelude::*;
 
 use crate::thinker::{Actor, ScorerEnt};
 
+/**
+Score value between `0.0..=100.0` associated with a Scorer.
+ */
 #[derive(Debug, Clone, Default)]
 pub struct Score(pub(crate) f32);
 
 impl Score {
+    /**
+    Returns the `Score`'s current value.
+     */
     pub fn get(&self) -> f32 {
         self.0
     }
+    /**
+    Set the `Score`'s value.
+
+    ### Panics
+
+    Panics if `value` isn't within `0.0..=100.0`.
+     */
     pub fn set(&mut self, value: f32) {
         if !(0.0..=100.0).contains(&value) {
             panic!("Score value must be between 0.0 and 100.0");
@@ -19,8 +36,33 @@ impl Score {
     }
 }
 
+/**
+Trait that must be defined by types in order to be `ScorerBuilder`s. `ScorerBuilder`s' job is to spawn new `Scorer` entities. In general, most of this is already done for you, and the only method you really have to implement is `.build()`.
+
+The `build()` method MUST be implemented for any `ScorerBuilder`s you want to define.
+*/
 pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
+    /**
+    MUST insert your concrete Scorer component into the Scorer [`Entity`], using `cmd`. You _may_ use `actor`, but it's perfectly normal to just ignore it.
+
+    ### Example
+
+    ```no_run
+    struct MyBuilder;
+    struct MyScorer;
+
+    impl ScorerBuilder for MyBuilder {
+        fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity) {
+            cmd.entity(action).insert(MyScorer);
+        }
+    }
+    ```
+    */
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity);
+
+    /**
+    Don't implement this yourself unless you know what you're doing.
+     */
     fn attach(&self, cmd: &mut Commands, actor: Entity) -> Entity {
         let scorer_ent = cmd.spawn().id();
         cmd.entity(scorer_ent)
@@ -31,6 +73,9 @@ pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
     }
 }
 
+/**
+Scorer that always returns the same, fixed score. Good for combining with things creatively!
+ */
 #[derive(Debug, Clone)]
 pub struct FixedScore(f32);
 
@@ -55,6 +100,20 @@ impl ScorerBuilder for FixedScoreBuilder {
     }
 }
 
+/**
+Composite Scorer that takes any number of other Scorers and returns the sum of their [`Score`] values if each _individual_ [`Score`] is at or above the configured `threshold`.
+
+### Example
+
+```ignore
+Thinker::build()
+    .when(
+        AllOrNothing::build()
+          .push(MyScorer)
+          .push(MyOtherScorer),
+        MyAction::build());
+```
+ */
 #[derive(Debug)]
 pub struct AllOrNothing {
     threshold: f32,
@@ -100,7 +159,10 @@ pub struct AllOrNothingBuilder {
 }
 
 impl AllOrNothingBuilder {
-    pub fn when(&mut self, scorer: impl ScorerBuilder + 'static) -> &mut Self {
+    /**
+    Add another Scorer to this [`ScorerBuilder`].
+     */
+    pub fn push(&mut self, scorer: impl ScorerBuilder + 'static) -> &mut Self {
         self.scorers.push(Arc::new(scorer));
         self
     }
@@ -123,6 +185,20 @@ impl ScorerBuilder for AllOrNothingBuilder {
     }
 }
 
+/**
+Composite Scorer that takes any number of other Scorers and returns the sum of their [`Score`] values if the _total_ summed [`Score`] is at or above the configured `threshold`.
+
+### Example
+
+```ignore
+Thinker::build()
+    .when(
+        SumOfScorers::build()
+          .push(MyScorer)
+          .push(MyOtherScorer),
+        MyAction::build());
+```
+ */
 #[derive(Debug)]
 pub struct SumOfScorers {
     threshold: f32,

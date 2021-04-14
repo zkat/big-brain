@@ -1,3 +1,7 @@
+/*!
+Thinkers are the "brain" of an entity. You attach Scorers to it, and the Thinker picks the right Action to run based on the resulting Scores.
+*/
+
 use std::{
     sync::Arc,
     time::{Duration, Instant},
@@ -12,15 +16,40 @@ use crate::{
     scorers::{Score, ScorerBuilder},
 };
 
+/**
+Wrapper for Actor entities. In terms of Scorers, Thinkers, and Actions, this is the [`Entity`] actually _performing_ the action, rather than the entity a Scorer/Thinker/Action is attached to. Generally, you will use this entity when writing Queries for Action and Scorer systems.
+ */
 #[derive(Debug, Clone, Copy)]
 pub struct Actor(pub Entity);
 
 #[derive(Debug, Clone, Copy)]
-pub struct ActionEnt(pub Entity);
+pub(crate) struct ActionEnt(pub Entity);
 
 #[derive(Debug, Clone, Copy)]
-pub struct ScorerEnt(pub Entity);
+pub(crate) struct ScorerEnt(pub Entity);
 
+/**
+The "brains" behind this whole operation. A `Thinker` is what glues together `Actions` and `Scorers` and shapes larger, intelligent-seeming systems.
+
+Note: Thinkers are also Actions, so anywhere you can pass in an Action (or [`ActionBuilder`]), you can pass in a Thinker (or [`ThinkerBuilder`]).
+
+### Example
+
+```no_run
+pub fn init_entities(mut cmd: Commands) {
+    cmd.spawn()
+        .insert(Thirst::new(70.0, 2.0))
+        .insert(Hunger::new(50.0, 3.0))
+        .insert(
+            Thinker::build()
+                .picker(FirstToScore::new(80.0))
+                .when(Thirsty::build(), Drink::build())
+                .when(Hungry::build(), Eat::build())
+                .otherwise(Meander::build()),
+        );
+}
+```
+ */
 #[derive(Debug)]
 pub struct Thinker {
     picker: Arc<dyn Picker>,
@@ -30,16 +59,22 @@ pub struct Thinker {
 }
 
 impl Thinker {
+    /**
+    Make a new [`ThinkerBuilder`]. This is what you'll actually use to configure Thinker behavior.
+     */
     pub fn build() -> ThinkerBuilder {
         ThinkerBuilder::new()
     }
 }
 
+/**
+This is what you actually use to configure Thinker behavior. It's a plain old [`ActionBuilder`], as well.
+ */
 #[derive(Debug, Default)]
 pub struct ThinkerBuilder {
-    pub picker: Option<Arc<dyn Picker>>,
-    pub otherwise: Option<ActionBuilderWrapper>, // Arc<dyn ActionBuilder>?
-    pub choices: Vec<ChoiceBuilder>,
+    picker: Option<Arc<dyn Picker>>,
+    otherwise: Option<ActionBuilderWrapper>,
+    choices: Vec<ChoiceBuilder>,
 }
 
 impl ThinkerBuilder {
@@ -51,11 +86,17 @@ impl ThinkerBuilder {
         }
     }
 
+    /**
+    Define a [`Picker`](crate::pickers::Picker) for this Thinker.
+     */
     pub fn picker(mut self, picker: impl Picker + 'static) -> Self {
         self.picker = Some(Arc::new(picker));
         self
     }
 
+    /**
+    Define an [`ActionBuilder`](crate::actions::ActionBuilder) and [`ScorerBuilder`](crate::scorers::ScorerBuilder) pair.
+     */
     pub fn when(
         mut self,
         scorer: impl ScorerBuilder + 'static,
@@ -66,6 +107,9 @@ impl ThinkerBuilder {
         self
     }
 
+    /**
+    Default `Action` to execute if the `Picker` did not pick any of the given choices.
+     */
     pub fn otherwise(mut self, otherwise: impl ActionBuilder + 'static) -> Self {
         self.otherwise = Some(ActionBuilderWrapper::new(Arc::new(otherwise)));
         self

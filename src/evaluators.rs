@@ -1,7 +1,17 @@
+/*!
+Utilities for turning values of 0.0..=100.0 into different curves.
+*/
+
+/**
+Trait that any evaluators must implement. Must return an `f32` value between `0.0..=100.0`.
+ */
 pub trait Evaluator: std::fmt::Debug + Sync + Send {
     fn evaluate(&self, value: f32) -> f32;
 }
 
+/**
+[`Evaluator`] for linear values. That is, there's no curve to the value mapping.
+ */
 #[derive(Debug)]
 pub struct LinearEvaluator {
     xa: f32,
@@ -39,6 +49,9 @@ impl Evaluator for LinearEvaluator {
     }
 }
 
+/**
+[`Evaluator`] with an exponent curve. The value will grow according to its `power` parameter.
+ */
 #[derive(Debug)]
 pub struct PowerEvaluator {
     xa: f32,
@@ -79,6 +92,9 @@ impl Evaluator for PowerEvaluator {
     }
 }
 
+/**
+[`Evaluator`] with a "Sigmoid", or "S-like" curve.
+ */
 #[derive(Debug)]
 pub struct SigmoidEvaluator {
     xa: f32,

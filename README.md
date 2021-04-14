@@ -1,3 +1,5 @@
+# big-brain
+
 `big-brain` is a [Utility AI](https://en.wikipedia.org/wiki/Utility_system)
 library for games, built for the [Bevy Game Engine](https://bevyengine.org/)
 
@@ -10,14 +12,32 @@ behavior.
 
 See [the documentation](https://docs.rs/big-brain) for more details.
 
-## Example
+### Features
 
-First, you define actions and considerations, which are just plain old `Bevy`
-`Component`s and `System`s.
+* Highly concurrent/parallelizable evaluation.
+* Integrates smoothly with Bevy.
+* Easy AI definition using idiomatic Rust builders. You don't have to be some genius to define behavior that _feels_ realistic to players.
+* High performance--supports hundreds of thousands of concurrent AIs.
+* Graceful degradation--can be configured such that the less frame time is available, the slower an AI might "seem", without dragging down framerates, by simply processing fewer events per tick.
+* Proven game AI model.
+* Low code overhead--you only define two types of application-dependent things, and everything else is building blocks!
+* Highly composable and reusable.
+* State machine-style continuous actions/behaviors.
+* Action cancellation.
 
-### Scorers
+### Example
 
-`Scorers`s are entities that look at the world and evaluate into `Score` values.
+First, you define actions and considerations, which are just plain old Bevy
+Components and Systems. As a developer, you write application-dependent code
+to define [`Scorers`](#scorers) and [`Actions`](#actions), and then put it
+all together like building blocks, using [`Thinkers`](#thinkers) that will
+define the actual behavior.
+
+#### Scorers
+
+`Scorer`s are entities that look at the world and evaluate into `Score` values. You can think of them as the "eyes" of the AI system. They're a highly-parallel way of being able to look at the `World` and use it to make some decisions later.
+
+They are created by types that implement `ScorerBuilder`.
 
 ```rust
 use bevy::prelude::*;
@@ -53,9 +73,9 @@ pub fn thirsty_scorer_system(
 }
 ```
 
-### Actions
+#### Actions
 
-`Action`s are the actual things your entities will _do_.
+`Action`s are the actual things your entities will _do_. They are connected to `ActionState`s, and are created by types implementing `ActionBuilder`.
 
 ```rust
 use bevy::prelude::*;
@@ -100,7 +120,7 @@ fn drink_action_system(
 }
 ```
 
-### Thinker Definition
+#### Thinkers
 
 Finally, you can use it when define the `Thinker`, which you can attach as a
 regular Component:
@@ -113,10 +133,17 @@ cmd.spawn().insert(Thirst::new(70.0, 2.0)).insert(
 );
 ```
 
-## License
+### Contributing
+
+1. Install the latest Rust toolchain (stable supported).
+2. `cargo run --example thirst`
+3. Happy hacking!
+
+### License
 
 This project is licensed under [the Parity License](LICENSE.md). Third-party contributions are licensed under Apache-2.0 and belong to their respective authors.
 
 The Parity License is a copyleft license that, unlike the GPL family, allows you to license derivative and connected works under permissive licenses like MIT or Apache-2.0. It's free to use provided the work you do is freely available!
 
 For proprietary use, please [contact me](mailto:kzm@zkat.tech?subject=big-brain%20license), or just [sponsor me on GitHub](https://github.com/users/zkat/sponsorship) under the appropriate tier to [acquire a proprietary-use license](LICENSE-PATRON.md)! This funding model helps me make my work sustainable and compensates me for the work it took to write this crate!
+

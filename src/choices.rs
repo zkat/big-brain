@@ -11,8 +11,8 @@ use crate::{
 // Contains different types of Considerations and Actions
 #[derive(Debug, Clone)]
 pub struct Choice {
-    pub scorer: ScorerEnt,
-    pub action: ActionBuilderWrapper,
+    pub(crate) scorer: ScorerEnt,
+    pub(crate) action: ActionBuilderWrapper,
 }
 impl Choice {
     pub fn calculate(&self, scores: &Query<&Score>) -> f32 {
