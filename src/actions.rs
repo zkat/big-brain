@@ -92,6 +92,8 @@ pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
     fn attach(&self, cmd: &mut Commands, actor: Entity) -> Entity {
         let action_ent = ActionEnt(cmd.spawn().id());
         cmd.entity(action_ent.0)
+            .insert(Transform::default())
+            .insert(GlobalTransform::default())
             .insert(ActionState::new())
             .insert(Actor(actor));
         self.build(cmd, action_ent.0, actor);
@@ -121,6 +123,8 @@ impl ActionBuilder for StepsBuilder {
     fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity) {
         let child_action = self.steps[0].attach(cmd, actor);
         cmd.entity(action)
+            .insert(Transform::default())
+            .insert(GlobalTransform::default())
             .insert(Steps {
                 active_step: 0,
                 active_ent: ActionEnt(child_action),

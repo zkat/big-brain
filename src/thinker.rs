@@ -118,13 +118,14 @@ impl ThinkerBuilder {
 
 impl ActionBuilder for ThinkerBuilder {
     fn build(&self, cmd: &mut Commands, action_ent: Entity, actor: Entity) {
-        println!("building thinker");
         let choices = self
             .choices
             .iter()
             .map(|choice| choice.build(cmd, actor, action_ent))
             .collect();
         cmd.entity(action_ent)
+            .insert(Transform::default())
+            .insert(GlobalTransform::default())
             .insert(Thinker {
                 // TODO: reasonable default?...
                 picker: self
@@ -190,7 +191,7 @@ pub fn thinker_system(
     mut cmd: Commands,
     mut iterations: Local<ThinkerIterations>,
     mut thinker_q: Query<(Entity, &Actor, &mut Thinker, &ActiveThinker)>,
-    utilities: Query<&Score>,
+    scores: Query<&Score>,
     mut action_states: Query<&mut actions::ActionState>,
 ) {
     let start = Instant::now();
@@ -229,7 +230,7 @@ pub fn thinker_system(
                 }
             }
             ActionState::Requested | ActionState::Executing => {
-                if let Some(choice) = thinker.picker.pick(&thinker.choices, &utilities) {
+                if let Some(choice) = thinker.picker.pick(&thinker.choices, &scores) {
                     // Think about what action we're supposed to be taking. We do this
                     // every tick, because we might change our mind.
                     // ...and then execute it (details below).

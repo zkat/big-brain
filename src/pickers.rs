@@ -38,9 +38,9 @@ impl FirstToScore {
 }
 
 impl Picker for FirstToScore {
-    fn pick(&self, choices: &[Choice], utilities: &Query<&Score>) -> Option<Choice> {
+    fn pick(&self, choices: &[Choice], scores: &Query<&Score>) -> Option<Choice> {
         for choice in choices {
-            let value = choice.calculate(utilities);
+            let value = choice.calculate(scores);
             if value >= self.threshold {
                 return Some(choice.clone());
             }
