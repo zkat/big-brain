@@ -1,3 +1,17 @@
+<a name="0.3.2"></a>
+## 0.3.2 (2021-04-17)
+
+This is a quick bugfix. Shoutout to [@ndarilek](https://github.com/ndarilek)
+for finding this one and giving me a chance to debug it!
+
+tl;dr: Bevy's hierarchy system *requires* that all children have `Transform`
+and `GlobalTransform` also attached, otherwise it just... kills them.
+
+#### Bug Fixes
+
+* **scorer:**  stop attaching duplicate scorers ([10a6d022](https://github.com/zkat/big-brain/commit/10a6d022ec682e33b98309318020c9068be4cea2))
+* **thinker:**  add Transform and GlobalTransform ([ed3a7cb3](https://github.com/zkat/big-brain/commit/ed3a7cb3c03e27b76b374f75ac179f29c979e4cf))
+
 <a name="0.3.1"></a>
 ## 0.3.1 (2021-04-14)
 
