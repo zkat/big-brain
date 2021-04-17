@@ -40,7 +40,7 @@ impl ChoiceBuilder {
         let scorer_ent = self.when.attach(cmd, actor);
         cmd.entity(parent).push_children(&[scorer_ent]);
         Choice {
-            scorer: ScorerEnt(self.when.attach(cmd, actor)),
+            scorer: ScorerEnt(scorer_ent),
             action: ActionBuilderWrapper::new(self.then.clone()),
         }
     }
