@@ -1,3 +1,13 @@
+<a name="0.3.3"></a>
+## 0.3.3 (2021-04-18)
+
+This fixes an issue with more children being added to an Actor causing Thinkers to get clobbered in really annoying ways.
+
+#### Bug Fixes
+
+* **thinker:**  stop using the child/parent system for toplevel thinkers ([db16e2f6](https://github.com/zkat/big-brain/commit/db16e2f6ee97777b4df12e4ae435bf27b8012c7c))
+
+
 <a name="0.3.2"></a>
 ## 0.3.2 (2021-04-17)
 
