@@ -45,7 +45,11 @@ impl Default for LinearEvaluator {
 
 impl Evaluator for LinearEvaluator {
     fn evaluate(&self, value: f32) -> f32 {
-        clamp(self.ya + self.dy_over_dx * (value - self.xa), self.ya, self.yb)
+        clamp(
+            self.ya + self.dy_over_dx * (value - self.xa),
+            self.ya,
+            self.yb,
+        )
     }
 }
 
@@ -140,7 +144,11 @@ impl Evaluator for SigmoidEvaluator {
         let cx_minus_x_mean = clamp(x, self.xa, self.xb) - self.x_mean;
         let numerator = self.two_over_dx * cx_minus_x_mean * self.one_minus_k;
         let denominator = self.k * (1.0 - 2.0 * (self.two_over_dx * cx_minus_x_mean)).abs() + 1.0;
-        clamp(self.dy_over_two * (numerator / denominator) + self.y_mean, self.ya, self.yb)
+        clamp(
+            self.dy_over_two * (numerator / denominator) + self.y_mean,
+            self.ya,
+            self.yb,
+        )
     }
 }
 

@@ -264,8 +264,8 @@ impl ScorerBuilder for SumOfScorersBuilder {
             .insert(Transform::default())
             .insert(GlobalTransform::default())
             .insert(AllOrNothing {
-            threshold: self.threshold,
-            scorers: scorers.into_iter().map(ScorerEnt).collect(),
-        });
+                threshold: self.threshold,
+                scorers: scorers.into_iter().map(ScorerEnt).collect(),
+            });
     }
 }
