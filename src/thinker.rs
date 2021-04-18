@@ -147,9 +147,7 @@ pub fn thinker_component_attach_system(
 ) {
     for (entity, thinker_builder) in q.iter() {
         let thinker = thinker_builder.attach(&mut cmd, entity);
-        cmd.entity(entity)
-            .insert(HasThinker(thinker))
-            .push_children(&[thinker]);
+        cmd.entity(entity).insert(HasThinker(thinker));
     }
 }
 
@@ -160,6 +158,19 @@ pub fn thinker_component_detach_system(
     for (actor, HasThinker(thinker)) in q.iter() {
         cmd.entity(*thinker).despawn_recursive();
         cmd.entity(actor).remove::<HasThinker>();
+    }
+}
+
+pub fn actor_gone_cleanup(
+    mut cmd: Commands,
+    actors: Query<&ThinkerBuilder>,
+    q: Query<(Entity, &Actor)>,
+) {
+    for (child, Actor(actor)) in q.iter() {
+        if actors.get(*actor).is_err() {
+            // Actor is gone. Let's clean up.
+            cmd.entity(child).despawn_recursive();
+        }
     }
 }
 

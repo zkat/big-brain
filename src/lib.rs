@@ -194,6 +194,7 @@ impl Plugin for BigBrainPlugin {
         app.add_system(thinker::thinker_system.system());
         app.add_system(thinker::thinker_component_attach_system.system());
         app.add_system(thinker::thinker_component_detach_system.system());
+        app.add_system(thinker::actor_gone_cleanup.system());
         app.add_system(actions::steps_system.system());
         app.add_system(scorers::fixed_score_system.system());
         app.add_system(scorers::all_or_nothing_system.system());
