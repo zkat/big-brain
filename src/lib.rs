@@ -166,7 +166,7 @@ pub mod prelude {
     pub use actions::{ActionBuilder, ActionState};
     pub use pickers::{FirstToScore, Picker};
     pub use scorers::{AllOrNothing, FixedScore, Score, ScorerBuilder, SumOfScorers};
-    pub use thinker::{Actor, Thinker};
+    pub use thinker::{Actor, Thinker, ThinkerBuilder};
 }
 
 use bevy::prelude::*;
