@@ -1,4 +1,8 @@
-The assets in this directory are from https://github.com/joshuajbouw/bevy_tilemap/tree/e9f4ec8/examples/assets/textures and have the following license:
+This example is based on one from bevy_tilemap, found here:
+https://github.com/joshuajbouw/bevy_tilemap/blob/9e19adb/examples/examples/random_dungeon.rs
+
+It, and the other assets in this subproject, include the following license,
+reproduced here in accordance with its requirements:
 
 MIT License
 

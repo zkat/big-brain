@@ -1,31 +1,3 @@
-/*
-This example is based on one from bevy_tilemap, found here: https://github.com/joshuajbouw/bevy_tilemap/blob/9e19adb/examples/examples/random_dungeon.rs
-
-It includes the following license, reproduced here in accordance with its requirements:
-
-MIT License
-
-Copyright (c) 2020 Joshua J. Bouw
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
-
 /*!
 This is a more involved big-brain example. In this example, we're going to define an AI "Player" which will autonomously explore a randomized dungeon. They will also react to various situations they come across, such as enemies, power-ups, and their own personal needs (like going to the bathroom).
 */
@@ -205,6 +177,25 @@ impl GameState {
             false
         }
     }
+}
+
+fn move_sprite(
+    map: &mut Tilemap,
+    previous_position: Position,
+    position: Position,
+    render: &Render,
+) {
+    // We need to first remove where we were prior.
+    map.clear_tile((previous_position.x, previous_position.y), 1)
+        .unwrap();
+    // We then need to update where we are going!
+    let tile = Tile {
+        point: (position.x, position.y),
+        sprite_index: render.sprite_index,
+        sprite_order: render.sprite_order,
+        ..Default::default()
+    };
+    map.insert_tile(tile).unwrap();
 }
 
 fn setup(mut tile_sprite_handles: ResMut<TileSpriteHandles>, asset_server: Res<AssetServer>) {
@@ -411,23 +402,4 @@ fn build_random_dungeon(
 
         game_state.map_loaded = true;
     }
-}
-
-fn move_sprite(
-    map: &mut Tilemap,
-    previous_position: Position,
-    position: Position,
-    render: &Render,
-) {
-    // We need to first remove where we were prior.
-    map.clear_tile((previous_position.x, previous_position.y), 1)
-        .unwrap();
-    // We then need to update where we are going!
-    let tile = Tile {
-        point: (position.x, position.y),
-        sprite_index: render.sprite_index,
-        sprite_order: render.sprite_order,
-        ..Default::default()
-    };
-    map.insert_tile(tile).unwrap();
 }
