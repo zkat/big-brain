@@ -1,0 +1,14 @@
+use bevy::prelude::*;
+use big_brain::prelude::*;
+
+pub mod actions;
+pub mod scorers;
+
+pub struct DorfHeroAiPlugin;
+
+impl Plugin for DorfHeroAiPlugin {
+    fn build(&self, app: &mut bevy::prelude::AppBuilder) {
+        app.add_plugin(BigBrainPlugin)
+            .add_system(actions::meander::meander_action.system());
+    }
+}
