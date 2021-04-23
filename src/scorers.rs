@@ -66,8 +66,7 @@ pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
     fn attach(&self, cmd: &mut Commands, actor: Entity) -> Entity {
         let scorer_ent = cmd.spawn().id();
         cmd.entity(scorer_ent)
-            .insert(Transform::default())
-            .insert(GlobalTransform::default())
+            .insert(Name::new("Scorer"))
             .insert(Score::default())
             .insert(Actor(actor));
         self.build(cmd, scorer_ent, actor);
@@ -178,10 +177,9 @@ impl ScorerBuilder for AllOrNothingBuilder {
             .map(|scorer| scorer.attach(cmd, actor))
             .collect();
         cmd.entity(scorer)
-            .insert(Transform::default())
-            .insert(GlobalTransform::default())
             .insert(Score::default())
             .push_children(&scorers[..])
+            .insert(Name::new("Scorer"))
             .insert(AllOrNothing {
                 threshold: self.threshold,
                 scorers: scorers.into_iter().map(ScorerEnt).collect(),

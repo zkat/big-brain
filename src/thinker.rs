@@ -124,8 +124,6 @@ impl ActionBuilder for ThinkerBuilder {
             .map(|choice| choice.build(cmd, actor, action_ent))
             .collect();
         cmd.entity(action_ent)
-            .insert(Transform::default())
-            .insert(GlobalTransform::default())
             .insert(Thinker {
                 // TODO: reasonable default?...
                 picker: self
@@ -136,6 +134,7 @@ impl ActionBuilder for ThinkerBuilder {
                 otherwise: self.otherwise.clone(),
                 current_action: None,
             })
+            .insert(Name::new("Thinker"))
             .insert(ActiveThinker(false))
             .insert(ActionState::Requested);
     }
