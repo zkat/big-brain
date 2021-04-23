@@ -135,7 +135,6 @@ impl ActionBuilder for ThinkerBuilder {
                 current_action: None,
             })
             .insert(Name::new("Thinker"))
-            .insert(ActiveThinker(false))
             .insert(ActionState::Requested);
     }
 }
@@ -176,9 +175,6 @@ pub fn actor_gone_cleanup(
 #[derive(Debug)]
 pub struct HasThinker(Entity);
 
-#[derive(Debug)]
-pub struct ActiveThinker(bool);
-
 pub struct ThinkerIterations {
     index: usize,
     max_duration: Duration,
@@ -200,14 +196,12 @@ impl Default for ThinkerIterations {
 pub fn thinker_system(
     mut cmd: Commands,
     mut iterations: Local<ThinkerIterations>,
-    mut thinker_q: Query<(Entity, &Actor, &mut Thinker, &ActiveThinker)>,
+    mut thinker_q: Query<(Entity, &Actor, &mut Thinker)>,
     scores: Query<&Score>,
     mut action_states: Query<&mut actions::ActionState>,
 ) {
     let start = Instant::now();
-    for (thinker_ent, Actor(actor), mut thinker, active_thinker) in
-        thinker_q.iter_mut().skip(iterations.index)
-    {
+    for (thinker_ent, Actor(actor), mut thinker) in thinker_q.iter_mut().skip(iterations.index) {
         iterations.index += 1;
 
         let thinker_state = action_states
@@ -215,21 +209,21 @@ pub fn thinker_system(
             .expect("Where is it?")
             .clone();
         match thinker_state {
-            ActionState::Init | ActionState::Success | ActionState::Failure => {
-                if let ActiveThinker(true) = active_thinker {
-                    let mut act_state = action_states.get_mut(thinker_ent).expect("???");
-                    *act_state = ActionState::Requested;
-                }
+            ActionState::Init => {
+                let mut act_state = action_states.get_mut(thinker_ent).expect("???");
+                *act_state = ActionState::Requested;
             }
+            ActionState::Requested => {
+                let mut act_state = action_states.get_mut(thinker_ent).expect("???");
+                *act_state = ActionState::Executing;
+            }
+            ActionState::Success | ActionState::Failure => {}
             ActionState::Cancelled => {
                 if let Some(current) = &mut thinker.current_action {
                     let state = action_states.get_mut(current.0.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.").clone();
                     match state {
                         ActionState::Success | ActionState::Failure => {
-                            let mut act_state = action_states.get_mut(thinker_ent).expect("???");
-                            *act_state = state.clone();
-                            let mut state = action_states.get_mut(current.0.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
-                            *state = ActionState::Init;
+                            cmd.entity(current.0 .0).despawn_recursive();
                             thinker.current_action = None;
                         }
                         _ => {
@@ -237,9 +231,12 @@ pub fn thinker_system(
                             *state = ActionState::Cancelled;
                         }
                     }
+                } else {
+                    let mut act_state = action_states.get_mut(thinker_ent).expect("???");
+                    *act_state = ActionState::Success;
                 }
             }
-            ActionState::Requested | ActionState::Executing => {
+            ActionState::Executing => {
                 if let Some(choice) = thinker.picker.pick(&thinker.choices, &scores) {
                     // Think about what action we're supposed to be taking. We do this
                     // every tick, because we might change our mind.
@@ -320,19 +317,14 @@ fn exec_picked_action(
             match *curr_action_state {
                 ActionState::Executing | ActionState::Requested => {
                     *curr_action_state = ActionState::Cancelled;
-                    let mut thinker_state = states.get_mut(thinker_ent).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
-                    *thinker_state = ActionState::Cancelled;
                 }
                 ActionState::Init | ActionState::Success | ActionState::Failure => {
-                    let old_state = curr_action_state.clone();
                     // Despawn the action itself.
                     cmd.entity(action_ent.0).despawn_recursive();
                     thinker.current_action = Some((
                         ActionEnt(picked_action.1.attach(cmd, actor)),
                         picked_action.clone(),
                     ));
-                    let mut thinker_state = states.get_mut(thinker_ent).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
-                    *thinker_state = old_state;
                 }
                 ActionState::Cancelled => {}
             };
