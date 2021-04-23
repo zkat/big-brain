@@ -1,3 +1,16 @@
+<a name="0.3.4"></a>
+## 0.3.4 (2021-04-23)
+
+Welp. Turns out Thinkers were completely broken? This should work better :)
+
+#### Bug Fixes
+
+* **prelude:**  Export ThinkerBuilder from prelude ([06cc03e1](https://github.com/zkat/big-brain/commit/06cc03e1dd563c708bff276f7a194c8c81a00a5a))
+* **thinker:**
+  *  disposed of ActiveThinker and circular state-setting ([7f8ed12b](https://github.com/zkat/big-brain/commit/7f8ed12b112152c3f8d548d0a2208cefdb1581af))
+  *  Need to do proper ptr_eq comparison here ([037a7c0d](https://github.com/zkat/big-brain/commit/037a7c0d0da065ea4cb5642047302d6bda13c670))
+
+
 <a name="0.3.3"></a>
 ## 0.3.3 (2021-04-18)
 
