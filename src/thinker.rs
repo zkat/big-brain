@@ -243,7 +243,6 @@ pub fn thinker_system(
                     // ...and then execute it (details below).
                     exec_picked_action(
                         &mut cmd,
-                        thinker_ent,
                         *actor,
                         &mut thinker,
                         &choice.action,
@@ -254,7 +253,6 @@ pub fn thinker_system(
                     let default_action_ent = default_action_ent.clone();
                     exec_picked_action(
                         &mut cmd,
-                        thinker_ent,
                         *actor,
                         &mut thinker,
                         &default_action_ent,
@@ -289,7 +287,6 @@ pub fn thinker_system(
 
 fn exec_picked_action(
     cmd: &mut Commands,
-    thinker_ent: Entity,
     actor: Entity,
     thinker: &mut Mut<Thinker>,
     picked_action: &ActionBuilderWrapper,
