@@ -11,10 +11,12 @@ use rand::Rng;
 use ai::DorfHeroAiPlugin;
 use components::{Player, Position, Render};
 use resources::{GameState, TileSpriteHandles};
+use systems::DorfHeroSystemsPlugin;
 
 mod ai;
 mod components;
 mod resources;
+mod systems;
 
 pub fn start() {
     App::build()
@@ -35,6 +37,7 @@ pub fn start() {
         // If big-brain doesn't seem to be working at all, this might be what
         // you're missing!
         .add_plugin(DorfHeroAiPlugin)
+        .add_plugin(DorfHeroSystemsPlugin)
         .add_startup_system(setup.system())
         .add_system(load.system())
         .add_system(build_random_dungeon.system())
