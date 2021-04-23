@@ -54,11 +54,11 @@ impl ActionState {
 pub(crate) struct ActionBuilderId;
 
 #[derive(Debug, Clone)]
-pub(crate) struct ActionBuilderWrapper(pub ActionBuilderId, pub Arc<dyn ActionBuilder>);
+pub(crate) struct ActionBuilderWrapper(pub Arc<ActionBuilderId>, pub Arc<dyn ActionBuilder>);
 
 impl ActionBuilderWrapper {
     pub fn new(builder: Arc<dyn ActionBuilder>) -> Self {
-        ActionBuilderWrapper(ActionBuilderId, builder)
+        ActionBuilderWrapper(Arc::new(ActionBuilderId), builder)
     }
 }
 

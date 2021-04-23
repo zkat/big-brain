@@ -310,7 +310,7 @@ fn exec_picked_action(
     // oscillation protection so we're not just bouncing back and
     // forth between the same couple of actions.
     if let Some((action_ent, ActionBuilderWrapper(current_id, _))) = &mut thinker.current_action {
-        if *current_id != picked_action.0 {
+        if !Arc::ptr_eq(current_id, &picked_action.0) {
             // So we've picked a different action than we were
             // currently executing. Just like before, we grab the
             // actual Action component (and we assume it exists).
