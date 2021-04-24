@@ -34,10 +34,6 @@ pub fn meander_action(
     mut location_query: Query<(&mut Position, &Render)>,
     mut action_q: Query<(&mut Meander, &Actor, &mut ActionState)>,
 ) {
-    if !game_state.map_loaded {
-        return;
-    }
-
     for (mut map, mut timer) in map_query.iter_mut() {
         timer.tick(time.delta());
         if !timer.finished() {

@@ -6,7 +6,6 @@ use crate::components::{Position, Render};
 
 #[derive(Default, Clone)]
 pub struct GameState {
-    pub map_loaded: bool,
     pub spawned: bool,
     pub collisions: HashSet<(i32, i32)>,
 }

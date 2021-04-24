@@ -4,7 +4,7 @@ use crate::components::{Player, Position};
 
 pub fn camera_follow_hero(
     mut camera_q: Query<&mut Transform, With<Camera>>,
-    player_q: Query<&Position, With<Player>>,
+    player_q: Query<&Position, (With<Player>, Changed<Position>)>,
 ) {
     if let (Ok(player_pos), Ok(mut camera_trans)) = (player_q.single(), camera_q.single_mut()) {
         camera_trans.translation.x = player_pos.x as f32 * 32.;

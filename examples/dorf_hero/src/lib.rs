@@ -18,10 +18,16 @@ mod components;
 mod resources;
 mod systems;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum AppState {
+    Setup,
+    Simulating,
+}
+
 pub fn start() {
     App::build()
         .insert_resource(WindowDescriptor {
-            title: "Endless Dungeon".to_string(),
+            title: "Dorf Hero".to_string(),
             width: 1024.,
             height: 1024.,
             vsync: false,
@@ -32,15 +38,16 @@ pub fn start() {
         .init_resource::<TileSpriteHandles>()
         .init_resource::<GameState>()
         .add_plugins(DefaultPlugins)
-        .add_plugins(TilemapDefaultPlugins)
-        // Here's the first important thing for you to do: include the plugin!
-        // If big-brain doesn't seem to be working at all, this might be what
-        // you're missing!
         .add_plugin(DorfHeroAiPlugin)
-        .add_plugin(DorfHeroSystemsPlugin)
-        .add_startup_system(setup.system())
-        .add_system(load.system())
-        .add_system(build_random_dungeon.system())
+        .add_plugin(DorfHeroSystemsPlugin(AppState::Simulating))
+        .add_state(AppState::Setup)
+        .add_system_set(SystemSet::on_enter(AppState::Setup).with_system(setup.system()))
+        .add_system_set(SystemSet::on_update(AppState::Setup).with_system(check_loaded.system()))
+        .add_system_set(SystemSet::on_exit(AppState::Setup).with_system(load.system()))
+        .add_system_set(
+            SystemSet::on_enter(AppState::Simulating)
+                .with_system(build_random_dungeon.system()),
+        )
         .run()
 }
 
@@ -61,12 +68,10 @@ struct EvilBundle {
     thinker: ThinkerBuilder,
 }
 
-
 const CHUNK_WIDTH: u32 = 16;
 const CHUNK_HEIGHT: u32 = 16;
 const TILEMAP_WIDTH: i32 = CHUNK_WIDTH as i32 * 40;
 const TILEMAP_HEIGHT: i32 = CHUNK_HEIGHT as i32 * 40;
-
 
 fn setup(mut tile_sprite_handles: ResMut<TileSpriteHandles>, asset_server: Res<AssetServer>) {
     tile_sprite_handles.handles = asset_server.load_folder("textures").unwrap();
@@ -74,65 +79,53 @@ fn setup(mut tile_sprite_handles: ResMut<TileSpriteHandles>, asset_server: Res<A
 
 fn load(
     mut commands: Commands,
-    mut sprite_handles: ResMut<TileSpriteHandles>,
+    sprite_handles: Res<TileSpriteHandles>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut textures: ResMut<Assets<Texture>>,
-    asset_server: Res<AssetServer>,
 ) {
-    if sprite_handles.atlas_loaded {
-        return;
-    }
-
-    // Lets load all our textures from our folder!
     let mut texture_atlas_builder = TextureAtlasBuilder::default();
-    if let LoadState::Loaded =
-        asset_server.get_group_load_state(sprite_handles.handles.iter().map(|handle| handle.id))
-    {
-        for handle in sprite_handles.handles.iter() {
-            let texture = textures.get(handle).unwrap();
-            texture_atlas_builder.add_texture(handle.clone_weak().typed::<Texture>(), &texture);
-        }
-
-        let texture_atlas = texture_atlas_builder.finish(&mut textures).unwrap();
-        let atlas_handle = texture_atlases.add(texture_atlas);
-
-        // These are fairly advanced configurations just to quickly showcase
-        // them.
-        let tilemap = Tilemap::builder()
-            .dimensions(TILEMAP_WIDTH as u32, TILEMAP_HEIGHT as u32)
-            .chunk_dimensions(CHUNK_WIDTH, CHUNK_HEIGHT, 1)
-            .texture_dimensions(32, 32)
-            .auto_chunk()
-            .auto_spawn(2, 2)
-            .add_layer(
-                TilemapLayer {
-                    kind: LayerKind::Dense,
-                },
-                0,
-            )
-            .texture_atlas(atlas_handle)
-            .finish()
-            .unwrap();
-
-        let tilemap_components = TilemapBundle {
-            tilemap,
-            visible: Visible {
-                is_visible: true,
-                is_transparent: true,
-            },
-            transform: Default::default(),
-            global_transform: Default::default(),
-        };
-        commands
-            .spawn()
-            .insert_bundle(OrthographicCameraBundle::new_2d());
-        commands
-            .spawn()
-            .insert_bundle(tilemap_components)
-            .insert(Timer::from_seconds(0.075, true));
-
-        sprite_handles.atlas_loaded = true;
+    for handle in sprite_handles.handles.iter() {
+        let texture = textures.get(handle).unwrap();
+        texture_atlas_builder.add_texture(handle.clone_weak().typed::<Texture>(), &texture);
     }
+
+    let texture_atlas = texture_atlas_builder.finish(&mut textures).unwrap();
+    let atlas_handle = texture_atlases.add(texture_atlas);
+
+    // These are fairly advanced configurations just to quickly showcase
+    // them.
+    let tilemap = Tilemap::builder()
+        .dimensions(TILEMAP_WIDTH as u32, TILEMAP_HEIGHT as u32)
+        .chunk_dimensions(CHUNK_WIDTH, CHUNK_HEIGHT, 1)
+        .texture_dimensions(32, 32)
+        .auto_chunk()
+        .auto_spawn(2, 2)
+        .add_layer(
+            TilemapLayer {
+                kind: LayerKind::Dense,
+            },
+            0,
+        )
+        .texture_atlas(atlas_handle)
+        .finish()
+        .unwrap();
+
+    let tilemap_components = TilemapBundle {
+        tilemap,
+        visible: Visible {
+            is_visible: true,
+            is_transparent: true,
+        },
+        transform: Default::default(),
+        global_transform: Default::default(),
+    };
+    commands
+        .spawn()
+        .insert_bundle(OrthographicCameraBundle::new_2d());
+    commands
+        .spawn()
+        .insert_bundle(tilemap_components)
+        .insert(Timer::from_seconds(0.075, true));
 }
 
 fn build_random_dungeon(
@@ -142,10 +135,6 @@ fn build_random_dungeon(
     asset_server: Res<AssetServer>,
     mut query: Query<&mut Tilemap>,
 ) {
-    if game_state.map_loaded {
-        return;
-    }
-
     for mut map in query.iter_mut() {
         // Then we need to find out what the handles were to our textures we are going to use.
         let floor_sprite: Handle<Texture> = asset_server.get_handle("textures/square-floor.png");
@@ -267,7 +256,8 @@ fn build_random_dungeon(
                 .otherwise(ai::actions::meander::Meander::build()),
         });
 
-        let evil_sprite: Handle<Texture> = asset_server.get_handle("textures/square-evil-dwarf.png");
+        let evil_sprite: Handle<Texture> =
+            asset_server.get_handle("textures/square-evil-dwarf.png");
         let evil_sprite_index = texture_atlas.get_texture_index(&evil_sprite).unwrap();
         // We add in a Z order of 1 to place the tile above the background on Z
         // order 0.
@@ -293,7 +283,19 @@ fn build_random_dungeon(
 
         // Now we pass all the tiles to our map.
         map.insert_tiles(tiles).unwrap();
+    }
+}
 
-        game_state.map_loaded = true;
+fn check_loaded(
+    mut state: ResMut<State<AppState>>,
+    asset_server: Res<AssetServer>,
+    sprite_handles: Res<TileSpriteHandles>,
+) {
+    if let LoadState::Loaded =
+        asset_server.get_group_load_state(sprite_handles.handles.iter().map(|handle| handle.id))
+    {
+        state
+            .set(AppState::Simulating)
+            .expect("Failed to switch AppState");
     }
 }
