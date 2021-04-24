@@ -9,7 +9,7 @@ use big_brain::prelude::*;
 use rand::Rng;
 
 use ai::DorfHeroAiPlugin;
-use components::{Player, Position, Render};
+use components::{EvilDorf, Player, Position, Render};
 use resources::{GameState, TileSpriteHandles};
 use systems::DorfHeroSystemsPlugin;
 
@@ -52,6 +52,15 @@ struct PlayerBundle {
     render: Render,
     thinker: ThinkerBuilder,
 }
+
+#[derive(Bundle)]
+struct EvilBundle {
+    evil: EvilDorf,
+    position: Position,
+    render: Render,
+    thinker: ThinkerBuilder,
+}
+
 
 const CHUNK_WIDTH: u32 = 16;
 const CHUNK_HEIGHT: u32 = 16;
@@ -247,10 +256,34 @@ fn build_random_dungeon(
         tiles.push(dwarf_tile);
 
         commands.spawn().insert_bundle(PlayerBundle {
-            player: Player {},
+            player: Player,
             position: Position { x: 0, y: 0 },
             render: Render {
                 sprite_index: dwarf_sprite_index,
+                sprite_order: 1,
+            },
+            thinker: Thinker::build()
+                .picker(FirstToScore::new(80.))
+                .otherwise(ai::actions::meander::Meander::build()),
+        });
+
+        let evil_sprite: Handle<Texture> = asset_server.get_handle("textures/square-evil-dwarf.png");
+        let evil_sprite_index = texture_atlas.get_texture_index(&evil_sprite).unwrap();
+        // We add in a Z order of 1 to place the tile above the background on Z
+        // order 0.
+        let evil_tile = Tile {
+            point: (0, 0),
+            sprite_order: 1,
+            sprite_index: evil_sprite_index,
+            ..Default::default()
+        };
+        tiles.push(evil_tile);
+
+        commands.spawn().insert_bundle(EvilBundle {
+            evil: EvilDorf,
+            position: Position { x: 4, y: 8 },
+            render: Render {
+                sprite_index: evil_sprite_index,
                 sprite_order: 1,
             },
             thinker: Thinker::build()
