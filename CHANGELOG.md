@@ -8,7 +8,8 @@ state until it was time to switch to a different one.
 With this version, that behavior is changed, and `Failure` and `Success`
 actions that are re-picked will be respawned entirely (not even reused).
 
-Cheers to `@doomy` on Discord for pointing out this weird behavior!
+Cheers to [@piedoomy](https://github.com/piedoomy) on Discord for pointing out
+this weird behavior!
 
 #### Bug Fixes
 
