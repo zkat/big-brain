@@ -1,3 +1,20 @@
+<a name="0.3.5"></a>
+## 0.3.5 (2021-04-24)
+
+Previously, if a `Picker` re-picked the same action, and that action had been
+set to `Success` or `Failure`, it would just keep running the action in that
+state until it was time to switch to a different one.
+
+With this version, that behavior is changed, and `Failure` and `Success`
+actions that are re-picked will be respawned entirely (not even reused).
+
+Cheers to `@doomy` on Discord for pointing out this weird behavior!
+
+#### Bug Fixes
+
+* **thinker:**  launch a new action when the current action is in an end state ([80d23f2f](https://github.com/zkat/big-brain/commit/80d23f2f2337a863c9cc3afbf944b25e3911db8c))
+
+
 <a name="0.3.4"></a>
 ## 0.3.4 (2021-04-23)
 
