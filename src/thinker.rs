@@ -304,11 +304,14 @@ fn exec_picked_action(
     // oscillation protection so we're not just bouncing back and
     // forth between the same couple of actions.
     if let Some((action_ent, ActionBuilderWrapper(current_id, _))) = &mut thinker.current_action {
-        if !Arc::ptr_eq(current_id, &picked_action.0) {
+        let mut curr_action_state = states.get_mut(action_ent.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
+        if !Arc::ptr_eq(current_id, &picked_action.0)
+            || matches!(*curr_action_state, ActionState::Success)
+            || matches!(*curr_action_state, ActionState::Failure)
+        {
             // So we've picked a different action than we were
             // currently executing. Just like before, we grab the
             // actual Action component (and we assume it exists).
-            let mut curr_action_state = states.get_mut(action_ent.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
             // If the action is executing, or was requested, we
             // need to cancel it to make sure it stops.
             match *curr_action_state {
@@ -331,7 +334,6 @@ fn exec_picked_action(
             // it as Requested if for some reason it had finished
             // but the Action System hasn't gotten around to
             // cleaning it up.
-            let mut curr_action_state = states.get_mut(action_ent.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
             if *curr_action_state == ActionState::Init {
                 *curr_action_state = ActionState::Requested;
             }
