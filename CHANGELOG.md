@@ -1,3 +1,15 @@
+<a name="0.4.0"></a>
+## 0.4.0 (2021-04-26)
+
+#### Breaking Changes
+
+* **score:**  scores are now 0.0..=1.0, not 0.0..=100.0 ([71f5122e](https://github.com/zkat/big-brain/commit/71f5122e9f5aa5b5965ad67f53ae9850f487d167), breaks [#](https://github.com/zkat/big-brain/issues/))
+
+#### Features
+
+* **evaluators:**  Make all evaluators Clone ([4d5a5121](https://github.com/zkat/big-brain/commit/4d5a512171bf6f850893424c5baad03b0e686c26))
+
+
 <a name="0.3.5"></a>
 ## 0.3.5 (2021-04-24)
 
