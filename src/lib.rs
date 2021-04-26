@@ -127,7 +127,7 @@ regular Component:
 ```no_run
 cmd.spawn().insert(Thirst::new(70.0, 2.0)).insert(
     Thinker::build()
-        .picker(FirstToScore { threshold: 80.0 })
+        .picker(FirstToScore { threshold: 0.8 })
         .when(Thirsty::build(), Drink::build()),
 );
 ```

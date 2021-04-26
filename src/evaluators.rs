@@ -1,5 +1,5 @@
 /*!
-Utilities for turning values of 0.0..=100.0 into different curves.
+Utilities for turning values within a certain range into different curves.
 */
 
 /**

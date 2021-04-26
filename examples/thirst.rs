@@ -20,10 +20,11 @@ impl Thirst {
 
 pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
     for mut thirst in thirsts.iter_mut() {
-        thirst.thirst += thirst.per_second * (time.delta().as_micros() as f32 / 1000000.0);
+        thirst.thirst += thirst.per_second * (time.delta().as_micros() as f32 / 1_000_000.0);
         if thirst.thirst >= 100.0 {
             thirst.thirst = 100.0;
         }
+        println!("Thirst: {}", thirst.thirst);
     }
 }
 
@@ -120,16 +121,12 @@ fn idle_system(mut query: Query<&mut ActionState, With<Idle>>) {
     for mut state in query.iter_mut() {
         match *state {
             ActionState::Requested => {
-                println!("Idling...");
                 *state = ActionState::Executing;
             }
             ActionState::Cancelled => {
-                println!("Idling cancelled");
                 *state = ActionState::Success;
             }
-            ActionState::Executing => {
-                println!("Idled");
-            }
+            ActionState::Executing => {}
             _ => {}
         }
     }
@@ -174,9 +171,8 @@ pub fn thirsty_scorer_system(
             // generally "the higher the better", and "first across the finish
             // line", but that's all configurable using Pickers!
             //
-            // The score here must be between 0.0 and 100.0.
-            score.set(thirst.thirst);
-            println!("Thirst: {}", thirst.thirst);
+            // The score here must be between 0.0 and 1.0.
+            score.set(thirst.thirst / 100.);
         }
     }
 }
@@ -190,7 +186,7 @@ pub fn init_entities(mut cmd: Commands) {
         // Thinker::build().component() will return a regular component you
         // can attach normally!
         Thinker::build()
-            .picker(FirstToScore { threshold: 80.0 })
+            .picker(FirstToScore { threshold: 0.8 })
             // Note that what we pass in are _builders_, not components!
             .when(Thirsty::build(), Drink::build())
             .otherwise(Idle::build()),

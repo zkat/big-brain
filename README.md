@@ -35,9 +35,9 @@ define the actual behavior.
 
 #### Scorers
 
-`Scorer`s are entities that look at the world and evaluate into `Score` values. You can think of them as the "eyes" of the AI system. They're a highly-parallel way of being able to look at the `World` and use it to make some decisions later.
+`Scorer`s are entities that look at the world and evaluate into [`Score`](scorers::Score) values. You can think of them as the "eyes" of the AI system. They're a highly-parallel way of being able to look at the `World` and use it to make some decisions later.
 
-They are created by types that implement `ScorerBuilder`.
+They are created by types that implement [`ScorerBuilder`](scorers::ScorerBuilder).
 
 ```rust
 use bevy::prelude::*;
@@ -75,7 +75,7 @@ pub fn thirsty_scorer_system(
 
 #### Actions
 
-`Action`s are the actual things your entities will _do_. They are connected to `ActionState`s, and are created by types implementing `ActionBuilder`.
+`Action`s are the actual things your entities will _do_. They are connected to [`ActionState`](actions::ActionState)s, and are created by types implementing [`ActionBuilder`](actions::ActionBuilder).
 
 ```rust
 use bevy::prelude::*;
@@ -122,13 +122,13 @@ fn drink_action_system(
 
 #### Thinkers
 
-Finally, you can use it when define the `Thinker`, which you can attach as a
+Finally, you can use it when define the [`Thinker`](thinker::Thinker), which you can attach as a
 regular Component:
 
 ```rust
 cmd.spawn().insert(Thirst::new(70.0, 2.0)).insert(
     Thinker::build()
-        .picker(FirstToScore { threshold: 80.0 })
+        .picker(FirstToScore { threshold: 0.8 })
         .when(Thirsty::build(), Drink::build()),
 );
 ```
