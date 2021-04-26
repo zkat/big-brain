@@ -9,7 +9,7 @@ use big_brain::prelude::*;
 use rand::Rng;
 
 use ai::DorfHeroAiPlugin;
-use components::{EvilDorf, Hero, Position, Render};
+use components::{EvilDorf, Hero, Hp, Position, Render};
 use resources::{GameState, TileSpriteHandles};
 use systems::DorfHeroSystemsPlugin;
 
@@ -52,22 +52,6 @@ pub fn start() {
 }
 
 // Here we have a pretty typical bundle, except we've added a ThinkerBuilder to it.
-#[derive(Bundle)]
-struct PlayerBundle {
-    player: Hero,
-    position: Position,
-    render: Render,
-    thinker: ThinkerBuilder,
-}
-
-#[derive(Bundle)]
-struct EvilBundle {
-    evil: EvilDorf,
-    position: Position,
-    render: Render,
-    thinker: ThinkerBuilder,
-}
-
 const CHUNK_WIDTH: u32 = 16;
 const CHUNK_HEIGHT: u32 = 16;
 const TILEMAP_WIDTH: i32 = CHUNK_WIDTH as i32 * 40;
@@ -244,17 +228,18 @@ fn build_random_dungeon(
         };
         tiles.push(dwarf_tile);
 
-        commands.spawn().insert_bundle(PlayerBundle {
-            player: Hero,
-            position: Position { x: 0, y: 0 },
-            render: Render {
+        commands.spawn().insert_bundle((
+            Hero,
+            Hp(100),
+            Position { x: 0, y: 0 },
+            Render {
                 sprite_index: dwarf_sprite_index,
                 sprite_order: 1,
             },
-            thinker: Thinker::build()
+            Thinker::build()
                 .picker(FirstToScore::new(80.))
                 .otherwise(ai::actions::meander::Meander::build()),
-        });
+        ));
 
         let evil_sprite: Handle<Texture> =
             asset_server.get_handle("textures/square-evil-dwarf.png");
@@ -269,17 +254,18 @@ fn build_random_dungeon(
         };
         tiles.push(evil_tile);
 
-        commands.spawn().insert_bundle(EvilBundle {
-            evil: EvilDorf,
-            position: Position { x: 4, y: 8 },
-            render: Render {
+        commands.spawn().insert_bundle((
+            EvilDorf,
+            Hp(10),
+            Position { x: 4, y: 8 },
+            Render {
                 sprite_index: evil_sprite_index,
                 sprite_order: 1,
             },
-            thinker: Thinker::build()
+            Thinker::build()
                 .picker(FirstToScore::new(80.))
                 .otherwise(ai::actions::meander::Meander::build()),
-        });
+        ));
 
         // Now we pass all the tiles to our map.
         map.insert_tiles(tiles).unwrap();
