@@ -9,6 +9,7 @@ pub struct DorfHeroAiPlugin;
 impl Plugin for DorfHeroAiPlugin {
     fn build(&self, app: &mut bevy::prelude::AppBuilder) {
         app.add_plugin(BigBrainPlugin)
+            .add_system(scorers::enemy_distance::enemy_distance.system())
             .add_system(actions::meander::meander_action.system());
     }
 }

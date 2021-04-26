@@ -9,7 +9,7 @@ use big_brain::prelude::*;
 use rand::Rng;
 
 use ai::DorfHeroAiPlugin;
-use components::{EvilDorf, Player, Position, Render};
+use components::{EvilDorf, Hero, Position, Render};
 use resources::{GameState, TileSpriteHandles};
 use systems::DorfHeroSystemsPlugin;
 
@@ -17,6 +17,7 @@ mod ai;
 mod components;
 mod resources;
 mod systems;
+mod util;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum AppState {
@@ -45,8 +46,7 @@ pub fn start() {
         .add_system_set(SystemSet::on_update(AppState::Setup).with_system(check_loaded.system()))
         .add_system_set(SystemSet::on_exit(AppState::Setup).with_system(load.system()))
         .add_system_set(
-            SystemSet::on_enter(AppState::Simulating)
-                .with_system(build_random_dungeon.system()),
+            SystemSet::on_enter(AppState::Simulating).with_system(build_random_dungeon.system()),
         )
         .run()
 }
@@ -54,7 +54,7 @@ pub fn start() {
 // Here we have a pretty typical bundle, except we've added a ThinkerBuilder to it.
 #[derive(Bundle)]
 struct PlayerBundle {
-    player: Player,
+    player: Hero,
     position: Position,
     render: Render,
     thinker: ThinkerBuilder,
@@ -125,7 +125,7 @@ fn load(
     commands
         .spawn()
         .insert_bundle(tilemap_components)
-        .insert(Timer::from_seconds(0.075, true));
+        .insert(Timer::from_seconds(0.1, true));
 }
 
 fn build_random_dungeon(
@@ -175,8 +175,8 @@ fn build_random_dungeon(
                 sprite_index: wall_idx,
                 ..Default::default()
             });
-            game_state.collisions.insert(tile_a);
-            game_state.collisions.insert(tile_b);
+            game_state.walls.insert(tile_a);
+            game_state.walls.insert(tile_b);
         }
 
         // Then the wall tiles on the Y axis.
@@ -194,8 +194,8 @@ fn build_random_dungeon(
                 sprite_index: wall_idx,
                 ..Default::default()
             });
-            game_state.collisions.insert(tile_a);
-            game_state.collisions.insert(tile_b);
+            game_state.walls.insert(tile_a);
+            game_state.walls.insert(tile_b);
         }
 
         // Lets just generate some random walls to sparsely place around the dungeon!
@@ -211,7 +211,7 @@ fn build_random_dungeon(
                     sprite_index: wall_idx,
                     ..Default::default()
                 });
-                game_state.collisions.insert((x, y));
+                game_state.walls.insert((x, y));
             }
         }
 
@@ -245,7 +245,7 @@ fn build_random_dungeon(
         tiles.push(dwarf_tile);
 
         commands.spawn().insert_bundle(PlayerBundle {
-            player: Player,
+            player: Hero,
             position: Position { x: 0, y: 0 },
             render: Render {
                 sprite_index: dwarf_sprite_index,

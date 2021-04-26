@@ -1,3 +1,3 @@
 #[derive(Default)]
-pub struct Player;
+pub struct Hero;
 

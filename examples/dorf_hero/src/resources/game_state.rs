@@ -7,7 +7,7 @@ use crate::components::{Position, Render};
 #[derive(Default, Clone)]
 pub struct GameState {
     pub spawned: bool,
-    pub collisions: HashSet<(i32, i32)>,
+    pub walls: HashSet<(i32, i32)>,
 }
 
 impl GameState {
@@ -20,11 +20,9 @@ impl GameState {
     ) -> bool {
         let prev_pos = *position;
         let new_pos = (position.x + delta_xy.0, position.y + delta_xy.1);
-        if !self.collisions.contains(&new_pos) {
+        if !self.walls.contains(&new_pos) {
             position.x += delta_xy.0;
             position.y += delta_xy.1;
-            // camera_translation.x += delta_xy.0 as f32 * 32.;
-            // camera_translation.y += delta_xy.1 as f32 * 32.;
             move_sprite(map, prev_pos, *position, render);
             true
         } else {
