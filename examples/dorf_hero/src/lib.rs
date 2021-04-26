@@ -230,7 +230,7 @@ fn build_random_dungeon(
 
         commands.spawn().insert_bundle((
             Hero,
-            Hp(100),
+            Hp::new(100),
             Position { x: 0, y: 0 },
             Render {
                 sprite_index: dwarf_sprite_index,
@@ -256,7 +256,7 @@ fn build_random_dungeon(
 
         commands.spawn().insert_bundle((
             EvilDorf,
-            Hp(10),
+            Hp::new(10),
             Position { x: 4, y: 8 },
             Render {
                 sprite_index: evil_sprite_index,
