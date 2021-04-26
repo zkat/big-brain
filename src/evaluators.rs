@@ -22,10 +22,10 @@ pub struct LinearEvaluator {
 
 impl LinearEvaluator {
     pub fn new() -> Self {
-        Self::new_full(0.0, 0.0, 100.0, 100.0)
+        Self::new_full(0.0, 0.0, 1.0, 1.0)
     }
     pub fn new_ranged(min: f32, max: f32) -> Self {
-        Self::new_full(min, 0.0, max, 100.0)
+        Self::new_full(min, 0.0, max, 1.0)
     }
     fn new_full(xa: f32, ya: f32, xb: f32, yb: f32) -> Self {
         Self {
@@ -67,10 +67,10 @@ pub struct PowerEvaluator {
 
 impl PowerEvaluator {
     pub fn new(power: f32) -> Self {
-        Self::new_full(power, 0.0, 0.0, 100.0, 100.0)
+        Self::new_full(power, 0.0, 0.0, 1.0, 1.0)
     }
     pub fn new_ranged(power: f32, min: f32, max: f32) -> Self {
-        Self::new_full(power, min, 0.0, max, 100.0)
+        Self::new_full(power, min, 0.0, max, 1.0)
     }
     fn new_full(power: f32, xa: f32, ya: f32, xb: f32, yb: f32) -> Self {
         Self {
@@ -115,11 +115,11 @@ pub struct SigmoidEvaluator {
 
 impl SigmoidEvaluator {
     pub fn new(k: f32) -> Self {
-        Self::new_full(k, 0.0, 0.0, 100.0, 100.0)
+        Self::new_full(k, 0.0, 0.0, 1.0, 1.0)
     }
 
     pub fn new_ranged(k: f32, min: f32, max: f32) -> Self {
-        Self::new_full(k, min, 0.0, max, 100.0)
+        Self::new_full(k, min, 0.0, max, 1.0)
     }
 
     fn new_full(k: f32, xa: f32, ya: f32, xb: f32, yb: f32) -> Self {

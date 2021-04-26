@@ -1,5 +1,5 @@
 /*!
-Scorers look at the world and boil down arbitrary characteristics into a range of 0.0..=100.0. This module includes the ScorerBuilder trait and some built-in Composite Scorers.
+Scorers look at the world and boil down arbitrary characteristics into a range of 0.0..=1.0. This module includes the ScorerBuilder trait and some built-in Composite Scorers.
 */
 
 use std::sync::Arc;
@@ -9,7 +9,7 @@ use bevy::prelude::*;
 use crate::thinker::{Actor, ScorerEnt};
 
 /**
-Score value between `0.0..=100.0` associated with a Scorer.
+Score value between `0.0..=1.0` associated with a Scorer.
  */
 #[derive(Debug, Clone, Default)]
 pub struct Score(pub(crate) f32);
@@ -26,11 +26,11 @@ impl Score {
 
     ### Panics
 
-    Panics if `value` isn't within `0.0..=100.0`.
+    Panics if `value` isn't within `0.0..=1.0`.
      */
     pub fn set(&mut self, value: f32) {
-        if !(0.0..=100.0).contains(&value) {
-            panic!("Score value must be between 0.0 and 100.0");
+        if !(0.0..=1.0).contains(&value) {
+            panic!("Score value must be between 0.0 and 1.0");
         }
         self.0 = value;
     }
@@ -150,7 +150,7 @@ pub fn all_or_nothing_system(query: Query<(Entity, &AllOrNothing)>, mut scores: 
             }
         }
         let mut score = scores.get_mut(aon_ent).expect("where did it go?");
-        score.set(crate::evaluators::clamp(sum, 0.0, 100.0));
+        score.set(crate::evaluators::clamp(sum, 0.0, 1.0));
     }
 }
 #[derive(Debug, Clone)]
@@ -234,7 +234,7 @@ pub fn sum_of_scorers_system(query: Query<(Entity, &SumOfScorers)>, mut scores: 
             sum = 0.0;
         }
         let mut score = scores.get_mut(sos_ent).expect("where did it go?");
-        score.set(crate::evaluators::clamp(sum, 0.0, 100.0));
+        score.set(crate::evaluators::clamp(sum, 0.0, 1.0));
     }
 }
 
