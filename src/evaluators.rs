@@ -12,7 +12,7 @@ pub trait Evaluator: std::fmt::Debug + Sync + Send {
 /**
 [`Evaluator`] for linear values. That is, there's no curve to the value mapping.
  */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LinearEvaluator {
     xa: f32,
     ya: f32,
@@ -56,7 +56,7 @@ impl Evaluator for LinearEvaluator {
 /**
 [`Evaluator`] with an exponent curve. The value will grow according to its `power` parameter.
  */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PowerEvaluator {
     xa: f32,
     ya: f32,
@@ -99,7 +99,7 @@ impl Evaluator for PowerEvaluator {
 /**
 [`Evaluator`] with a "Sigmoid", or "S-like" curve.
  */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SigmoidEvaluator {
     xa: f32,
     xb: f32,
