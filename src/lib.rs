@@ -199,5 +199,6 @@ impl Plugin for BigBrainPlugin {
         app.add_system(scorers::fixed_score_system.system());
         app.add_system(scorers::all_or_nothing_system.system());
         app.add_system(scorers::sum_of_scorers_system.system());
+        app.add_system(scorers::winning_scorer_system.system());
     }
 }
