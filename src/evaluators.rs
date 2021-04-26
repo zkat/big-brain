@@ -24,6 +24,9 @@ impl LinearEvaluator {
     pub fn new() -> Self {
         Self::new_full(0.0, 0.0, 1.0, 1.0)
     }
+    pub fn new_inversed() -> Self {
+        Self::new_ranged(1.0, 0.0)
+    }
     pub fn new_ranged(min: f32, max: f32) -> Self {
         Self::new_full(min, 0.0, max, 1.0)
     }
