@@ -2,7 +2,7 @@
 Scorers look at the world and boil down arbitrary characteristics into a range of 0.0..=1.0. This module includes the ScorerBuilder trait and some built-in Composite Scorers.
 */
 
-use std::sync::Arc;
+use std::{cmp::Ordering, sync::Arc};
 
 use bevy::prelude::*;
 
@@ -262,6 +262,103 @@ impl ScorerBuilder for SumOfScorersBuilder {
             .insert(Transform::default())
             .insert(GlobalTransform::default())
             .insert(SumOfScorers {
+                threshold: self.threshold,
+                scorers: scorers.into_iter().map(ScorerEnt).collect(),
+            });
+    }
+}
+
+/**
+Composite Scorer that takes any number of other Scorers and returns the single highest value [`Score`] if  _any_ [`Score`]s are at or above the configured `threshold`.
+
+### Example
+
+```ignore
+Thinker::build()
+    .when(
+        WinningScorer::build()
+          .push(MyScorer)
+          .push(MyOtherScorer),
+        MyAction::build());
+```
+ */
+
+#[derive(Debug)]
+pub struct WinningScorer {
+    threshold: f32,
+    scorers: Vec<ScorerEnt>,
+}
+
+impl WinningScorer {
+    pub fn build(threshold: f32) -> WinningScorerBuilder {
+        WinningScorerBuilder {
+            threshold,
+            scorers: Vec::new(),
+        }
+    }
+}
+
+pub fn winning_scorer_system(
+    mut query: Query<(Entity, &mut WinningScorer)>,
+    mut scores: QuerySet<(Query<&Score>, Query<&mut Score>)>,
+) {
+    for (sos_ent, mut winning_scorer) in query.iter_mut() {
+        let (threshold, children) = (winning_scorer.threshold, &mut winning_scorer.scorers);
+        let mut all_scores = children
+            .iter()
+            .map(|ScorerEnt(e)| scores.q0().get(*e).expect("where is it?"))
+            .collect::<Vec<&Score>>();
+
+        all_scores.sort_by(|a, b| a.get().partial_cmp(&b.get()).unwrap_or(Ordering::Equal));
+        let winning_score_or_zero = match all_scores.last() {
+            Some(s) => {
+                if s.get() < threshold {
+                    0.0
+                } else {
+                    s.get()
+                }
+            }
+            None => 0.0,
+        };
+        let mut score = scores.q1_mut().get_mut(sos_ent).expect("where did it go?");
+        score.set(crate::evaluators::clamp(winning_score_or_zero, 0.0, 1.0));
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct WinningScorerBuilder {
+    threshold: f32,
+    scorers: Vec<Arc<dyn ScorerBuilder>>,
+}
+
+impl WinningScorerBuilder {
+    pub fn when(&mut self, scorer: impl ScorerBuilder + 'static) -> &mut Self {
+        self.scorers.push(Arc::new(scorer));
+        self
+    }
+}
+
+impl WinningScorerBuilder {
+    /**
+    Add another Scorer to this [`ScorerBuilder`].
+     */
+    pub fn push(&mut self, scorer: impl ScorerBuilder + 'static) -> &mut Self {
+        self.scorers.push(Arc::new(scorer));
+        self
+    }
+}
+
+impl ScorerBuilder for WinningScorerBuilder {
+    fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
+        let scorers: Vec<_> = self
+            .scorers
+            .iter()
+            .map(|scorer| scorer.attach(cmd, actor))
+            .collect();
+        cmd.entity(scorer)
+            .insert(Transform::default())
+            .insert(GlobalTransform::default())
+            .insert(WinningScorer {
                 threshold: self.threshold,
                 scorers: scorers.into_iter().map(ScorerEnt).collect(),
             });
