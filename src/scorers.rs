@@ -261,7 +261,7 @@ impl ScorerBuilder for SumOfScorersBuilder {
         cmd.entity(scorer)
             .insert(Transform::default())
             .insert(GlobalTransform::default())
-            .insert(AllOrNothing {
+            .insert(SumOfScorers {
                 threshold: self.threshold,
                 scorers: scorers.into_iter().map(ScorerEnt).collect(),
             });
