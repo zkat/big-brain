@@ -290,7 +290,7 @@ pub struct WinningScorer {
 }
 
 impl WinningScorer {
-    pub fn build_smallest(threshold: f32) -> WinningScorerBuilder {
+    pub fn build(threshold: f32) -> WinningScorerBuilder {
         WinningScorerBuilder {
             threshold,
             scorers: Vec::new(),
