@@ -5,7 +5,7 @@ Utilities for turning values within a certain range into different curves.
 /**
 Trait that any evaluators must implement. Must return an `f32` value between `0.0..=100.0`.
  */
-pub trait Evaluator: std::fmt::Debug + Sync + Send {
+pub trait Evaluator: std::fmt::Debug + Sync + Send + Clone {
     fn evaluate(&self, value: f32) -> f32;
 }
 
