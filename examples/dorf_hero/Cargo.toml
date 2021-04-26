@@ -9,4 +9,4 @@ bevy_tilemap = "0.4.0"
 rand = "0.8.3"
 pathfinding = "2.1.2"
 bevy = "0.5.0"
-big-brain = { path = "../../", version = "0.3.4" }
+big-brain = { path = "../../" }

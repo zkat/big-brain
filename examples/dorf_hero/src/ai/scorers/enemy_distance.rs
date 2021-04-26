@@ -47,7 +47,7 @@ pub fn enemy_distance(
             if let Ok(hero_pos) = hero_q.single() {
                 let distance = util::euclidean_distance(enemy_pos, hero_pos);
                 if distance <= enemy_distance.within {
-                    score.set(enemy_distance.evaluator.evaluate((distance - enemy_distance.within) * -1.));
+                    score.set(enemy_distance.evaluator.evaluate((distance - enemy_distance.within).abs()));
                 } else {
                     score.set(0.0);
                 }
@@ -57,7 +57,7 @@ pub fn enemy_distance(
             for enemy_pos in enemy_q.iter() {
                 let distance = util::euclidean_distance(enemy_pos, hero_pos);
                 if distance <= enemy_distance.within {
-                    score.set(enemy_distance.evaluator.evaluate((distance - enemy_distance.within) * -1.));
+                    score.set(enemy_distance.evaluator.evaluate((distance - enemy_distance.within).abs()));
                 } else {
                     score.set(0.0);
                 }
