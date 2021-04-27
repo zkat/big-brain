@@ -1,3 +1,30 @@
+<a name="0.5.0"></a>
+## 0.5.0 (2021-04-27)
+
+Got a few goodies in this release, mainly focused around composite actions and
+scorers, which were apparently broken.
+
+Shout out again to [@piedoomy](https://github.com/piedoomy) for some of these
+contributions!
+
+#### Features
+
+* **actions:**  Add new Concurrently composite action ([6c736374](https://github.com/zkat/big-brain/commit/6c736374b4afd60af592a357ad2403304d3638d1))
+* **evaluators:**  added inversed linear evaluator helper (#19) ([f871d19e](https://github.com/zkat/big-brain/commit/f871d19e93b6764088d6db5db1947fcb37143868))
+* **scorers:**  Added WinningScorer composite scorer (#20) ([748b30ae](https://github.com/zkat/big-brain/commit/748b30aedcb0711f4180a8e24b457f01f0b84f6a))
+
+#### Breaking Changes
+
+* **scorers:** Composite Scorers now all use `.push()` instead of a mixture of `.push()` and `.when()`. Please update any usages of composite scorers ([63bad1fd](https://github.com/zkat/big-brain/commit/63bad1fd2c82eadc88107003dd819f3cfa7530a2)
+
+#### Bug Fixes
+
+* **scorers:**
+  *  Scorer builders now properly return themselves ([63bad1fd](https://github.com/zkat/big-brain/commit/63bad1fd2c82eadc88107003dd819f3cfa7530a2)
+  *  Fixed error where wrong component for `SumOfScorers` was attached (#21) ([71fd05a6](https://github.com/zkat/big-brain/commit/71fd05a64912b2cc88c76439543ea00a00267303))
+
+
+
 <a name="0.4.0"></a>
 ## 0.4.0 (2021-04-26)
 
