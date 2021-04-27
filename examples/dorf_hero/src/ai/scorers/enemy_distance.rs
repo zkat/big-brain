@@ -20,7 +20,7 @@ impl ScorerBuilder for EnemyDistanceBuilder {
     fn build(&self, cmd: &mut Commands, scorer: Entity, _actor: Entity) {
         cmd.entity(scorer).insert(EnemyDistance {
             within: self.within,
-            evaluator: LinearEvaluator::new_ranged(0.0, self.within),
+            evaluator: LinearEvaluator::new_ranged(self.within, 0.0),
         });
     }
 }
@@ -47,7 +47,7 @@ pub fn enemy_distance(
             if let Ok(hero_pos) = hero_q.single() {
                 let distance = util::euclidean_distance(enemy_pos, hero_pos);
                 if distance <= enemy_distance.within {
-                    score.set(enemy_distance.evaluator.evaluate((distance - enemy_distance.within).abs()));
+                    score.set(enemy_distance.evaluator.evaluate(distance / enemy_distance.within));
                 } else {
                     score.set(0.0);
                 }
@@ -57,7 +57,7 @@ pub fn enemy_distance(
             for enemy_pos in enemy_q.iter() {
                 let distance = util::euclidean_distance(enemy_pos, hero_pos);
                 if distance <= enemy_distance.within {
-                    score.set(enemy_distance.evaluator.evaluate((distance - enemy_distance.within).abs()));
+                    score.set(enemy_distance.evaluator.evaluate(distance / enemy_distance.within));
                 } else {
                     score.set(0.0);
                 }
