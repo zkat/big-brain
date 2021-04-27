@@ -232,3 +232,144 @@ pub fn steps_system(
         }
     }
 }
+
+/**
+[`ActionBuilder`] for the [`Concurrent`] component. Constructed through `Concurrent::build()`.
+*/
+#[derive(Debug)]
+pub struct ConcurrentlyBuilder {
+    actions: Vec<Arc<dyn ActionBuilder>>,
+}
+
+impl ConcurrentlyBuilder {
+    /**
+    Add an action to execute. Order does not matter.
+    */
+    pub fn push(mut self, action_builder: impl ActionBuilder + 'static) -> Self {
+        self.actions.push(Arc::new(action_builder));
+        self
+    }
+}
+
+impl ActionBuilder for ConcurrentlyBuilder {
+    fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity) {
+        let children: Vec<Entity> = self
+            .actions
+            .iter()
+            .map(|action| action.attach(cmd, actor))
+            .collect();
+        cmd.entity(action)
+            .insert(Name::new("Concurrent Action"))
+            .push_children(&children[..])
+            .insert(Concurrently {
+                actions: children.into_iter().map(ActionEnt).collect(),
+            });
+    }
+}
+
+/**
+Composite Action that executes a number of Actions concurrently, as long as they all result in a `Success`ful [`ActionState`].
+
+### Example
+
+```ignore
+Thinker::build()
+    .when(
+        MyScorer,
+        Concurrent::build()
+            .push(MyAction::build())
+            .push(MyOtherAction::build())
+        )
+```
+*/
+#[derive(Debug)]
+pub struct Concurrently {
+    actions: Vec<ActionEnt>,
+}
+
+impl Concurrently {
+    /**
+    Construct a new [`ConcurrentBuilder`] to define the actions to take.
+    */
+    pub fn build() -> ConcurrentlyBuilder {
+        ConcurrentlyBuilder {
+            actions: Vec::new(),
+        }
+    }
+}
+
+/**
+System that takes care of executing any existing [`Concurrent`] Actions.
+*/
+pub fn concurrent_system(
+    concurrent_q: Query<(Entity, &Concurrently)>,
+    mut states_q: Query<&mut ActionState>,
+) {
+    use ActionState::*;
+    for (seq_ent, concurrent_action) in concurrent_q.iter() {
+        let current_state = states_q.get_mut(seq_ent).expect("uh oh").clone();
+        match current_state {
+            Requested => {
+                // Begin at the beginning
+                let mut current_state = states_q.get_mut(seq_ent).expect("uh oh");
+                *current_state = Executing;
+                for ActionEnt(child_ent) in concurrent_action.actions.iter() {
+                    let mut child_state = states_q.get_mut(*child_ent).expect("uh oh");
+                    *child_state = Requested;
+                }
+            }
+            Executing => {
+                let mut all_success = true;
+                let mut failed_idx = None;
+                for (idx, ActionEnt(child_ent)) in concurrent_action.actions.iter().enumerate() {
+                    let mut child_state = states_q.get_mut(*child_ent).expect("uh oh");
+                    match *child_state {
+                        Failure => {
+                            failed_idx = Some(idx);
+                            all_success = false;
+                        }
+                        Success => {}
+                        _ => {
+                            all_success = false;
+                            if failed_idx.is_some() {
+                                *child_state = Cancelled;
+                            }
+                        }
+                    }
+                }
+                if all_success {
+                    let mut state_var = states_q.get_mut(seq_ent).expect("uh oh");
+                    *state_var = Success;
+                } else if let Some(idx) = failed_idx {
+                    for ActionEnt(child_ent) in concurrent_action.actions.iter().take(idx) {
+                        let mut child_state = states_q.get_mut(*child_ent).expect("uh oh");
+                        match *child_state {
+                            Failure | Success => {}
+                            _ => {
+                                *child_state = Cancelled;
+                            }
+                        }
+                    }
+                }
+
+            }
+            Cancelled => {
+                // Cancel all actions
+                for ActionEnt(child_ent) in concurrent_action.actions.iter() {
+                    let mut child_state = states_q.get_mut(*child_ent).expect("uh oh");
+                    match *child_state {
+                        Init | Success | Failure => {
+                            // Do nothing
+                        }
+                        _ => {
+                            *child_state = Cancelled;
+                        }
+                    }
+                }
+            }
+            Init | Success | Failure => {
+                // Do nothing.
+            }
+        }
+    }
+}

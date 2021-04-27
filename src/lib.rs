@@ -163,7 +163,7 @@ pub mod prelude {
     use super::*;
 
     pub use super::BigBrainPlugin;
-    pub use actions::{ActionBuilder, ActionState, Steps};
+    pub use actions::{ActionBuilder, ActionState, Steps, Concurrently};
     pub use pickers::{FirstToScore, Picker};
     pub use scorers::{AllOrNothing, FixedScore, Score, ScorerBuilder, SumOfScorers, WinningScorer};
     pub use thinker::{Actor, Thinker, ThinkerBuilder};
@@ -196,6 +196,7 @@ impl Plugin for BigBrainPlugin {
         app.add_system(thinker::thinker_component_detach_system.system());
         app.add_system(thinker::actor_gone_cleanup.system());
         app.add_system(actions::steps_system.system());
+        app.add_system(actions::concurrent_system.system());
         app.add_system(scorers::fixed_score_system.system());
         app.add_system(scorers::all_or_nothing_system.system());
         app.add_system(scorers::sum_of_scorers_system.system());
