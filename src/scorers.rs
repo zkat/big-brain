@@ -163,7 +163,7 @@ impl AllOrNothingBuilder {
     /**
     Add another Scorer to this [`ScorerBuilder`].
      */
-    pub fn push(&mut self, scorer: impl ScorerBuilder + 'static) -> &mut Self {
+    pub fn push(mut self, scorer: impl ScorerBuilder + 'static) -> Self {
         self.scorers.push(Arc::new(scorer));
         self
     }
@@ -245,7 +245,7 @@ pub struct SumOfScorersBuilder {
 }
 
 impl SumOfScorersBuilder {
-    pub fn when(&mut self, scorer: impl ScorerBuilder + 'static) -> &mut Self {
+    pub fn push(mut self, scorer: impl ScorerBuilder + 'static) -> Self {
         self.scorers.push(Arc::new(scorer));
         self
     }
@@ -332,17 +332,10 @@ pub struct WinningScorerBuilder {
 }
 
 impl WinningScorerBuilder {
-    pub fn when(&mut self, scorer: impl ScorerBuilder + 'static) -> &mut Self {
-        self.scorers.push(Arc::new(scorer));
-        self
-    }
-}
-
-impl WinningScorerBuilder {
     /**
     Add another Scorer to this [`ScorerBuilder`].
      */
-    pub fn push(&mut self, scorer: impl ScorerBuilder + 'static) -> &mut Self {
+    pub fn push(mut self, scorer: impl ScorerBuilder + 'static) -> Self {
         self.scorers.push(Arc::new(scorer));
         self
     }

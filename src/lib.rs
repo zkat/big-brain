@@ -165,7 +165,7 @@ pub mod prelude {
     pub use super::BigBrainPlugin;
     pub use actions::{ActionBuilder, ActionState, Steps};
     pub use pickers::{FirstToScore, Picker};
-    pub use scorers::{AllOrNothing, FixedScore, Score, ScorerBuilder, SumOfScorers};
+    pub use scorers::{AllOrNothing, FixedScore, Score, ScorerBuilder, SumOfScorers, WinningScorer};
     pub use thinker::{Actor, Thinker, ThinkerBuilder};
 }
 

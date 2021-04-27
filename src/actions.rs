@@ -112,7 +112,7 @@ impl StepsBuilder {
     /**
     Adds an action step. Order matters.
     */
-    pub fn step(&mut self, action_builder: impl ActionBuilder + 'static) -> &mut Self {
+    pub fn step(mut self, action_builder: impl ActionBuilder + 'static) -> Self {
         self.steps.push(Arc::new(action_builder));
         self
     }
