@@ -99,38 +99,6 @@ fn drink_action_system(
     }
 }
 
-#[derive(Debug, Clone)]
-struct Idle;
-
-impl Idle {
-    fn build() -> IdleBuilder {
-        IdleBuilder
-    }
-}
-
-#[derive(Debug, Clone)]
-struct IdleBuilder;
-
-impl ActionBuilder for IdleBuilder {
-    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
-        cmd.entity(action).insert(Idle);
-    }
-}
-
-fn idle_system(mut query: Query<&mut ActionState, With<Idle>>) {
-    for mut state in query.iter_mut() {
-        match *state {
-            ActionState::Requested => {
-                *state = ActionState::Executing;
-            }
-            ActionState::Cancelled => {
-                *state = ActionState::Success;
-            }
-            ActionState::Executing => {}
-            _ => {}
-        }
-    }
-}
 // Then, we have something called "Scorers". These are special components that
 // run in the background, calculating a "Score" value, which is what Big Brain
 // will use to pick which actions to execute.
@@ -188,8 +156,7 @@ pub fn init_entities(mut cmd: Commands) {
         Thinker::build()
             .picker(FirstToScore { threshold: 0.8 })
             // Note that what we pass in are _builders_, not components!
-            .when(Thirsty::build(), Drink::build())
-            .otherwise(Idle::build()),
+            .when(Thirsty::build(), Drink::build()),
     );
 }
 
@@ -202,6 +169,5 @@ fn main() {
         .add_system(thirst_system.system())
         .add_system(drink_action_system.system())
         .add_system(thirsty_scorer_system.system())
-        .add_system(idle_system.system())
         .run();
 }
