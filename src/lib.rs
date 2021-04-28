@@ -152,7 +152,7 @@ pub mod evaluators;
 pub mod pickers;
 
 pub mod actions;
-mod choices;
+pub mod choices;
 pub mod scorers;
 pub mod thinker;
 
