@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use big_brain::{evaluators::{Evaluator, LinearEvaluator}, prelude::*};
+use big_brain::{
+    evaluators::{Evaluator, LinearEvaluator},
+    prelude::*,
+};
 
 use crate::components::{EvilDorf, Hero, Position};
 use crate::util;
@@ -47,21 +50,31 @@ pub fn enemy_distance(
             if let Ok(hero_pos) = hero_q.single() {
                 let distance = util::euclidean_distance(enemy_pos, hero_pos);
                 if distance <= enemy_distance.within {
-                    score.set(enemy_distance.evaluator.evaluate(distance / enemy_distance.within));
+                    score.set(
+                        enemy_distance
+                            .evaluator
+                            .evaluate(distance / enemy_distance.within),
+                    );
                 } else {
                     score.set(0.0);
                 }
             }
         }
         if let Ok(hero_pos) = hero_q.get(*actor) {
+            let mut max = 0.;
             for enemy_pos in enemy_q.iter() {
                 let distance = util::euclidean_distance(enemy_pos, hero_pos);
                 if distance <= enemy_distance.within {
-                    score.set(enemy_distance.evaluator.evaluate(distance / enemy_distance.within));
-                } else {
-                    score.set(0.0);
+                    let val = enemy_distance.evaluator.evaluate(distance / enemy_distance.within);
+                    if val > max {
+                        max = val;
+                    }
+                    if max >= 1.0 {
+                        break;
+                    }
                 }
             }
+            score.set(max);
         }
     }
 }
