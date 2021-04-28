@@ -370,7 +370,7 @@ unlike other composite scorers, `EvaluatingScorer` only takes one scorer upon bu
 ```ignore
 Thinker::build()
     .when(
-        WinningScorer::build(MyScorer, MyEvaluator),
+        EvaluatingScorer::build(MyScorer, MyEvaluator),
         MyAction::build());
 ```
  */
