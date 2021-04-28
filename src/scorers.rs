@@ -6,7 +6,10 @@ use std::{cmp::Ordering, sync::Arc};
 
 use bevy::prelude::*;
 
-use crate::thinker::{Actor, ScorerEnt};
+use crate::{
+    evaluators::Evaluator,
+    thinker::{Actor, ScorerEnt},
+};
 
 /**
 Score value between `0.0..=1.0` associated with a Scorer.
@@ -354,6 +357,77 @@ impl ScorerBuilder for WinningScorerBuilder {
             .insert(WinningScorer {
                 threshold: self.threshold,
                 scorers: scorers.into_iter().map(ScorerEnt).collect(),
+            });
+    }
+}
+
+/**
+Composite scorer that takes a `ScorerBuilder` and applies an `Evaluator`. Note that
+unlike other composite scorers, `EvaluatingScorer` only takes one scorer upon building.
+
+### Example
+
+```ignore
+Thinker::build()
+    .when(
+        WinningScorer::build(MyScorer, MyEvaluator),
+        MyAction::build());
+```
+ */
+#[derive(Debug, Clone)]
+pub struct EvaluatingScorer {
+    scorer: ScorerEnt,
+    evaluator: Arc<dyn Evaluator>,
+}
+
+impl EvaluatingScorer {
+    pub fn build(
+        scorer: impl ScorerBuilder + 'static,
+        evaluator: impl Evaluator + 'static,
+    ) -> EvaluatingScorerBuilder {
+        EvaluatingScorerBuilder {
+            evaluator: Arc::new(evaluator),
+            scorer: Arc::new(scorer),
+        }
+    }
+}
+
+pub fn evaluating_scorer_system(
+    query: Query<(Entity, &EvaluatingScorer)>,
+    mut scores: QuerySet<(Query<&Score>, Query<&mut Score>)>,
+) {
+    for (sos_ent, eval_scorer) in query.iter() {
+        // Get the inner score
+        let inner_score = scores
+            .q0()
+            .get(eval_scorer.scorer.0)
+            .expect("where did it go?")
+            .get();
+        // Get composite score
+        let mut score = scores.q1_mut().get_mut(sos_ent).expect("where did it go?");
+        score.set(crate::evaluators::clamp(
+            eval_scorer.evaluator.evaluate(inner_score),
+            0.0,
+            1.0,
+        ));
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct EvaluatingScorerBuilder {
+    pub scorer: Arc<dyn ScorerBuilder>,
+    pub evaluator: Arc<dyn Evaluator>,
+}
+
+impl ScorerBuilder for EvaluatingScorerBuilder {
+    fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
+        let inner_scorer = self.scorer.attach(cmd, actor);
+        cmd.entity(scorer)
+            .insert(Transform::default())
+            .insert(GlobalTransform::default())
+            .insert(EvaluatingScorer {
+                evaluator: self.evaluator.clone(),
+                scorer: ScorerEnt(inner_scorer),
             });
     }
 }
