@@ -1,3 +1,16 @@
+<a name="0.6.0"></a>
+## 0.6.0 (2021-05-20)
+
+#### Features
+
+* **pickers:**  Make choices mod public (#23) ([92034cd0](https://github.com/zkat/big-brain/commit/92034cd04e629723893cfcd7730ce597083da9e7))
+* **scorers:**  Added EvaluatingScorer (#24) ([1a1d5b3d](https://github.com/zkat/big-brain/commit/1a1d5b3d17d96a51084418128f0bfebe0ad8c702))
+
+#### Bug Fixes
+
+* **actions:**  Concurrently was not setting its state to Failure ([d4a689f6](https://github.com/zkat/big-brain/commit/d4a689f6c60f509a71fb3a9ae4ca49dad263acab))
+
+
 <a name="0.5.0"></a>
 ## 0.5.0 (2021-04-27)
 
