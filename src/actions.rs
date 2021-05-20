@@ -350,8 +350,9 @@ pub fn concurrent_system(
                             }
                         }
                     }
+                    let mut state_var = states_q.get_mut(seq_ent).expect("uh oh");
+                    *state_var = Failure;
                 }
-
             }
             Cancelled => {
                 // Cancel all actions
