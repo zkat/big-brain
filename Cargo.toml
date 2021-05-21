@@ -13,4 +13,3 @@ homepage = "https://github.com/zkat/big-brain"
 
 [dependencies]
 bevy = "0.5.0"
-
