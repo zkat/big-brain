@@ -12,5 +12,7 @@ repository = "https://github.com/zkat/big-brain"
 homepage = "https://github.com/zkat/big-brain"
 
 [dependencies]
-bevy = "0.5.0"
+bevy = { version = "0.5.0", default-features = false }
 
+[dev-dependencies]
+bevy = { version = "0.5.0", default-features = true }
