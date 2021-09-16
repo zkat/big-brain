@@ -1,3 +1,17 @@
+# `big-brain` Release Changelog
+
+<a name="0.7.0"></a>
+## 0.7.0 (2021-09-16)
+
+### Bug Fixes
+
+* **deps:** Don't include Bevy default features when used as a dependency. (#25) ([61558137](https://github.com/zkat/big-brain/commit/615581370a165645795966ac7c878ff492630ba2))
+
+### Features
+
+* **license:** change license to Apache-2.0 ([d7d17772](https://github.com/zkat/big-brain/commit/d7d177729476af8ec1463d8957a35092a336098a))
+    * **BREAKING CHANGE**: This is a significant licensing change. Please review.
+
 <a name="0.6.0"></a>
 ## 0.6.0 (2021-05-20)
 
