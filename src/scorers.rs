@@ -255,6 +255,7 @@ impl SumOfScorersBuilder {
 }
 
 impl ScorerBuilder for SumOfScorersBuilder {
+    #[allow(clippy::needless_collect)]
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
         let scorers: Vec<_> = self
             .scorers
@@ -345,6 +346,7 @@ impl WinningScorerBuilder {
 }
 
 impl ScorerBuilder for WinningScorerBuilder {
+    #[allow(clippy::needless_collect)]
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
         let scorers: Vec<_> = self
             .scorers

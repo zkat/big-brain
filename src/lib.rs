@@ -163,9 +163,11 @@ pub mod prelude {
     use super::*;
 
     pub use super::BigBrainPlugin;
-    pub use actions::{ActionBuilder, ActionState, Steps, Concurrently};
+    pub use actions::{ActionBuilder, ActionState, Concurrently, Steps};
     pub use pickers::{FirstToScore, Picker};
-    pub use scorers::{AllOrNothing, FixedScore, Score, ScorerBuilder, SumOfScorers, WinningScorer};
+    pub use scorers::{
+        AllOrNothing, FixedScore, Score, ScorerBuilder, SumOfScorers, WinningScorer,
+    };
     pub use thinker::{Actor, Thinker, ThinkerBuilder};
 }
 
