@@ -175,17 +175,16 @@ pub fn steps_system(
 ) {
     use ActionState::*;
     for (seq_ent, Actor(actor), mut steps_action) in steps_q.iter_mut() {
-        let current_state = states.get_mut(seq_ent).expect("uh oh").clone();
+        let active_ent = steps_action.active_ent.0;
+        let current_state = states.get_mut(seq_ent).unwrap().clone();
         match current_state {
             Requested => {
                 // Begin at the beginning
-                let mut step_state = states.get_mut(steps_action.active_ent.0).expect("oops");
-                *step_state = Requested;
-                let mut current_state = states.get_mut(seq_ent).expect("uh oh");
-                *current_state = Executing;
+                *states.get_mut(active_ent).unwrap() = Requested;
+                *states.get_mut(seq_ent).unwrap() = Executing;
             }
             Executing => {
-                let mut step_state = states.get_mut(steps_action.active_ent.0).expect("bug");
+                let mut step_state = states.get_mut(active_ent).unwrap();
                 match *step_state {
                     Init => {
                         // Request it! This... should not really happen? But just in case I'm missing something... :)
@@ -216,15 +215,18 @@ pub fn steps_system(
                         let step_builder = steps_action.steps[steps_action.active_step].clone();
                         let step_ent = step_builder.attach(&mut cmd, *actor);
                         cmd.entity(seq_ent).push_children(&[step_ent]);
-                        let mut step_state = states.get_mut(step_ent).expect("oops");
-                        *step_state = ActionState::Requested;
+                        steps_action.active_ent.0 = step_ent;
                     }
                 }
             }
             Cancelled => {
                 // Cancel current action
-                let mut step_state = states.get_mut(steps_action.active_ent.0).expect("oops");
-                *step_state = ActionState::Cancelled;
+                let mut step_state = states.get_mut(active_ent).expect("oops");
+                if *step_state == Requested || *step_state == Executing {
+                    *step_state = Cancelled;
+                } else if *step_state == Failure || *step_state == Success {
+                    *states.get_mut(seq_ent).unwrap() = step_state.clone();
+                }
             }
             Init | Success | Failure => {
                 // Do nothing.
