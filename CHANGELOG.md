@@ -1,5 +1,12 @@
 # `big-brain` Release Changelog
 
+<a name="0.8.0"></a>
+## 0.8.0 (2021-09-19)
+
+### Bug Fixes
+
+* **systems:** Fix steps, add a test and explicit systems ordering (#27) ([f33315c9](https://github.com/zkat/big-brain/commit/f33315c9b7b769a94baab17e3a9df9f5ebe924d2)) (credit: [@payload](https://github.com/payload))
+
 <a name="0.7.0"></a>
 ## 0.7.0 (2021-09-16)
 
