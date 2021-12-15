@@ -10,7 +10,7 @@ use crate::thinker::{ActionEnt, Actor};
 /**
 The current state for an Action.
 */
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Component, Eq, PartialEq)]
 pub enum ActionState {
     /**
     Initial state. No action should be performed.
@@ -149,7 +149,7 @@ Thinker::build()
         )
 ```
 */
-#[derive(Debug)]
+#[derive(Component, Debug)]
 pub struct Steps {
     steps: Vec<Arc<dyn ActionBuilder>>,
     active_step: usize,
@@ -284,7 +284,7 @@ Thinker::build()
         )
 ```
 */
-#[derive(Debug)]
+#[derive(Component, Debug)]
 pub struct Concurrently {
     actions: Vec<ActionEnt>,
 }

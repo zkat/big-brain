@@ -19,13 +19,13 @@ use crate::{
 /**
 Wrapper for Actor entities. In terms of Scorers, Thinkers, and Actions, this is the [`Entity`] actually _performing_ the action, rather than the entity a Scorer/Thinker/Action is attached to. Generally, you will use this entity when writing Queries for Action and Scorer systems.
  */
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Component, Copy)]
 pub struct Actor(pub Entity);
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Component, Copy)]
 pub(crate) struct ActionEnt(pub Entity);
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Component, Copy)]
 pub(crate) struct ScorerEnt(pub Entity);
 
 /**
@@ -50,7 +50,7 @@ pub fn init_entities(mut cmd: Commands) {
 }
 ```
  */
-#[derive(Debug)]
+#[derive(Component, Debug)]
 pub struct Thinker {
     picker: Arc<dyn Picker>,
     otherwise: Option<ActionBuilderWrapper>,
@@ -70,7 +70,7 @@ impl Thinker {
 /**
 This is what you actually use to configure Thinker behavior. It's a plain old [`ActionBuilder`], as well.
  */
-#[derive(Debug, Default)]
+#[derive(Component, Debug, Default)]
 pub struct ThinkerBuilder {
     picker: Option<Arc<dyn Picker>>,
     otherwise: Option<ActionBuilderWrapper>,
@@ -172,7 +172,7 @@ pub fn actor_gone_cleanup(
     }
 }
 
-#[derive(Debug)]
+#[derive(Component, Debug)]
 pub struct HasThinker(Entity);
 
 pub struct ThinkerIterations {
