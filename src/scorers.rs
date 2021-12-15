@@ -304,13 +304,13 @@ impl WinningScorer {
 
 pub fn winning_scorer_system(
     mut query: Query<(Entity, &mut WinningScorer)>,
-    mut scores: QuerySet<(Query<&Score>, Query<&mut Score>)>,
+    mut scores: Query<&mut Score>,
 ) {
     for (sos_ent, mut winning_scorer) in query.iter_mut() {
         let (threshold, children) = (winning_scorer.threshold, &mut winning_scorer.scorers);
         let mut all_scores = children
             .iter()
-            .map(|ScorerEnt(e)| scores.q0().get(*e).expect("where is it?"))
+            .map(|ScorerEnt(e)| scores.get(*e).expect("where is it?"))
             .collect::<Vec<&Score>>();
 
         all_scores.sort_by(|a, b| a.get().partial_cmp(&b.get()).unwrap_or(Ordering::Equal));
@@ -324,7 +324,7 @@ pub fn winning_scorer_system(
             }
             None => 0.0,
         };
-        let mut score = scores.q1_mut().get_mut(sos_ent).expect("where did it go?");
+        let mut score = scores.get_mut(sos_ent).expect("where did it go?");
         score.set(crate::evaluators::clamp(winning_score_or_zero, 0.0, 1.0));
     }
 }
@@ -396,17 +396,16 @@ impl EvaluatingScorer {
 
 pub fn evaluating_scorer_system(
     query: Query<(Entity, &EvaluatingScorer)>,
-    mut scores: QuerySet<(Query<&Score>, Query<&mut Score>)>,
+    mut scores: Query<&mut Score>,
 ) {
     for (sos_ent, eval_scorer) in query.iter() {
         // Get the inner score
         let inner_score = scores
-            .q0()
             .get(eval_scorer.scorer.0)
             .expect("where did it go?")
             .get();
         // Get composite score
-        let mut score = scores.q1_mut().get_mut(sos_ent).expect("where did it go?");
+        let mut score = scores.get_mut(sos_ent).expect("where did it go?");
         score.set(crate::evaluators::clamp(
             eval_scorer.evaluator.evaluate(inner_score),
             0.0,
