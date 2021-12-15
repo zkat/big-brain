@@ -165,9 +165,9 @@ fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
         .add_plugin(BigBrainPlugin)
-        .add_startup_system(init_entities.system())
-        .add_system(thirst_system.system())
-        .add_system(drink_action_system.system())
-        .add_system(thirsty_scorer_system.system())
+        .add_startup_system(init_entities)
+        .add_system(thirst_system)
+        .add_system(drink_action_system)
+        .add_system(thirsty_scorer_system)
         .run();
 }
