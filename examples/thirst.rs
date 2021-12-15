@@ -125,7 +125,7 @@ impl ScorerBuilder for ThirstyBuilder {
     }
 }
 
-// Looks familiar? It's a lot likee Actions!
+// Looks familiar? It's a lot like Actions!
 pub fn thirsty_scorer_system(
     thirsts: Query<&Thirst>,
     // Same dance with the Parent here, but now Big Brain has added a Score component!
