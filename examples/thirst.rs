@@ -6,7 +6,7 @@ use big_brain::prelude::*;
 // time. This is what the AI will later interact with.
 //
 // There's nothing special here. It's a plain old Bevy component.
-#[derive(Debug)]
+#[derive(Component, Debug)]
 pub struct Thirst {
     pub per_second: f32,
     pub thirst: f32,
@@ -36,7 +36,7 @@ pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
 //
 // These actions will be spawned and queued by the game engine when their
 // conditions trigger (we'll configure what these are later).
-#[derive(Debug, Clone)]
+#[derive(Clone, Component, Debug)]
 pub struct Drink;
 
 // The convention is to attach a `::build()` function to the Action type.
@@ -48,7 +48,7 @@ impl Drink {
 
 // Then we define an ActionBuilder, which is responsible for making new
 // Action components for us.
-#[derive(Debug, Clone)]
+#[derive(Clone, Component, Debug)]
 pub struct DrinkBuilder;
 
 // All you need to implement heree is the `build()` method, which requires
@@ -107,7 +107,7 @@ fn drink_action_system(
 // ScorerBuilder and Scorer components. While it might seem like a lot of
 // boilerplate, in a "real" application, you will almost certainly have data
 // and configuration concerns. This pattern separates those nicely.
-#[derive(Debug, Clone)]
+#[derive(Clone, Component, Debug)]
 pub struct Thirsty;
 
 impl Thirsty {
@@ -125,7 +125,7 @@ impl ScorerBuilder for ThirstyBuilder {
     }
 }
 
-// Looks familiar? It's a lot likee Actions!
+// Looks familiar? It's a lot like Actions!
 pub fn thirsty_scorer_system(
     thirsts: Query<&Thirst>,
     // Same dance with the Parent here, but now Big Brain has added a Score component!
@@ -162,12 +162,12 @@ pub fn init_entities(mut cmd: Commands) {
 
 fn main() {
     // Once all that's done, we just add our systems and off we go!
-    App::build()
+    App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(BigBrainPlugin)
-        .add_startup_system(init_entities.system())
-        .add_system(thirst_system.system())
-        .add_system(drink_action_system.system())
-        .add_system(thirsty_scorer_system.system())
+        .add_startup_system(init_entities)
+        .add_system(thirst_system)
+        .add_system(drink_action_system)
+        .add_system(thirsty_scorer_system)
         .run();
 }

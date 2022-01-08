@@ -2,7 +2,7 @@
 name = "big-brain"
 version = "0.8.1-alpha.0"
 authors = ["Kat Marchán <kzm@zkat.tech>"]
-edition = "2018"
+edition = "2021"
 description = "Rusty Utility AI library"
 license = "Apache-2.0"
 readme = "README.md"
@@ -12,7 +12,7 @@ repository = "https://github.com/zkat/big-brain"
 homepage = "https://github.com/zkat/big-brain"
 
 [dependencies]
-bevy = { version = "0.5.0", default-features = false }
+bevy = { version = "0.6.0", default-features = false }
 
 [dev-dependencies]
-bevy = { version = "0.5.0", default-features = true }
+bevy = { version = "0.6.0", default-features = true }

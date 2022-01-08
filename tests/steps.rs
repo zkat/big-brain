@@ -4,17 +4,17 @@ use big_brain::{pickers, prelude::*};
 #[test]
 fn steps() {
     println!("steps test");
-    App::build()
+    App::new()
         .add_plugins(MinimalPlugins)
         .add_plugin(BigBrainPlugin)
         .init_resource::<GlobalState>()
-        .add_startup_system(setup.system())
-        .add_system_to_stage(CoreStage::First, no_failure_score.system())
-        .add_system(action1.system())
-        .add_system(action2.system())
-        .add_system(exit_action.system())
-        .add_system(failure_action.system())
-        .add_system_to_stage(CoreStage::Last, last.system())
+        .add_startup_system(setup)
+        .add_system_to_stage(CoreStage::First, no_failure_score)
+        .add_system(action1)
+        .add_system(action2)
+        .add_system(exit_action)
+        .add_system(failure_action)
+        .add_system_to_stage(CoreStage::Last, last)
         .run();
     println!("end");
 }
@@ -28,7 +28,7 @@ fn setup(mut cmds: Commands) {
     );
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Clone, Component, Debug, Default)]
 struct Action1;
 impl ActionBuilder for Action1 {
     fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
@@ -50,7 +50,7 @@ fn action1(mut query: Query<(&Actor, &mut ActionState), With<Action1>>) {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Clone, Component, Debug, Default)]
 struct Action2;
 impl ActionBuilder for Action2 {
     fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
@@ -72,7 +72,7 @@ fn action2(mut query: Query<(&Actor, &mut ActionState), With<Action2>>) {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Clone, Component, Debug, Default)]
 struct ExitAction;
 impl ActionBuilder for ExitAction {
     fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
@@ -101,7 +101,7 @@ fn last() {
     println!();
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Clone, Component, Debug, Default)]
 struct FailureAction;
 impl ActionBuilder for FailureAction {
     fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
@@ -132,7 +132,7 @@ struct GlobalState {
     failure: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Component, Debug)]
 struct NoFailureScore;
 impl ScorerBuilder for NoFailureScore {
     fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
