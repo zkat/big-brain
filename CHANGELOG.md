@@ -1,5 +1,13 @@
 # `big-brain` Release Changelog
 
+<a name="0.9.0"></a>
+## 0.9.0 (2022-01-09)
+
+### Features
+
+* **deps:** update for bevy 0.6 (#31) ([b97f9273](https://github.com/zkat/big-brain/commit/b97f9273c5f5eceb010d8fa2b23abb534fb2cee1))
+* **perf:** Use SparseSet for ActionState ([5fc08176](https://github.com/zkat/big-brain/commit/5fc081765c1ed8788a7a5d1e940efbc66dc8aa8f))
+
 <a name="0.8.0"></a>
 ## 0.8.0 (2021-09-19)
 
