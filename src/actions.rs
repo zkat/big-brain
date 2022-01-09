@@ -11,6 +11,7 @@ use crate::thinker::{ActionEnt, Actor};
 The current state for an Action.
 */
 #[derive(Debug, Clone, Component, Eq, PartialEq)]
+#[component(storage = "SparseSet")]
 pub enum ActionState {
     /**
     Initial state. No action should be performed.
