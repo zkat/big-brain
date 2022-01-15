@@ -46,12 +46,27 @@ The `build()` method MUST be implemented for any `ScorerBuilder`s you want to de
 */
 pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
     /**
-    MUST insert your concrete Scorer component into the Scorer [`Entity`], using `cmd`. You _may_ use `actor`, but it's perfectly normal to just ignore it.
+    MUST insert your concrete Scorer component into the Scorer [`Entity`], using
+     `cmd`. You _may_ use `actor`, but it's perfectly normal to just ignore it.
+
+    Note that this method is automatically implemented for any Components that
+    implement Clone, so you don't need to define it yourself unless you want
+    more complex parameterization of your Actions.
 
     ### Example
 
+    Using `Clone` (the easy way):
+
+    ```no_run
+    #[derive(Debug, Clone, Component)]
+    struct MyScorer;
+    ```
+
+    Implementing it manually:
+
     ```no_run
     struct MyBuilder;
+    #[derive(Debug, Component)]
     struct MyScorer;
 
     impl ScorerBuilder for MyBuilder {
@@ -91,24 +106,9 @@ Scorer that always returns the same, fixed score. Good for combining with things
 #[derive(Clone, Component, Debug)]
 pub struct FixedScore(f32);
 
-impl FixedScore {
-    pub fn build(score: f32) -> FixedScoreBuilder {
-        FixedScoreBuilder(score)
-    }
-}
-
 pub fn fixed_score_system(mut query: Query<(&FixedScore, &mut Score)>) {
     for (FixedScore(fixed), mut score) in query.iter_mut() {
         score.set(*fixed);
-    }
-}
-
-#[derive(Clone, Component, Debug)]
-pub struct FixedScoreBuilder(f32);
-
-impl ScorerBuilder for FixedScoreBuilder {
-    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
-        cmd.entity(action).insert(FixedScore(self.0));
     }
 }
 
@@ -385,7 +385,7 @@ unlike other composite scorers, `EvaluatingScorer` only takes one scorer upon bu
 Thinker::build()
     .when(
         EvaluatingScorer::build(MyScorer, MyEvaluator),
-        MyAction::build());
+        MyAction);
 ```
  */
 #[derive(Clone, Component, Debug)]
