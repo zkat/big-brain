@@ -12,7 +12,7 @@ Required trait for Pickers. A Picker is given a slice of choices and a query tha
 Implementations of `pick` must return `Some(Choice)` for the `Choice` that was picked, or `None`.
  */
 pub trait Picker: std::fmt::Debug + Sync + Send {
-    fn pick(&self, _choices: &[Choice], _utilities: &Query<&Score>) -> Option<Choice>;
+    fn pick<'a>(&self, choices: &'a [Choice], scores: &Query<&Score>) -> Option<&'a Choice>;
 }
 
 /**
@@ -38,11 +38,11 @@ impl FirstToScore {
 }
 
 impl Picker for FirstToScore {
-    fn pick(&self, choices: &[Choice], scores: &Query<&Score>) -> Option<Choice> {
+    fn pick<'a>(&self, choices: &'a [Choice], scores: &Query<&Score>) -> Option<&'a Choice> {
         for choice in choices {
             let value = choice.calculate(scores);
             if value >= self.threshold {
-                return Some(choice.clone());
+                return Some(choice);
             }
         }
         None
