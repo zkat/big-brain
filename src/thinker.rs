@@ -241,13 +241,8 @@ pub fn thinker_system(
                     // Think about what action we're supposed to be taking. We do this
                     // every tick, because we might change our mind.
                     // ...and then execute it (details below).
-                    exec_picked_action(
-                        &mut cmd,
-                        *actor,
-                        &mut thinker,
-                        &choice.action,
-                        &mut action_states,
-                    );
+                    let action = choice.action.clone();
+                    exec_picked_action(&mut cmd, *actor, &mut thinker, &action, &mut action_states);
                 } else if let Some(default_action_ent) = &thinker.otherwise {
                     // Otherwise, let's just execute the default one! (if it's there)
                     let default_action_ent = default_action_ent.clone();
