@@ -87,10 +87,9 @@ pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
     */
     fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity);
 
-    /**
-    Don't implement this yourself unless you know what you're doing.
-     */
-    fn attach(&self, cmd: &mut Commands, actor: Entity) -> Entity {
+    #[doc(hidden)]
+    // Don't implement this yourself unless you know what you're doing.
+    fn spawn_action(&self, cmd: &mut Commands, actor: Entity) -> Entity {
         let action_ent = ActionEnt(cmd.spawn().id());
         cmd.entity(action_ent.0)
             .insert(Name::new("Action"))
@@ -131,7 +130,7 @@ impl StepsBuilder {
 impl ActionBuilder for StepsBuilder {
     fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity) {
         if let Some(step) = self.steps.get(0) {
-            let child_action = step.attach(cmd, actor);
+            let child_action = step.spawn_action(cmd, actor);
             cmd.entity(action)
                 .insert(Name::new("Steps Action"))
                 .insert(Steps {
@@ -223,7 +222,7 @@ pub fn steps_system(
 
                         steps_action.active_step += 1;
                         let step_builder = steps_action.steps[steps_action.active_step].clone();
-                        let step_ent = step_builder.attach(&mut cmd, *actor);
+                        let step_ent = step_builder.spawn_action(&mut cmd, *actor);
                         cmd.entity(seq_ent).push_children(&[step_ent]);
                         steps_action.active_ent.0 = step_ent;
                     }
@@ -268,7 +267,7 @@ impl ActionBuilder for ConcurrentlyBuilder {
         let children: Vec<Entity> = self
             .actions
             .iter()
-            .map(|action| action.attach(cmd, actor))
+            .map(|action| action.spawn_action(cmd, actor))
             .collect();
         cmd.entity(action)
             .insert(Name::new("Concurrent Action"))
