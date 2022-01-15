@@ -77,6 +77,15 @@ pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
     }
 }
 
+impl<T> ScorerBuilder for T
+where
+    T: Component + Clone + std::fmt::Debug + Send + Sync,
+{
+    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
+        cmd.entity(action).insert(T::clone(self));
+    }
+}
+
 /**
 Scorer that always returns the same, fixed score. Good for combining with things creatively!
  */

@@ -101,6 +101,15 @@ pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
     }
 }
 
+impl<T> ActionBuilder for T
+where
+    T: Component + Clone + std::fmt::Debug + Send + Sync,
+{
+    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
+        cmd.entity(action).insert(T::clone(self));
+    }
+}
+
 /**
 [`ActionBuilder`] for the [`Steps`] component. Constructed through `Steps::build()`.
 */
