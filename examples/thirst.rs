@@ -46,7 +46,10 @@ pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
 // implements Clone. So, the Clone derive matters here. This is enough in most
 // cases.
 #[derive(Clone, Component, Debug)]
-pub struct Drink { until: f32, per_second: f32 }
+pub struct Drink {
+    until: f32,
+    per_second: f32,
+}
 
 // Action systems execute according to a state machine, where the states are
 // labeled by ActionState.
@@ -67,7 +70,8 @@ fn drink_action_system(
                 }
                 ActionState::Executing => {
                     println!("drinking some water");
-                    thirst.thirst -= drink.per_second * (time.delta().as_micros() as f32 / 1_000_000.0);
+                    thirst.thirst -=
+                        drink.per_second * (time.delta().as_micros() as f32 / 1_000_000.0);
                     if thirst.thirst <= drink.until {
                         // To "finish" an action, we set its state to Success or
                         // Failure.
@@ -124,7 +128,13 @@ pub fn init_entities(mut cmd: Commands) {
             .picker(FirstToScore { threshold: 0.8 })
             // Technically these are supposed to be ActionBuilders and
             // ScorerBuilders, but our Clone impls simplify our code here.
-            .when(Thirsty, Drink { until: 70.0, per_second: 5.0 }),
+            .when(
+                Thirsty,
+                Drink {
+                    until: 70.0,
+                    per_second: 5.0,
+                },
+            ),
     );
 }
 
