@@ -27,39 +27,21 @@ See [the documentation](https://docs.rs/big-brain) for more details.
 
 ### Example
 
-First, you define actions and considerations, which are just plain old Bevy
-Components and Systems. As a developer, you write application-dependent code
-to define [`Scorers`](#scorers) and [`Actions`](#actions), and then put it
-all together like building blocks, using [`Thinkers`](#thinkers) that will
-define the actual behavior.
+As a developer, you write application-dependent code to define
+[`Scorers`](#scorers) and [`Actions`](#actions), and then put it all together
+like building blocks, using [`Thinkers`](#thinkers) that will define the
+actual behavior.
 
 #### Scorers
 
 `Scorer`s are entities that look at the world and evaluate into [`Score`](scorers::Score) values. You can think of them as the "eyes" of the AI system. They're a highly-parallel way of being able to look at the `World` and use it to make some decisions later.
 
-They are created by types that implement [`ScorerBuilder`](scorers::ScorerBuilder).
-
 ```rust
 use bevy::prelude::*;
 use big_brain::prelude::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Component)]
 pub struct Thirsty;
-
-impl Thirsty {
-    fn build() -> ThirstyBuilder {
-        ThirstyBuilder
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ThirstyBuilder;
-
-impl ScorerBuilder for ThirstyBuilder {
-    fn build(&self, cmd: &mut Commands, scorer: Entity, _actor: Entity) {
-        cmd.entity(scorer).insert(Thirsty);
-    }
-}
 
 pub fn thirsty_scorer_system(
     thirsts: Query<&Thirst>,
@@ -75,29 +57,16 @@ pub fn thirsty_scorer_system(
 
 #### Actions
 
-`Action`s are the actual things your entities will _do_. They are connected to [`ActionState`](actions::ActionState)s, and are created by types implementing [`ActionBuilder`](actions::ActionBuilder).
+`Action`s are the actual things your entities will _do_. They are connected to
+[`ActionState`](actions::ActionState)s that represent the current execution
+state of the state machine.
 
 ```rust
 use bevy::prelude::*;
 use big_brain::prelude::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Component)]
 pub struct Drink;
-
-impl Drink {
-    pub fn build() -> DrinkBuilder {
-        DrinkBuilder
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct DrinkBuilder;
-
-impl ActionBuilder for DrinkBuilder {
-    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
-        cmd.entity(action).insert(Drink);
-    }
-}
 
 fn drink_action_system(
     mut thirsts: Query<&mut Thirst>,
@@ -129,8 +98,23 @@ regular Component:
 cmd.spawn().insert(Thirst::new(70.0, 2.0)).insert(
     Thinker::build()
         .picker(FirstToScore { threshold: 0.8 })
-        .when(Thirsty::build(), Drink::build()),
+        .when(Thirsty, Drink),
 );
+```
+
+#### App
+
+Once all that's done, we just add our systems and off we go!
+
+```rust
+App::new()
+    .add_plugins(DefaultPlugins)
+    .add_plugin(BigBrainPlugin)
+    .add_startup_system(init_entities)
+    .add_system(thirst_system)
+    .add_system_to_stage(BigBrainStage::Actions, drink_action_system)
+    .add_system_to_stage(BigBrainStage::Scorers, thirsty_scorer_system)
+    .run();
 ```
 
 ### Contributing

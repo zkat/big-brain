@@ -64,18 +64,34 @@ impl ActionBuilderWrapper {
 }
 
 /**
-Trait that must be defined by types in order to be `ActionBuilder`s. `ActionBuilder`s' job is to spawn new `Action` entities. In general, most of this is already done for you, and the only method you really have to implement is `.build()`.
+Trait that must be defined by types in order to be `ActionBuilder`s. `ActionBuilder`s' job is to spawn new `Action` entities on demand. In general, most of this is already done for you, and the only method you really have to implement is `.build()`.
 
 The `build()` method MUST be implemented for any `ActionBuilder`s you want to define.
 */
 pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
     /**
-    MUST insert your concrete Action component into the `action` [`Entity`], using `cmd`. You _may_ use `actor`, but it's perfectly normal to just ignore it.
+
+    MUST insert your concrete Action component into the Scorer [`Entity`], using
+     `cmd`. You _may_ use `actor`, but it's perfectly normal to just ignore it.
+
+    Note that this method is automatically implemented for any Components that
+    implement Clone, so you don't need to define it yourself unless you want
+    more complex parameterization of your Actions.
 
     ### Example
 
+    Using `Clone` (the easy way):
+
+    ```no_run
+    #[derive(Debug, Clone, Component)]
+    struct MyAction;
+    ```
+
+    Implementing it manually:
+
     ```no_run
     struct MyBuilder;
+    #[derive(Debug, Component)]
     struct MyAction;
 
     impl ActionBuilder for MyBuilder {
@@ -155,8 +171,8 @@ Thinker::build()
     .when(
         MyScorer,
         Steps::build()
-            .step(MyAction::build())
-            .step(MyNextAction::build())
+            .step(MyAction)
+            .step(MyNextAction)
         )
 ```
 */
@@ -247,7 +263,7 @@ pub fn steps_system(
 }
 
 /**
-[`ActionBuilder`] for the [`Concurrent`] component. Constructed through `Concurrent::build()`.
+[`ActionBuilder`] for the [`Concurrently`] component. Constructed through `Concurrently::build()`.
 */
 #[derive(Debug)]
 pub struct ConcurrentlyBuilder {
@@ -292,8 +308,8 @@ Thinker::build()
     .when(
         MyScorer,
         Concurrent::build()
-            .push(MyAction::build())
-            .push(MyOtherAction::build())
+            .push(MyAction)
+            .push(MyOtherAction)
         )
 ```
 */
@@ -304,7 +320,7 @@ pub struct Concurrently {
 
 impl Concurrently {
     /**
-    Construct a new [`ConcurrentBuilder`] to define the actions to take.
+    Construct a new [`ConcurrentlyBuilder`] to define the actions to take.
     */
     pub fn build() -> ConcurrentlyBuilder {
         ConcurrentlyBuilder {
@@ -314,7 +330,7 @@ impl Concurrently {
 }
 
 /**
-System that takes care of executing any existing [`Concurrent`] Actions.
+System that takes care of executing any existing [`Concurrently`] Actions.
 */
 pub fn concurrent_system(
     concurrent_q: Query<(Entity, &Concurrently)>,
