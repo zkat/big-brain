@@ -163,6 +163,7 @@ pub mod prelude {
     use super::*;
 
     pub use super::BigBrainPlugin;
+    pub use super::BigBrainStage;
     pub use actions::{ActionBuilder, ActionState, Concurrently, Steps};
     pub use pickers::{FirstToScore, Picker};
     pub use scorers::{
@@ -188,36 +189,60 @@ App::build()
     // ...insert entities and other systems.
     .run();
 */
-
 pub struct BigBrainPlugin;
 
 impl Plugin for BigBrainPlugin {
     fn build(&self, app: &mut App) {
         use CoreStage::*;
+
+        app.add_stage_after(First, BigBrainStage::Scorers, SystemStage::parallel());
         app.add_system_set_to_stage(
-            First,
+            BigBrainStage::Scorers,
             SystemSet::new()
                 .with_system(scorers::fixed_score_system)
                 .with_system(scorers::all_or_nothing_system)
                 .with_system(scorers::sum_of_scorers_system)
                 .with_system(scorers::winning_scorer_system)
-                .with_system(scorers::evaluating_scorer_system)
-                .label("scorers"),
+                .with_system(scorers::evaluating_scorer_system),
         );
-        app.add_system_to_stage(First, thinker::thinker_system.after("scorers"));
 
+        app.add_stage_after(
+            BigBrainStage::Scorers,
+            BigBrainStage::Thinkers,
+            SystemStage::parallel(),
+        );
+        app.add_system_to_stage(BigBrainStage::Thinkers, thinker::thinker_system);
+
+        app.add_stage_after(PreUpdate, BigBrainStage::Actions, SystemStage::parallel());
         app.add_system_set_to_stage(
-            PreUpdate,
+            BigBrainStage::Actions,
             SystemSet::new()
                 .with_system(actions::steps_system)
-                .with_system(actions::concurrent_system)
-                .label("aggregate-actions"),
+                .with_system(actions::concurrent_system),
         );
 
-        // run your actions in PreUpdate after aggregate-actions or in a later stage
-
-        app.add_system_to_stage(Last, thinker::thinker_component_attach_system);
-        app.add_system_to_stage(Last, thinker::thinker_component_detach_system);
-        app.add_system_to_stage(Last, thinker::actor_gone_cleanup);
+        app.add_stage_after(Last, BigBrainStage::Cleanup, SystemStage::parallel());
+        app.add_system_set_to_stage(
+            BigBrainStage::Cleanup,
+            SystemSet::new()
+                .with_system(thinker::thinker_component_attach_system)
+                .with_system(thinker::thinker_component_detach_system)
+                .with_system(thinker::actor_gone_cleanup),
+        );
     }
+}
+
+/**
+BigBrainPlugin execution stages. Use these to schedule your own actions/scorers/etc.
+*/
+#[derive(Clone, Debug, Hash, Eq, PartialEq, StageLabel)]
+pub enum BigBrainStage {
+    /// Scorers are evaluated in this stage.
+    Scorers,
+    /// Actions are executed in this stage.
+    Actions,
+    /// Thinkers run their logic in this stage.
+    Thinkers,
+    /// Various internal cleanup items run in this final stage.
+    Cleanup,
 }
