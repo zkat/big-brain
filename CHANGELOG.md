@@ -1,5 +1,30 @@
 # `big-brain` Release Changelog
 
+<a name="0.10.0"></a>
+## 0.10.0 (2022-01-15)
+
+This is my first pass at a significant API improvement. I iterated on it for a
+while and this is what I settled on. I look forward to continuing to evolve
+this API as I get more feedback and experience with it! Please let me know
+what you think!
+
+### Breaking Changes
+
+* **thinker:** stop cancelling actions when they go under Picker thresholds ([4c72b3d1](https://github.com/zkat/big-brain/commit/4c72b3d11eaa42af4b99ccf9ea729306e589ada8))
+* **stages:** Strongly typed stages for BigBrainPlugin ([65ca646e](https://github.com/zkat/big-brain/commit/65ca646e3b92b178025591878e2df6a08714880f))
+* **builders:** Blanket impls for ActionBuilder and ScorerBuilder when Clone ([8bed75b5](https://github.com/zkat/big-brain/commit/8bed75b54a43c72b53fbf9e2605b942cb2c53214))
+* **api:** rename attach and hide it from docs ([6c64df4f](https://github.com/zkat/big-brain/commit/6c64df4fc1211abe19919a3628476b930b6e9919))
+* **choice:** return &Choice instead of cloning ([a76dcbb6](https://github.com/zkat/big-brain/commit/a76dcbb67d4f6ae402f03d22e8d526408d8d875f))
+
+### Features
+
+* **example:** update thirst example ([edecc4c9](https://github.com/zkat/big-brain/commit/edecc4c95f76bcd69c042372140486f744f4ccea))
+
+### Bug Fixes
+
+* **hierarchy:** make sure all the hierarchy stuff is set up properly ([372c13e2](https://github.com/zkat/big-brain/commit/372c13e207523ec919c6490682f628f7d21cebea))
+* **tests:** update tests ([94e1b1f6](https://github.com/zkat/big-brain/commit/94e1b1f685e6ab0be9d90bae5dfbd648ba87f1de))
+
 <a name="0.9.0"></a>
 ## 0.9.0 (2022-01-09)
 
