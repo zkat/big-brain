@@ -28,12 +28,12 @@ fn setup(mut cmds: Commands) {
     );
 }
 
-#[derive(Clone, Component, Debug, Default)]
+#[derive(Component, Debug, Default)]
 struct Action1;
 impl ActionBuilder for Action1 {
     fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
         cmd.entity(action)
-            .insert(self.clone())
+            .insert(Self)
             .insert(ActionState::Requested);
     }
 }
@@ -50,12 +50,12 @@ fn action1(mut query: Query<(&Actor, &mut ActionState), With<Action1>>) {
     }
 }
 
-#[derive(Clone, Component, Debug, Default)]
+#[derive(Component, Debug, Default)]
 struct Action2;
 impl ActionBuilder for Action2 {
     fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
         cmd.entity(action)
-            .insert(self.clone())
+            .insert(Self)
             .insert(ActionState::Requested);
     }
 }
@@ -72,12 +72,12 @@ fn action2(mut query: Query<(&Actor, &mut ActionState), With<Action2>>) {
     }
 }
 
-#[derive(Clone, Component, Debug, Default)]
+#[derive(Component, Debug, Default)]
 struct ExitAction;
 impl ActionBuilder for ExitAction {
     fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
         cmd.entity(action)
-            .insert(self.clone())
+            .insert(Self)
             .insert(ActionState::Requested);
     }
 }
@@ -101,12 +101,12 @@ fn last() {
     println!();
 }
 
-#[derive(Clone, Component, Debug, Default)]
+#[derive(Component, Debug, Default)]
 struct FailureAction;
 impl ActionBuilder for FailureAction {
     fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
         cmd.entity(action)
-            .insert(self.clone())
+            .insert(Self)
             .insert(ActionState::Requested);
     }
 }
@@ -134,11 +134,6 @@ struct GlobalState {
 
 #[derive(Clone, Component, Debug)]
 struct NoFailureScore;
-impl ScorerBuilder for NoFailureScore {
-    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
-        cmd.entity(action).insert(self.clone());
-    }
-}
 
 fn no_failure_score(
     mut query: Query<(&NoFailureScore, &mut Score)>,
