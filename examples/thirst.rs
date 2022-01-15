@@ -31,65 +31,50 @@ pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
 // The second step is to define an action. What can the AI do, and how does it
 // do it? This is the first bit involving Big Brain itself, and there's a few
 // pieces you need:
-
-// First, you need an Action and an ActionBuilder struct.
+//
+// 1. An Action Component. This is just a plain Component we will query
+//    against later.
+// 2. An ActionBuilder. This is anything that implements the ActionBuilder
+//    trait.
+// 3. A System that will run Action code.
 //
 // These actions will be spawned and queued by the game engine when their
 // conditions trigger (we'll configure what these are later).
-#[derive(Clone, Component, Debug)]
-pub struct Drink;
-
-// The convention is to attach a `::build()` function to the Action type.
-impl Drink {
-    pub fn build() -> DrinkBuilder {
-        DrinkBuilder
-    }
-}
-
-// Then we define an ActionBuilder, which is responsible for making new
-// Action components for us.
-#[derive(Clone, Component, Debug)]
-pub struct DrinkBuilder;
-
-// All you need to implement heree is the `build()` method, which requires
-// that you attach your actual component to the action Entity that was created
-// and configured for you.
-impl ActionBuilder for DrinkBuilder {
-    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
-        cmd.entity(action).insert(Drink);
-    }
-}
-
-// Associated with that Drink Action, you then need to have a system that will
-// actually execute those actions when they're "spawned" by the Big Brain
-// engine. This is the actual "act" part of the Action.
 //
-// In our case, we want the Thirst components, since we'll be changing those.
-// Additionally, we want to pick up the DrinkAction components, as well as
-// their associated ActionState. Note that the Drink Action belongs to a
-// *separate entity* from the owner of the Thirst component!
+// NOTE: In this example, we're not implementing ActionBuilder ourselves, but
+// instead just relying on the blanket implementation for anything that
+// implements Clone. So, the Clone derive matters here. This is enough in most
+// cases.
+#[derive(Clone, Component, Debug)]
+pub struct Drink { until: f32, per_second: f32 }
+
+// Action systems execute according to a state machine, where the states are
+// labeled by ActionState.
 fn drink_action_system(
+    time: Res<Time>,
     mut thirsts: Query<&mut Thirst>,
-    // We grab the Parent here, because individual Actions are parented to the
-    // entity "doing" the action.
-    //
-    // ActionState is an enum that described the specific run-state the action
-    // is in. You can think of Actions as state machines. They get requested,
-    // they can be cancelled, they can run to completion, etc. Cancellations
-    // usually happen because the target action changed (due to a different
-    // Scorer winning). But you can also cancel the actions yourself by
-    // setting the state in the Action system.
-    mut query: Query<(&Actor, &mut ActionState), With<Drink>>,
+    // We execute actions by querying for their associated Action Component
+    // (Drink in this case). You'll always need both Actor and ActionState.
+    mut query: Query<(&Actor, &mut ActionState, &Drink)>,
 ) {
-    for (Actor(actor), mut state) in query.iter_mut() {
-        // Use the drink_action's actor to look up the corresponding Thirst.
+    for (Actor(actor), mut state, drink) in query.iter_mut() {
+        // Use the drink_action's actor to look up the corresponding Thirst Component.
         if let Ok(mut thirst) = thirsts.get_mut(*actor) {
             match *state {
                 ActionState::Requested => {
-                    thirst.thirst = 10.0;
-                    println!("drank some water");
-                    *state = ActionState::Success;
+                    println!("Time to drink some water!");
+                    *state = ActionState::Executing;
                 }
+                ActionState::Executing => {
+                    println!("drinking some water");
+                    thirst.thirst -= drink.per_second * (time.delta().as_micros() as f32 / 1_000_000.0);
+                    if thirst.thirst <= drink.until {
+                        // To "finish" an action, we set its state to Success or
+                        // Failure.
+                        *state = ActionState::Success;
+                    }
+                }
+                // All Actions should make sure to handle cancellations!
                 ActionState::Cancelled => {
                     *state = ActionState::Failure;
                 }
@@ -101,40 +86,24 @@ fn drink_action_system(
 
 // Then, we have something called "Scorers". These are special components that
 // run in the background, calculating a "Score" value, which is what Big Brain
-// will use to pick which actions to execute.
+// will use to pick which Actions to execute.
 //
-// Just like with Actions, we use the convention of having separate
-// ScorerBuilder and Scorer components. While it might seem like a lot of
-// boilerplate, in a "real" application, you will almost certainly have data
-// and configuration concerns. This pattern separates those nicely.
+// Just like with Actions, there's two pieces to this: the Scorer and the
+// ScorerBuilder. And just like with Actions, there's a blanket implementation
+// for Clone, so we only need the Component here.
 #[derive(Clone, Component, Debug)]
 pub struct Thirsty;
-
-impl Thirsty {
-    fn build() -> ThirstyBuilder {
-        ThirstyBuilder
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ThirstyBuilder;
-
-impl ScorerBuilder for ThirstyBuilder {
-    fn build(&self, cmd: &mut Commands, scorer: Entity, _actor: Entity) {
-        cmd.entity(scorer).insert(Thirsty);
-    }
-}
 
 // Looks familiar? It's a lot like Actions!
 pub fn thirsty_scorer_system(
     thirsts: Query<&Thirst>,
-    // Same dance with the Parent here, but now Big Brain has added a Score component!
+    // Same dance with the Actor here, but now we use look up Score instead of ActionState.
     mut query: Query<(&Actor, &mut Score), With<Thirsty>>,
 ) {
     for (Actor(actor), mut score) in query.iter_mut() {
         if let Ok(thirst) = thirsts.get(*actor) {
             // This is really what the job of a Scorer is. To calculate a
-            // generic Utility value that the Big Brain engine will compare
+            // generic "Utility" score that the Big Brain engine will compare
             // against others, over time, and use to make decisions. This is
             // generally "the higher the better", and "first across the finish
             // line", but that's all configurable using Pickers!
@@ -150,13 +119,12 @@ pub fn thirsty_scorer_system(
 // to have AI behavior should have one *or more* Thinkers attached to it.
 pub fn init_entities(mut cmd: Commands) {
     // Create the entity and throw the Thirst component in there. Nothing special here.
-    cmd.spawn().insert(Thirst::new(70.0, 2.0)).insert(
-        // Thinker::build().component() will return a regular component you
-        // can attach normally!
+    cmd.spawn().insert(Thirst::new(75.0, 2.0)).insert(
         Thinker::build()
             .picker(FirstToScore { threshold: 0.8 })
-            // Note that what we pass in are _builders_, not components!
-            .when(Thirsty::build(), Drink::build()),
+            // Technically these are supposed to be ActionBuilders and
+            // ScorerBuilders, but our Clone impls simplify our code here.
+            .when(Thirsty, Drink { until: 70.0, per_second: 5.0 }),
     );
 }
 
@@ -167,7 +135,10 @@ fn main() {
         .add_plugin(BigBrainPlugin)
         .add_startup_system(init_entities)
         .add_system(thirst_system)
-        .add_system(drink_action_system)
-        .add_system(thirsty_scorer_system)
+        // Big Brain has specific stages for Scorers and Actions. If
+        // determinism matters a lot to you, you should add your action and
+        // scorer systems to these stages.
+        .add_system_to_stage(BigBrainStage::Actions, drink_action_system)
+        .add_system_to_stage(BigBrainStage::Scorers, thirsty_scorer_system)
         .run();
 }
