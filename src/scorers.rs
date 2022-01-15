@@ -63,10 +63,9 @@ pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
     */
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity);
 
-    /**
-    Don't implement this yourself unless you know what you're doing.
-     */
-    fn attach(&self, cmd: &mut Commands, actor: Entity) -> Entity {
+    // Don't implement this yourself unless you know what you're doing.
+    #[doc(hidden)]
+    fn spawn_scorer(&self, cmd: &mut Commands, actor: Entity) -> Entity {
         let scorer_ent = cmd.spawn().id();
         cmd.entity(scorer_ent)
             .insert(Name::new("Scorer"))
@@ -186,7 +185,7 @@ impl ScorerBuilder for AllOrNothingBuilder {
         let scorers: Vec<_> = self
             .scorers
             .iter()
-            .map(|scorer| scorer.attach(cmd, actor))
+            .map(|scorer| scorer.spawn_scorer(cmd, actor))
             .collect();
         cmd.entity(scorer)
             .insert(Score::default())
@@ -269,7 +268,7 @@ impl ScorerBuilder for SumOfScorersBuilder {
         let scorers: Vec<_> = self
             .scorers
             .iter()
-            .map(|scorer| scorer.attach(cmd, actor))
+            .map(|scorer| scorer.spawn_scorer(cmd, actor))
             .collect();
         cmd.entity(scorer)
             .insert(Transform::default())
@@ -360,7 +359,7 @@ impl ScorerBuilder for WinningScorerBuilder {
         let scorers: Vec<_> = self
             .scorers
             .iter()
-            .map(|scorer| scorer.attach(cmd, actor))
+            .map(|scorer| scorer.spawn_scorer(cmd, actor))
             .collect();
         cmd.entity(scorer)
             .insert(Transform::default())
@@ -431,7 +430,7 @@ pub struct EvaluatingScorerBuilder {
 
 impl ScorerBuilder for EvaluatingScorerBuilder {
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
-        let inner_scorer = self.scorer.attach(cmd, actor);
+        let inner_scorer = self.scorer.spawn_scorer(cmd, actor);
         cmd.entity(scorer)
             .insert(Transform::default())
             .insert(GlobalTransform::default())

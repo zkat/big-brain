@@ -144,7 +144,7 @@ pub fn thinker_component_attach_system(
     q: Query<(Entity, &ThinkerBuilder), Without<HasThinker>>,
 ) {
     for (entity, thinker_builder) in q.iter() {
-        let thinker = thinker_builder.attach(&mut cmd, entity);
+        let thinker = thinker_builder.spawn_action(&mut cmd, entity);
         cmd.entity(entity).insert(HasThinker(thinker));
     }
 }
@@ -305,7 +305,7 @@ fn exec_picked_action(
                     // Despawn the action itself.
                     cmd.entity(action_ent.0).despawn_recursive();
                     thinker.current_action = Some((
-                        ActionEnt(picked_action.1.attach(cmd, actor)),
+                        ActionEnt(picked_action.1.spawn_action(cmd, actor)),
                         picked_action.clone(),
                     ));
                 }
@@ -326,7 +326,7 @@ fn exec_picked_action(
         // current_action in the thinker. The logic here is pretty
         // straightforward -- we set the action, Request it, and
         // that's it.
-        let new_action = picked_action.1.attach(cmd, actor);
+        let new_action = picked_action.1.spawn_action(cmd, actor);
         thinker.current_action = Some((ActionEnt(new_action), picked_action.clone()));
     }
 }
