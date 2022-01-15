@@ -189,6 +189,8 @@ impl ScorerBuilder for AllOrNothingBuilder {
             .collect();
         cmd.entity(scorer)
             .insert(Score::default())
+            .insert(Transform::default())
+            .insert(GlobalTransform::default())
             .push_children(&scorers[..])
             .insert(Name::new("Scorer"))
             .insert(AllOrNothing {
@@ -273,6 +275,7 @@ impl ScorerBuilder for SumOfScorersBuilder {
         cmd.entity(scorer)
             .insert(Transform::default())
             .insert(GlobalTransform::default())
+            .push_children(&scorers[..])
             .insert(SumOfScorers {
                 threshold: self.threshold,
                 scorers: scorers.into_iter().map(ScorerEnt).collect(),
@@ -364,6 +367,7 @@ impl ScorerBuilder for WinningScorerBuilder {
         cmd.entity(scorer)
             .insert(Transform::default())
             .insert(GlobalTransform::default())
+            .push_children(&scorers[..])
             .insert(WinningScorer {
                 threshold: self.threshold,
                 scorers: scorers.into_iter().map(ScorerEnt).collect(),
@@ -431,9 +435,11 @@ pub struct EvaluatingScorerBuilder {
 impl ScorerBuilder for EvaluatingScorerBuilder {
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
         let inner_scorer = self.scorer.spawn_scorer(cmd, actor);
+        let scorers = vec![inner_scorer];
         cmd.entity(scorer)
             .insert(Transform::default())
             .insert(GlobalTransform::default())
+            .push_children(&scorers[..])
             .insert(EvaluatingScorer {
                 evaluator: self.evaluator.clone(),
                 scorer: ScorerEnt(inner_scorer),
