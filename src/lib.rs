@@ -15,11 +15,7 @@ See [the documentation](https://docs.rs/big-brain) for more details.
 
 * Highly concurrent/parallelizable evaluation.
 * Integrates smoothly with Bevy.
-* Easy AI definition using idiomatic Rust builders. You don't have to be some genius to define behavior that _feels_ realistic to players.
-* High performance--supports hundreds of thousands of concurrent AIs.
-* Graceful degradation--can be configured such that the less frame time is available, the slower an AI might "seem", without dragging down framerates, by simply processing fewer events per tick.
 * Proven game AI model.
-* Low code overhead--you only define two types of application-dependent things, and everything else is building blocks!
 * Highly composable and reusable.
 * State machine-style continuous actions/behaviors.
 * Action cancellation.
