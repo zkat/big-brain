@@ -258,23 +258,6 @@ pub fn thinker_system(
                         &default_action_ent,
                         &mut action_states,
                     );
-                } else if let Some(current) = &mut thinker.current_action {
-                    // If we didn't pick anything, and there's no default action,
-                    // we need to see if there's any action currently executing,
-                    // and cancel it. We also use this opportunity to clean up
-                    // stale action components so they don't slow down joins.
-                    let mut state = action_states.get_mut(current.0.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
-                    match *state {
-                        actions::ActionState::Init
-                        | actions::ActionState::Success
-                        | actions::ActionState::Failure => {
-                            cmd.entity(current.0 .0).despawn_recursive();
-                            thinker.current_action = None;
-                        }
-                        _ => {
-                            *state = ActionState::Cancelled;
-                        }
-                    }
                 }
             }
         }
