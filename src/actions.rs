@@ -138,6 +138,8 @@ impl ActionBuilder for StepsBuilder {
                     active_ent: ActionEnt(child_action),
                     steps: self.steps.clone(),
                 })
+                .insert(Transform::default())
+                .insert(GlobalTransform::default())
                 .push_children(&[child_action]);
         }
     }
@@ -271,6 +273,8 @@ impl ActionBuilder for ConcurrentlyBuilder {
             .collect();
         cmd.entity(action)
             .insert(Name::new("Concurrent Action"))
+            .insert(Transform::default())
+            .insert(GlobalTransform::default())
             .push_children(&children[..])
             .insert(Concurrently {
                 actions: children.into_iter().map(ActionEnt).collect(),
