@@ -1,5 +1,12 @@
 # `big-brain` Release Changelog
 
+<a name="0.11.0"></a>
+## 0.11.0 (2022-05-05)
+
+### Features
+
+* **deps:** upgrade to Bevy 0.7. (#37) ([38688789](https://github.com/zkat/big-brain/commit/38688789d08547e1cbc0d2a373fc58af39dea360))
+
 <a name="0.10.0"></a>
 ## 0.10.0 (2022-01-15)
 
