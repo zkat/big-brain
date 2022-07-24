@@ -113,6 +113,13 @@ App::new()
     .run();
 ```
 
+### Examples
+
+The full source code of the above Thirst/Drink action example can be found in the [Thirst example]([)examples/thirst.rs).
+
+Also, the [Sequence Example](examples/sequence.rs) example describes how to use `Steps` to compose several actions
+together sequentially.
+
 ### Contributing
 
 1. Install the latest Rust toolchain (stable supported).
