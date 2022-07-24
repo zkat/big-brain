@@ -257,6 +257,13 @@ pub fn init_entities(mut cmd: Commands) {
             position: Vec2::new(-10.0, 0.0),
         });
 
+    // We use the Steps struct to essentially build a "MoveAndDrink" action by composing
+    // the MoveToWaterSource and Drink actions.
+    //
+    // If either of the steps fails, the whole action fails. That is: if the actor somehow fails
+    // to move to the water source (which is not possible in our case) they will not attempt to
+    // drink either. Getting them un-stuck from that situation is then up to other possible actions.
+    //
     // We build up a list of steps that make it so that the actor will...
     let move_and_drink =
         Steps::build()
