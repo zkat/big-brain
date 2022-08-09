@@ -1,5 +1,9 @@
 # big-brain
 
+[![crates.io](https://img.shields.io/crates/v/big-brain.svg)](https://crates.io/crates/big-brain)
+[![docs.rs](https://docs.rs/big-brain/badge.svg)](https://docs.rs/big-brain)
+[![Apache 2.0](https://img.shields.io/badge/license-Apache-blue.svg)](./LICENSE.md)
+
 `big-brain` is a [Utility AI](https://en.wikipedia.org/wiki/Utility_system)
 library for games, built for the [Bevy Game Engine](https://bevyengine.org/)
 
