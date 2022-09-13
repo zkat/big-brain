@@ -2,7 +2,7 @@
 Pickers are used by Thinkers to determine which of its Scorers will "win".
 */
 
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::FloatOrd};
 
 use crate::{choices::Choice, scorers::Score};
 
@@ -13,6 +13,33 @@ Implementations of `pick` must return `Some(Choice)` for the `Choice` that was p
  */
 pub trait Picker: std::fmt::Debug + Sync + Send {
     fn pick<'a>(&self, choices: &'a [Choice], scores: &Query<&Score>) -> Option<&'a Choice>;
+}
+
+/**
+Picker that chooses the `Choice` with the highest non-zero [`Score`], and the first highest in case of a tie.
+
+### Example
+
+```no_run
+Thinker::build()
+    .picker(HighestThenFirst)
+    // .when(...)
+```
+ */
+#[derive(Debug, Clone, Default)]
+pub struct Highest;
+
+impl Picker for Highest {
+    fn pick<'a>(&self, choices: &'a [Choice], scores: &Query<&Score>) -> Option<&'a Choice> {
+        let mut choices = choices
+            .iter()
+            .map(|v| (FloatOrd(v.calculate(scores)), v))
+            .filter(|v| v.0 .0 > 0.)
+            .collect::<Vec<(FloatOrd, &Choice)>>();
+        choices.sort_by_key(|v| v.0);
+        choices.reverse();
+        choices.first().map(|v| v.1)
+    }
 }
 
 /**
