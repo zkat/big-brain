@@ -104,7 +104,7 @@ where
 Scorer that always returns the same, fixed score. Good for combining with things creatively!
  */
 #[derive(Clone, Component, Debug)]
-pub struct FixedScore(f32);
+pub struct FixedScore(pub f32);
 
 pub fn fixed_score_system(mut query: Query<(&FixedScore, &mut Score)>) {
     for (FixedScore(fixed), mut score) in query.iter_mut() {
