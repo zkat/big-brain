@@ -26,7 +26,7 @@ pub struct Actor(pub Entity);
 pub(crate) struct ActionEnt(pub Entity);
 
 #[derive(Debug, Clone, Component, Copy)]
-pub(crate) struct ScorerEnt(pub Entity);
+pub struct ScorerEnt(pub Entity);
 
 /**
 The "brains" behind this whole operation. A `Thinker` is what glues together `Actions` and `Scorers` and shapes larger, intelligent-seeming systems.
