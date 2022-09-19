@@ -15,7 +15,7 @@ use crate::{
 Score value between `0.0..=1.0` associated with a Scorer.
  */
 #[derive(Clone, Component, Debug, Default)]
-pub struct Score(pub f32);
+pub struct Score(pub(crate) f32);
 
 impl Score {
     /**
