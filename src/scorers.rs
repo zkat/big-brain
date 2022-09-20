@@ -337,12 +337,12 @@ pub fn product_of_scorers_system(
 
         for ScorerEnt(child) in children.iter() {
             let score = scores.get_mut(*child).expect("where is it?");
-            product *= score.get();
+            product *= score.0;
             num_scorers += 1;
         }
 
-        // we can now need to modify the score based on the number of inputs
-        // see http://www.gdcvault.com/play/1021848/Building-a-Better-Centaur-AI
+        // we can apply some compensation for the fact that composite score will be reduced for scores
+        // with more inputs. See for example http://www.gdcvault.com/play/1021848/Building-a-Better-Centaur-AI
         if *apply_compensation && product < 1.0 {
             let mod_factor = 1.0 - 1.0 / (num_scorers as f32);
             let makeup = (1.0 - product) * mod_factor;
