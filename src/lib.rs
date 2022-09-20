@@ -178,6 +178,7 @@ impl Plugin for BigBrainPlugin {
                 .with_system(scorers::fixed_score_system)
                 .with_system(scorers::all_or_nothing_system)
                 .with_system(scorers::sum_of_scorers_system)
+                .with_system(scorers::product_of_scorers_system)
                 .with_system(scorers::winning_scorer_system)
                 .with_system(scorers::evaluating_scorer_system),
         );
