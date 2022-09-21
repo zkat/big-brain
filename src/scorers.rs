@@ -287,15 +287,16 @@ impl ScorerBuilder for SumOfScorersBuilder {
 Composite Scorer that takes any number of other Scorers and returns the product of their [`Score`]. If the resulting score
 is less than the threshold, it returns 0.
 
-The Scorer also provides a compensation factor based on the number of Scores passed to it. This can be disabled by passing
-`false` to the `build` argument.
+The Scorer can also apply a compensation factor based on the number of Scores passed to it. This can be enabled by passing
+`true` to the `apply_compensation` function on the builder.
 
 ### Example
 
 ```ignore
-Thinker::build(0.5, true)
+Thinker::build()
     .when(
-        ProductOfScorers::build()
+        ProductOfScorers::build(0.5)
+          .apply_compensation(true)
           .push(MyScorer)
           .push(MyOtherScorer),
         MyAction::build());
@@ -305,15 +306,15 @@ Thinker::build(0.5, true)
 #[derive(Component, Debug)]
 pub struct ProductOfScorers {
     threshold: f32,
-    apply_compensation: bool,
+    use_compensation: bool,
     scorers: Vec<ScorerEnt>,
 }
 
 impl ProductOfScorers {
-    pub fn build(threshold: f32, apply_compensation: bool) -> ProductOfScorersBuilder {
+    pub fn build(threshold: f32) -> ProductOfScorersBuilder {
         ProductOfScorersBuilder {
             threshold,
-            apply_compensation,
+            use_compensation: false,
             scorers: Vec::new(),
         }
     }
@@ -327,7 +328,7 @@ pub fn product_of_scorers_system(
         sos_ent,
         ProductOfScorers {
             threshold,
-            apply_compensation,
+            use_compensation,
             scorers: children,
         },
     ) in query.iter()
@@ -341,9 +342,8 @@ pub fn product_of_scorers_system(
             num_scorers += 1;
         }
 
-        // we can apply some compensation for the fact that composite score will be reduced for scores
-        // with more inputs. See for example http://www.gdcvault.com/play/1021848/Building-a-Better-Centaur-AI
-        if *apply_compensation && product < 1.0 {
+        // See for example http://www.gdcvault.com/play/1021848/Building-a-Better-Centaur-AI
+        if *use_compensation && product < 1.0 {
             let mod_factor = 1.0 - 1.0 / (num_scorers as f32);
             let makeup = (1.0 - product) * mod_factor;
             product += makeup * product;
@@ -361,11 +361,18 @@ pub fn product_of_scorers_system(
 #[derive(Debug, Clone)]
 pub struct ProductOfScorersBuilder {
     threshold: f32,
-    apply_compensation: bool,
+    use_compensation: bool,
     scorers: Vec<Arc<dyn ScorerBuilder>>,
 }
 
 impl ProductOfScorersBuilder {
+    /// To account for the fact that the total score will be reduced for scores with more inputs,
+    /// we can optionally apply a compensation factor by calling this and passing `true`
+    pub fn apply_compensation(mut self, use_compensation: bool) -> Self {
+        self.use_compensation = use_compensation;
+        self
+    }
+
     pub fn push(mut self, scorer: impl ScorerBuilder + 'static) -> Self {
         self.scorers.push(Arc::new(scorer));
         self
@@ -386,7 +393,7 @@ impl ScorerBuilder for ProductOfScorersBuilder {
             .push_children(&scorers[..])
             .insert(ProductOfScorers {
                 threshold: self.threshold,
-                apply_compensation: self.apply_compensation,
+                use_compensation: self.use_compensation,
                 scorers: scorers.into_iter().map(ScorerEnt).collect(),
             });
     }
