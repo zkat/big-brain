@@ -23,7 +23,7 @@ Wrapper for Actor entities. In terms of Scorers, Thinkers, and Actions, this is 
 pub struct Actor(pub Entity);
 
 #[derive(Debug, Clone, Component, Copy)]
-pub(crate) struct ActionEnt(pub Entity);
+pub struct ActionEnt(pub Entity);
 
 #[derive(Debug, Clone, Component, Copy)]
 pub struct ScorerEnt(pub Entity);
