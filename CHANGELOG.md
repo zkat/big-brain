@@ -1,5 +1,17 @@
 # `big-brain` Release Changelog
 
+<a name="0.13.0"></a>
+## 0.13.0 (2022-09-21)
+
+### Features
+
+* **scorers:** make ScorerEnt public (#50) ([9e6d7f63](https://github.com/zkat/big-brain/commit/9e6d7f63f52f66ad6e80914913aad37c00570bb3))
+* **scorers:** make FixedScore members pub (#49) ([f0ddb9e5](https://github.com/zkat/big-brain/commit/f0ddb9e51cf96956b73ca2d7fc25812def676fef))
+* **picker:** Implement a Highest Picker (#52) ([4b48f94d](https://github.com/zkat/big-brain/commit/4b48f94d7221eedcaa1a64a6d2f100022f79164b))
+* **scorers:** Add ProductOfScorers composite scorer (#51) ([e425e234](https://github.com/zkat/big-brain/commit/e425e2348a53cd675070b4f2a3e7076242012c8b))
+* **actions:** make ActionEnt public, too ([fc30e752](https://github.com/zkat/big-brain/commit/fc30e752c66aa887f62a899827e5a8c9910eeec3))
+* **prelude:** Add ScorerEnt and ActionEnt to the prelude ([08b0598b](https://github.com/zkat/big-brain/commit/08b0598b1cd1fa5cae68932012ff20d76d0acbf6))
+
 <a name="0.12.0"></a>
 ## 0.12.0 (2022-08-01)
 
