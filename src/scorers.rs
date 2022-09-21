@@ -288,7 +288,7 @@ Composite Scorer that takes any number of other Scorers and returns the product 
 is less than the threshold, it returns 0.
 
 The Scorer can also apply a compensation factor based on the number of Scores passed to it. This can be enabled by passing
-`true` to the `apply_compensation` function on the builder.
+`true` to the `use_compensation` method on the builder.
 
 ### Example
 
@@ -296,7 +296,7 @@ The Scorer can also apply a compensation factor based on the number of Scores pa
 Thinker::build()
     .when(
         ProductOfScorers::build(0.5)
-          .apply_compensation(true)
+          .use_compensation(true)
           .push(MyScorer)
           .push(MyOtherScorer),
         MyAction::build());
