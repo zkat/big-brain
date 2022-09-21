@@ -368,7 +368,7 @@ pub struct ProductOfScorersBuilder {
 impl ProductOfScorersBuilder {
     /// To account for the fact that the total score will be reduced for scores with more inputs,
     /// we can optionally apply a compensation factor by calling this and passing `true`
-    pub fn apply_compensation(mut self, use_compensation: bool) -> Self {
+    pub fn use_compensation(mut self, use_compensation: bool) -> Self {
         self.use_compensation = use_compensation;
         self
     }
