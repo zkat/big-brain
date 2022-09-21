@@ -145,7 +145,7 @@ pub mod prelude {
     pub use scorers::{
         AllOrNothing, FixedScore, ProductOfScorers, Score, ScorerBuilder, SumOfScorers, WinningScorer,
     };
-    pub use thinker::{Actor, Thinker, ThinkerBuilder};
+    pub use thinker::{Actor, ActionEnt, ScorerEnt, Thinker, ThinkerBuilder};
 }
 
 use bevy::prelude::*;
