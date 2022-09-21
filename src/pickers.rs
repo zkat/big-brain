@@ -48,3 +48,34 @@ impl Picker for FirstToScore {
         None
     }
 }
+
+/**
+Picker that chooses the `Choice` with the highest non-zero [`Score`], and the first highest in case of a tie.
+
+### Example
+
+```no_run
+Thinker::build()
+    .picker(HighestThenFirst)
+    // .when(...)
+```
+ */
+#[derive(Debug, Clone, Default)]
+pub struct Highest;
+
+impl Picker for Highest {
+    fn pick<'a>(&self, choices: &'a [Choice], scores: &Query<&Score>) -> Option<&'a Choice> {
+        let mut max_score = 0f32;
+
+        choices.iter().fold(None, |acc, choice| {
+            let score = choice.calculate(scores);
+
+            if score <= max_score || score <= 0.0 {
+                return acc;
+            }
+
+            max_score = score;
+            Some(choice)
+        })
+    }
+}
