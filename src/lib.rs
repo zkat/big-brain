@@ -143,7 +143,7 @@ pub mod prelude {
     pub use actions::{ActionBuilder, ActionState, Concurrently, Steps};
     pub use pickers::{FirstToScore, Highest, Picker};
     pub use scorers::{
-        AllOrNothing, FixedScore, Score, ScorerBuilder, SumOfScorers, WinningScorer,
+        AllOrNothing, FixedScore, ProductOfScorers, Score, ScorerBuilder, SumOfScorers, WinningScorer,
     };
     pub use thinker::{Actor, Thinker, ThinkerBuilder};
 }
@@ -178,6 +178,7 @@ impl Plugin for BigBrainPlugin {
                 .with_system(scorers::fixed_score_system)
                 .with_system(scorers::all_or_nothing_system)
                 .with_system(scorers::sum_of_scorers_system)
+                .with_system(scorers::product_of_scorers_system)
                 .with_system(scorers::winning_scorer_system)
                 .with_system(scorers::evaluating_scorer_system),
         );

@@ -284,6 +284,122 @@ impl ScorerBuilder for SumOfScorersBuilder {
 }
 
 /**
+Composite Scorer that takes any number of other Scorers and returns the product of their [`Score`]. If the resulting score
+is less than the threshold, it returns 0.
+
+The Scorer can also apply a compensation factor based on the number of Scores passed to it. This can be enabled by passing
+`true` to the `use_compensation` method on the builder.
+
+### Example
+
+```ignore
+Thinker::build()
+    .when(
+        ProductOfScorers::build(0.5)
+          .use_compensation(true)
+          .push(MyScorer)
+          .push(MyOtherScorer),
+        MyAction::build());
+```
+ */
+
+#[derive(Component, Debug)]
+pub struct ProductOfScorers {
+    threshold: f32,
+    use_compensation: bool,
+    scorers: Vec<ScorerEnt>,
+}
+
+impl ProductOfScorers {
+    pub fn build(threshold: f32) -> ProductOfScorersBuilder {
+        ProductOfScorersBuilder {
+            threshold,
+            use_compensation: false,
+            scorers: Vec::new(),
+        }
+    }
+}
+
+pub fn product_of_scorers_system(
+    query: Query<(Entity, &ProductOfScorers)>,
+    mut scores: Query<&mut Score>,
+) {
+    for (
+        sos_ent,
+        ProductOfScorers {
+            threshold,
+            use_compensation,
+            scorers: children,
+        },
+    ) in query.iter()
+    {
+        let mut product = 1.0;
+        let mut num_scorers = 0;
+
+        for ScorerEnt(child) in children.iter() {
+            let score = scores.get_mut(*child).expect("where is it?");
+            product *= score.0;
+            num_scorers += 1;
+        }
+
+        // See for example http://www.gdcvault.com/play/1021848/Building-a-Better-Centaur-AI
+        if *use_compensation && product < 1.0 {
+            let mod_factor = 1.0 - 1.0 / (num_scorers as f32);
+            let makeup = (1.0 - product) * mod_factor;
+            product += makeup * product;
+        }
+
+        if product < *threshold {
+            product = 0.0;
+        }
+
+        let mut score = scores.get_mut(sos_ent).expect("where did it go?");
+        score.set(product.clamp(0.0, 1.0));
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ProductOfScorersBuilder {
+    threshold: f32,
+    use_compensation: bool,
+    scorers: Vec<Arc<dyn ScorerBuilder>>,
+}
+
+impl ProductOfScorersBuilder {
+    /// To account for the fact that the total score will be reduced for scores with more inputs,
+    /// we can optionally apply a compensation factor by calling this and passing `true`
+    pub fn use_compensation(mut self, use_compensation: bool) -> Self {
+        self.use_compensation = use_compensation;
+        self
+    }
+
+    pub fn push(mut self, scorer: impl ScorerBuilder + 'static) -> Self {
+        self.scorers.push(Arc::new(scorer));
+        self
+    }
+}
+
+impl ScorerBuilder for ProductOfScorersBuilder {
+    #[allow(clippy::needless_collect)]
+    fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
+        let scorers: Vec<_> = self
+            .scorers
+            .iter()
+            .map(|scorer| scorer.spawn_scorer(cmd, actor))
+            .collect();
+        cmd.entity(scorer)
+            .insert(Transform::default())
+            .insert(GlobalTransform::default())
+            .push_children(&scorers[..])
+            .insert(ProductOfScorers {
+                threshold: self.threshold,
+                use_compensation: self.use_compensation,
+                scorers: scorers.into_iter().map(ScorerEnt).collect(),
+            });
+    }
+}
+
+/**
 Composite Scorer that takes any number of other Scorers and returns the single highest value [`Score`] if  _any_ [`Score`]s are at or above the configured `threshold`.
 
 ### Example
