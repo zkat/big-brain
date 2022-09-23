@@ -8,7 +8,7 @@ use bevy::prelude::*;
 
 use crate::{
     evaluators::Evaluator,
-    thinker::{Actor, ScorerEnt},
+    thinker::{Actor, Scorer},
 };
 
 /**
@@ -129,7 +129,7 @@ Thinker::build()
 #[derive(Component, Debug)]
 pub struct AllOrNothing {
     threshold: f32,
-    scorers: Vec<ScorerEnt>,
+    scorers: Vec<Scorer>,
 }
 
 impl AllOrNothing {
@@ -151,7 +151,7 @@ pub fn all_or_nothing_system(query: Query<(Entity, &AllOrNothing)>, mut scores: 
     ) in query.iter()
     {
         let mut sum = 0.0;
-        for ScorerEnt(child) in children.iter() {
+        for Scorer(child) in children.iter() {
             let score = scores.get_mut(*child).expect("where is it?");
             if score.0 < *threshold {
                 sum = 0.0;
@@ -195,7 +195,7 @@ impl ScorerBuilder for AllOrNothingBuilder {
             .insert(Name::new("Scorer"))
             .insert(AllOrNothing {
                 threshold: self.threshold,
-                scorers: scorers.into_iter().map(ScorerEnt).collect(),
+                scorers: scorers.into_iter().map(Scorer).collect(),
             });
     }
 }
@@ -217,7 +217,7 @@ Thinker::build()
 #[derive(Component, Debug)]
 pub struct SumOfScorers {
     threshold: f32,
-    scorers: Vec<ScorerEnt>,
+    scorers: Vec<Scorer>,
 }
 
 impl SumOfScorers {
@@ -239,7 +239,7 @@ pub fn sum_of_scorers_system(query: Query<(Entity, &SumOfScorers)>, mut scores: 
     ) in query.iter()
     {
         let mut sum = 0.0;
-        for ScorerEnt(child) in children.iter() {
+        for Scorer(child) in children.iter() {
             let score = scores.get_mut(*child).expect("where is it?");
             sum += score.0;
         }
@@ -278,7 +278,7 @@ impl ScorerBuilder for SumOfScorersBuilder {
             .push_children(&scorers[..])
             .insert(SumOfScorers {
                 threshold: self.threshold,
-                scorers: scorers.into_iter().map(ScorerEnt).collect(),
+                scorers: scorers.into_iter().map(Scorer).collect(),
             });
     }
 }
@@ -307,7 +307,7 @@ Thinker::build()
 pub struct ProductOfScorers {
     threshold: f32,
     use_compensation: bool,
-    scorers: Vec<ScorerEnt>,
+    scorers: Vec<Scorer>,
 }
 
 impl ProductOfScorers {
@@ -336,7 +336,7 @@ pub fn product_of_scorers_system(
         let mut product = 1.0;
         let mut num_scorers = 0;
 
-        for ScorerEnt(child) in children.iter() {
+        for Scorer(child) in children.iter() {
             let score = scores.get_mut(*child).expect("where is it?");
             product *= score.0;
             num_scorers += 1;
@@ -394,7 +394,7 @@ impl ScorerBuilder for ProductOfScorersBuilder {
             .insert(ProductOfScorers {
                 threshold: self.threshold,
                 use_compensation: self.use_compensation,
-                scorers: scorers.into_iter().map(ScorerEnt).collect(),
+                scorers: scorers.into_iter().map(Scorer).collect(),
             });
     }
 }
@@ -417,7 +417,7 @@ Thinker::build()
 #[derive(Component, Debug)]
 pub struct WinningScorer {
     threshold: f32,
-    scorers: Vec<ScorerEnt>,
+    scorers: Vec<Scorer>,
 }
 
 impl WinningScorer {
@@ -437,7 +437,7 @@ pub fn winning_scorer_system(
         let (threshold, children) = (winning_scorer.threshold, &mut winning_scorer.scorers);
         let mut all_scores = children
             .iter()
-            .map(|ScorerEnt(e)| scores.get(*e).expect("where is it?"))
+            .map(|Scorer(e)| scores.get(*e).expect("where is it?"))
             .collect::<Vec<&Score>>();
 
         all_scores.sort_by(|a, b| a.get().partial_cmp(&b.get()).unwrap_or(Ordering::Equal));
@@ -486,7 +486,7 @@ impl ScorerBuilder for WinningScorerBuilder {
             .push_children(&scorers[..])
             .insert(WinningScorer {
                 threshold: self.threshold,
-                scorers: scorers.into_iter().map(ScorerEnt).collect(),
+                scorers: scorers.into_iter().map(Scorer).collect(),
             });
     }
 }
@@ -506,7 +506,7 @@ Thinker::build()
  */
 #[derive(Clone, Component, Debug)]
 pub struct EvaluatingScorer {
-    scorer: ScorerEnt,
+    scorer: Scorer,
     evaluator: Arc<dyn Evaluator>,
 }
 
@@ -558,7 +558,7 @@ impl ScorerBuilder for EvaluatingScorerBuilder {
             .push_children(&scorers[..])
             .insert(EvaluatingScorer {
                 evaluator: self.evaluator.clone(),
-                scorer: ScorerEnt(inner_scorer),
+                scorer: Scorer(inner_scorer),
             });
     }
 }

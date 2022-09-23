@@ -143,9 +143,10 @@ pub mod prelude {
     pub use actions::{ActionBuilder, ActionState, Concurrently, Steps};
     pub use pickers::{FirstToScore, Highest, Picker};
     pub use scorers::{
-        AllOrNothing, FixedScore, ProductOfScorers, Score, ScorerBuilder, SumOfScorers, WinningScorer,
+        AllOrNothing, FixedScore, ProductOfScorers, Score, ScorerBuilder, SumOfScorers,
+        WinningScorer,
     };
-    pub use thinker::{Actor, ActionEnt, ScorerEnt, Thinker, ThinkerBuilder};
+    pub use thinker::{Action, Actor, Scorer, Thinker, ThinkerBuilder};
 }
 
 use bevy::prelude::*;

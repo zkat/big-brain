@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 
-use crate::thinker::{ActionEnt, Actor};
+use crate::thinker::{Action, Actor};
 
 /**
 The current state for an Action.
@@ -106,7 +106,7 @@ pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
     #[doc(hidden)]
     // Don't implement this yourself unless you know what you're doing.
     fn spawn_action(&self, cmd: &mut Commands, actor: Entity) -> Entity {
-        let action_ent = ActionEnt(cmd.spawn().id());
+        let action_ent = Action(cmd.spawn().id());
         cmd.entity(action_ent.0)
             .insert(Name::new("Action"))
             .insert(ActionState::new())
@@ -151,7 +151,7 @@ impl ActionBuilder for StepsBuilder {
                 .insert(Name::new("Steps Action"))
                 .insert(Steps {
                     active_step: 0,
-                    active_ent: ActionEnt(child_action),
+                    active_ent: Action(child_action),
                     steps: self.steps.clone(),
                 })
                 .insert(Transform::default())
@@ -180,7 +180,7 @@ Thinker::build()
 pub struct Steps {
     steps: Vec<Arc<dyn ActionBuilder>>,
     active_step: usize,
-    active_ent: ActionEnt,
+    active_ent: Action,
 }
 
 impl Steps {
@@ -293,7 +293,7 @@ impl ActionBuilder for ConcurrentlyBuilder {
             .insert(GlobalTransform::default())
             .push_children(&children[..])
             .insert(Concurrently {
-                actions: children.into_iter().map(ActionEnt).collect(),
+                actions: children.into_iter().map(Action).collect(),
             });
     }
 }
@@ -315,7 +315,7 @@ Thinker::build()
 */
 #[derive(Component, Debug)]
 pub struct Concurrently {
-    actions: Vec<ActionEnt>,
+    actions: Vec<Action>,
 }
 
 impl Concurrently {
@@ -344,7 +344,7 @@ pub fn concurrent_system(
                 // Begin at the beginning
                 let mut current_state = states_q.get_mut(seq_ent).expect("uh oh");
                 *current_state = Executing;
-                for ActionEnt(child_ent) in concurrent_action.actions.iter() {
+                for Action(child_ent) in concurrent_action.actions.iter() {
                     let mut child_state = states_q.get_mut(*child_ent).expect("uh oh");
                     *child_state = Requested;
                 }
@@ -352,7 +352,7 @@ pub fn concurrent_system(
             Executing => {
                 let mut all_success = true;
                 let mut failed_idx = None;
-                for (idx, ActionEnt(child_ent)) in concurrent_action.actions.iter().enumerate() {
+                for (idx, Action(child_ent)) in concurrent_action.actions.iter().enumerate() {
                     let mut child_state = states_q.get_mut(*child_ent).expect("uh oh");
                     match *child_state {
                         Failure => {
@@ -372,7 +372,7 @@ pub fn concurrent_system(
                     let mut state_var = states_q.get_mut(seq_ent).expect("uh oh");
                     *state_var = Success;
                 } else if let Some(idx) = failed_idx {
-                    for ActionEnt(child_ent) in concurrent_action.actions.iter().take(idx) {
+                    for Action(child_ent) in concurrent_action.actions.iter().take(idx) {
                         let mut child_state = states_q.get_mut(*child_ent).expect("uh oh");
                         match *child_state {
                             Failure | Success => {}
@@ -387,7 +387,7 @@ pub fn concurrent_system(
             }
             Cancelled => {
                 // Cancel all actions
-                for ActionEnt(child_ent) in concurrent_action.actions.iter() {
+                for Action(child_ent) in concurrent_action.actions.iter() {
                     let mut child_state = states_q.get_mut(*child_ent).expect("uh oh");
                     match *child_state {
                         Init | Success | Failure => {

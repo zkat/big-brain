@@ -23,10 +23,10 @@ Wrapper for Actor entities. In terms of Scorers, Thinkers, and Actions, this is 
 pub struct Actor(pub Entity);
 
 #[derive(Debug, Clone, Copy)]
-pub struct ActionEnt(pub Entity);
+pub struct Action(pub Entity);
 
 #[derive(Debug, Clone, Copy)]
-pub struct ScorerEnt(pub Entity);
+pub struct Scorer(pub Entity);
 
 /**
 The "brains" behind this whole operation. A `Thinker` is what glues together `Actions` and `Scorers` and shapes larger, intelligent-seeming systems.
@@ -55,7 +55,7 @@ pub struct Thinker {
     picker: Arc<dyn Picker>,
     otherwise: Option<ActionBuilderWrapper>,
     choices: Vec<Choice>,
-    current_action: Option<(ActionEnt, ActionBuilderWrapper)>,
+    current_action: Option<(Action, ActionBuilderWrapper)>,
 }
 
 impl Thinker {
@@ -300,7 +300,7 @@ fn exec_picked_action(
                     // Despawn the action itself.
                     cmd.entity(action_ent.0).despawn_recursive();
                     thinker.current_action = Some((
-                        ActionEnt(picked_action.1.spawn_action(cmd, actor)),
+                        Action(picked_action.1.spawn_action(cmd, actor)),
                         picked_action.clone(),
                     ));
                 }
@@ -322,6 +322,6 @@ fn exec_picked_action(
         // straightforward -- we set the action, Request it, and
         // that's it.
         let new_action = picked_action.1.spawn_action(cmd, actor);
-        thinker.current_action = Some((ActionEnt(new_action), picked_action.clone()));
+        thinker.current_action = Some((Action(new_action), picked_action.clone()));
     }
 }
