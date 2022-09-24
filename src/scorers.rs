@@ -8,6 +8,7 @@ use bevy::prelude::*;
 
 use crate::{
     evaluators::Evaluator,
+    measures::{Measure, SumMeasure},
     thinker::{Actor, ScorerEnt},
 };
 
@@ -559,6 +560,123 @@ impl ScorerBuilder for EvaluatingScorerBuilder {
             .insert(EvaluatingScorer {
                 evaluator: self.evaluator.clone(),
                 scorer: ScorerEnt(inner_scorer),
+            });
+    }
+}
+
+/**
+Composite Scorer that allows more fine-grained control of how the scores are combined. The default is to apply a weighting
+
+### Example
+
+Using the default measure:
+
+```ignore
+Thinker::build()
+    .when(
+        MeasuredScorer::build(0.5)
+          .push(MyScorer)
+          .push(MyOtherScorer),
+        MyAction);
+```
+
+Customising the measure:
+
+```ignore
+Thinker::build()
+    .when(
+        MeasuredScorer::build(0.5)
+          .measure(measures::ChebychevDistance)
+          .push(MyScorer)
+          .push(MyOtherScorer),
+        MyAction);
+```
+
+ */
+
+#[derive(Component, Debug)]
+pub struct MeasuredScorer {
+    threshold: f32,
+    measure: Arc<dyn Measure>,
+    scorers: Vec<ScorerEnt>,
+}
+
+impl MeasuredScorer {
+    pub fn build(threshold: f32) -> MeasuredScorerBuilder {
+        MeasuredScorerBuilder {
+            threshold,
+            measure: Arc::new(SumMeasure),
+            scorers: Vec::new(),
+        }
+    }
+}
+
+pub fn measured_scorers_system(
+    query: Query<(Entity, &MeasuredScorer)>,
+    mut scores: Query<&mut Score>,
+) {
+    for (
+        sos_ent,
+        MeasuredScorer {
+            threshold,
+            measure,
+            scorers: children,
+        },
+    ) in query.iter()
+    {
+        let measured_score = measure.calculate(
+            children
+                .iter()
+                .map(|s| scores.get(s.0).expect("where is it?"))
+                .collect::<Vec<_>>(),
+        );
+        let mut score = scores.get_mut(sos_ent).expect("where did it go?");
+
+        if measured_score < *threshold {
+            score.set(0.0);
+        } else {
+            score.set(measured_score.clamp(0.0, 1.0));
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct MeasuredScorerBuilder {
+    threshold: f32,
+    measure: Arc<dyn Measure>,
+    scorers: Vec<Arc<dyn ScorerBuilder>>,
+}
+
+impl MeasuredScorerBuilder {
+    /// To account for the fact that the total score will be reduced for scores with more inputs,
+    /// we can optionally apply a compensation factor by calling this and passing `true`
+    pub fn measure(mut self, measure: impl Measure + 'static) -> Self {
+        self.measure = Arc::new(measure);
+        self
+    }
+
+    pub fn push(mut self, scorer: impl ScorerBuilder + 'static) -> Self {
+        self.scorers.push(Arc::new(scorer));
+        self
+    }
+}
+
+impl ScorerBuilder for MeasuredScorerBuilder {
+    #[allow(clippy::needless_collect)]
+    fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
+        let scorers: Vec<_> = self
+            .scorers
+            .iter()
+            .map(|scorer| scorer.spawn_scorer(cmd, actor))
+            .collect();
+        cmd.entity(scorer)
+            .insert(Transform::default())
+            .insert(GlobalTransform::default())
+            .push_children(&scorers[..])
+            .insert(MeasuredScorer {
+                threshold: self.threshold,
+                measure: self.measure.clone(),
+                scorers: scorers.into_iter().map(ScorerEnt).collect(),
             });
     }
 }
