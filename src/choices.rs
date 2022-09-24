@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use crate::{
     actions::{ActionBuilder, ActionBuilderWrapper},
-    scorers::{Score, ScorerBuilder},
+    scorers::{self, Score, ScorerBuilder},
     thinker::Scorer,
 };
 
@@ -37,7 +37,7 @@ impl ChoiceBuilder {
     }
 
     pub fn build(&self, cmd: &mut Commands, actor: Entity, parent: Entity) -> Choice {
-        let scorer_ent = self.when.spawn_scorer(cmd, actor);
+        let scorer_ent = scorers::spawn_scorer(&*self.when, cmd, actor);
         cmd.entity(parent).push_children(&[scorer_ent]);
         Choice {
             scorer: Scorer(scorer_ent),

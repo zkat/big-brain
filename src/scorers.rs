@@ -5,10 +5,11 @@ Scorers look at the world and boil down arbitrary characteristics into a range o
 use std::{cmp::Ordering, sync::Arc};
 
 use bevy::prelude::*;
+use bevy::utils::tracing::trace;
 
 use crate::{
     evaluators::Evaluator,
-    thinker::{Actor, Scorer},
+    thinker::{Actor, Scorer, ScorerSpan},
 };
 
 /**
@@ -24,6 +25,7 @@ impl Score {
     pub fn get(&self) -> f32 {
         self.0
     }
+
     /**
     Set the `Score`'s value.
 
@@ -78,17 +80,31 @@ pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
     */
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity);
 
-    // Don't implement this yourself unless you know what you're doing.
-    #[doc(hidden)]
-    fn spawn_scorer(&self, cmd: &mut Commands, actor: Entity) -> Entity {
-        let scorer_ent = cmd.spawn().id();
-        cmd.entity(scorer_ent)
-            .insert(Name::new("Scorer"))
-            .insert(Score::default())
-            .insert(Actor(actor));
-        self.build(cmd, scorer_ent, actor);
-        scorer_ent
+    /**
+     * A label to display when logging using the Scorer's tracing span.
+     */
+    fn label(&self) -> Option<&str> {
+        None
     }
+}
+
+pub fn spawn_scorer<T: ScorerBuilder + ?Sized>(
+    builder: &T,
+    cmd: &mut Commands,
+    actor: Entity,
+) -> Entity {
+    let scorer_ent = cmd.spawn().id();
+    let span = ScorerSpan::new(scorer_ent, ScorerBuilder::label(builder));
+    let _guard = span.span().enter();
+    debug!("New Scorer spawned.");
+    cmd.entity(scorer_ent)
+        .insert(Name::new("Scorer"))
+        .insert(Score::default())
+        .insert(Actor(actor));
+    builder.build(cmd, scorer_ent, actor);
+    std::mem::drop(_guard);
+    cmd.entity(scorer_ent).insert(span);
+    scorer_ent
 }
 
 impl<T> ScorerBuilder for T
@@ -106,9 +122,43 @@ Scorer that always returns the same, fixed score. Good for combining with things
 #[derive(Clone, Component, Debug)]
 pub struct FixedScore(pub f32);
 
-pub fn fixed_score_system(mut query: Query<(&FixedScore, &mut Score)>) {
-    for (FixedScore(fixed), mut score) in query.iter_mut() {
+impl FixedScore {
+    pub fn build(score: f32) -> FixedScorerBuilder {
+        FixedScorerBuilder { score, label: None }
+    }
+}
+
+pub fn fixed_score_system(mut query: Query<(&FixedScore, &mut Score, &ScorerSpan)>) {
+    for (FixedScore(fixed), mut score, span) in query.iter_mut() {
+        #[cfg(feature = "trace")]
+        {
+            let _guard = span.span().enter();
+            trace!("FixedScore: {}", fixed);
+        }
         score.set(*fixed);
+    }
+}
+
+#[derive(Debug)]
+pub struct FixedScorerBuilder {
+    score: f32,
+    label: Option<String>,
+}
+
+impl FixedScorerBuilder {
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+}
+
+impl ScorerBuilder for FixedScorerBuilder {
+    fn build(&self, cmd: &mut Commands, scorer: Entity, _actor: Entity) {
+        cmd.entity(scorer).insert(FixedScore(self.score));
+    }
+
+    fn label(&self) -> Option<&str> {
+        self.label.as_deref().or(Some("FixedScore"))
     }
 }
 
@@ -120,7 +170,7 @@ Composite Scorer that takes any number of other Scorers and returns the sum of t
 ```ignore
 Thinker::build()
     .when(
-        AllOrNothing::build()
+        AllOrNothing::build(0.8)
           .push(MyScorer)
           .push(MyOtherScorer),
         MyAction::build());
@@ -137,17 +187,22 @@ impl AllOrNothing {
         AllOrNothingBuilder {
             threshold,
             scorers: Vec::new(),
+            label: None,
         }
     }
 }
 
-pub fn all_or_nothing_system(query: Query<(Entity, &AllOrNothing)>, mut scores: Query<&mut Score>) {
+pub fn all_or_nothing_system(
+    query: Query<(Entity, &AllOrNothing, &ScorerSpan)>,
+    mut scores: Query<&mut Score>,
+) {
     for (
         aon_ent,
         AllOrNothing {
             threshold,
             scorers: children,
         },
+        span,
     ) in query.iter()
     {
         let mut sum = 0.0;
@@ -162,12 +217,19 @@ pub fn all_or_nothing_system(query: Query<(Entity, &AllOrNothing)>, mut scores: 
         }
         let mut score = scores.get_mut(aon_ent).expect("where did it go?");
         score.set(crate::evaluators::clamp(sum, 0.0, 1.0));
+        #[cfg(feature = "trace")]
+        {
+            let _guard = span.span().enter();
+            trace!("AllOrNothing score: {}", score.get());
+        }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct AllOrNothingBuilder {
     threshold: f32,
     scorers: Vec<Arc<dyn ScorerBuilder>>,
+    label: Option<String>,
 }
 
 impl AllOrNothingBuilder {
@@ -178,14 +240,26 @@ impl AllOrNothingBuilder {
         self.scorers.push(Arc::new(scorer));
         self
     }
+
+    /**
+     * Set a label for this Action.
+     */
+    pub fn label(mut self, label: impl AsRef<str>) -> Self {
+        self.label = Some(label.as_ref().into());
+        self
+    }
 }
 
 impl ScorerBuilder for AllOrNothingBuilder {
+    fn label(&self) -> Option<&str> {
+        self.label.as_deref().or(Some("AllOrNothing"))
+    }
+
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
         let scorers: Vec<_> = self
             .scorers
             .iter()
-            .map(|scorer| scorer.spawn_scorer(cmd, actor))
+            .map(|scorer| spawn_scorer(&**scorer, cmd, actor))
             .collect();
         cmd.entity(scorer)
             .insert(Score::default())
@@ -225,17 +299,22 @@ impl SumOfScorers {
         SumOfScorersBuilder {
             threshold,
             scorers: Vec::new(),
+            label: None,
         }
     }
 }
 
-pub fn sum_of_scorers_system(query: Query<(Entity, &SumOfScorers)>, mut scores: Query<&mut Score>) {
+pub fn sum_of_scorers_system(
+    query: Query<(Entity, &SumOfScorers, &ScorerSpan)>,
+    mut scores: Query<&mut Score>,
+) {
     for (
         sos_ent,
         SumOfScorers {
             threshold,
             scorers: children,
         },
+        span,
     ) in query.iter()
     {
         let mut sum = 0.0;
@@ -248,6 +327,15 @@ pub fn sum_of_scorers_system(query: Query<(Entity, &SumOfScorers)>, mut scores: 
         }
         let mut score = scores.get_mut(sos_ent).expect("where did it go?");
         score.set(crate::evaluators::clamp(sum, 0.0, 1.0));
+        #[cfg(feature = "trace")]
+        {
+            let _guard = span.span().enter();
+            trace!(
+                "SumOfScorers score: {}, from {} scores",
+                score.get(),
+                children.len()
+            );
+        }
     }
 }
 
@@ -255,6 +343,7 @@ pub fn sum_of_scorers_system(query: Query<(Entity, &SumOfScorers)>, mut scores: 
 pub struct SumOfScorersBuilder {
     threshold: f32,
     scorers: Vec<Arc<dyn ScorerBuilder>>,
+    label: Option<String>,
 }
 
 impl SumOfScorersBuilder {
@@ -262,15 +351,27 @@ impl SumOfScorersBuilder {
         self.scorers.push(Arc::new(scorer));
         self
     }
+
+    /**
+     * Set a label for this Action.
+     */
+    pub fn label(mut self, label: impl AsRef<str>) -> Self {
+        self.label = Some(label.as_ref().into());
+        self
+    }
 }
 
 impl ScorerBuilder for SumOfScorersBuilder {
+    fn label(&self) -> Option<&str> {
+        self.label.as_deref().or(Some("SumOfScorers"))
+    }
+
     #[allow(clippy::needless_collect)]
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
         let scorers: Vec<_> = self
             .scorers
             .iter()
-            .map(|scorer| scorer.spawn_scorer(cmd, actor))
+            .map(|scorer| spawn_scorer(&**scorer, cmd, actor))
             .collect();
         cmd.entity(scorer)
             .insert(Transform::default())
@@ -316,12 +417,13 @@ impl ProductOfScorers {
             threshold,
             use_compensation: false,
             scorers: Vec::new(),
+            label: None,
         }
     }
 }
 
 pub fn product_of_scorers_system(
-    query: Query<(Entity, &ProductOfScorers)>,
+    query: Query<(Entity, &ProductOfScorers, &ScorerSpan)>,
     mut scores: Query<&mut Score>,
 ) {
     for (
@@ -331,6 +433,7 @@ pub fn product_of_scorers_system(
             use_compensation,
             scorers: children,
         },
+        span,
     ) in query.iter()
     {
         let mut product = 1.0;
@@ -355,6 +458,15 @@ pub fn product_of_scorers_system(
 
         let mut score = scores.get_mut(sos_ent).expect("where did it go?");
         score.set(product.clamp(0.0, 1.0));
+        #[cfg(feature = "trace")]
+        {
+            let _guard = span.span().enter();
+            trace!(
+                "ProductOfScorers score: {}, from {} scores",
+                score.get(),
+                children.len()
+            );
+        }
     }
 }
 
@@ -363,6 +475,7 @@ pub struct ProductOfScorersBuilder {
     threshold: f32,
     use_compensation: bool,
     scorers: Vec<Arc<dyn ScorerBuilder>>,
+    label: Option<String>,
 }
 
 impl ProductOfScorersBuilder {
@@ -377,15 +490,27 @@ impl ProductOfScorersBuilder {
         self.scorers.push(Arc::new(scorer));
         self
     }
+
+    /**
+     * Set a label for this Action.
+     */
+    pub fn label(mut self, label: impl AsRef<str>) -> Self {
+        self.label = Some(label.as_ref().into());
+        self
+    }
 }
 
 impl ScorerBuilder for ProductOfScorersBuilder {
+    fn label(&self) -> Option<&str> {
+        self.label.as_deref().or(Some("ProductOfScorers"))
+    }
+
     #[allow(clippy::needless_collect)]
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
         let scorers: Vec<_> = self
             .scorers
             .iter()
-            .map(|scorer| scorer.spawn_scorer(cmd, actor))
+            .map(|scorer| spawn_scorer(&**scorer, cmd, actor))
             .collect();
         cmd.entity(scorer)
             .insert(Transform::default())
@@ -425,15 +550,16 @@ impl WinningScorer {
         WinningScorerBuilder {
             threshold,
             scorers: Vec::new(),
+            label: None,
         }
     }
 }
 
 pub fn winning_scorer_system(
-    mut query: Query<(Entity, &mut WinningScorer)>,
+    mut query: Query<(Entity, &mut WinningScorer, &ScorerSpan)>,
     mut scores: Query<&mut Score>,
 ) {
-    for (sos_ent, mut winning_scorer) in query.iter_mut() {
+    for (sos_ent, mut winning_scorer, span) in query.iter_mut() {
         let (threshold, children) = (winning_scorer.threshold, &mut winning_scorer.scorers);
         let mut all_scores = children
             .iter()
@@ -453,6 +579,15 @@ pub fn winning_scorer_system(
         };
         let mut score = scores.get_mut(sos_ent).expect("where did it go?");
         score.set(crate::evaluators::clamp(winning_score_or_zero, 0.0, 1.0));
+        #[cfg(feature = "trace")]
+        {
+            let _guard = span.span().enter();
+            trace!(
+                "WinningScorer score: {}, from {} scores",
+                score.get(),
+                children.len()
+            );
+        }
     }
 }
 
@@ -460,6 +595,7 @@ pub fn winning_scorer_system(
 pub struct WinningScorerBuilder {
     threshold: f32,
     scorers: Vec<Arc<dyn ScorerBuilder>>,
+    label: Option<String>,
 }
 
 impl WinningScorerBuilder {
@@ -470,15 +606,27 @@ impl WinningScorerBuilder {
         self.scorers.push(Arc::new(scorer));
         self
     }
+
+    /**
+     * Set a label for this Action.
+     */
+    pub fn label(mut self, label: impl AsRef<str>) -> Self {
+        self.label = Some(label.as_ref().into());
+        self
+    }
 }
 
 impl ScorerBuilder for WinningScorerBuilder {
+    fn label(&self) -> Option<&str> {
+        self.label.as_deref().or(Some("WinningScorer"))
+    }
+
     #[allow(clippy::needless_collect)]
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
         let scorers: Vec<_> = self
             .scorers
             .iter()
-            .map(|scorer| scorer.spawn_scorer(cmd, actor))
+            .map(|scorer| spawn_scorer(&**scorer, cmd, actor))
             .collect();
         cmd.entity(scorer)
             .insert(Transform::default())
@@ -504,7 +652,7 @@ Thinker::build()
         MyAction);
 ```
  */
-#[derive(Clone, Component, Debug)]
+#[derive(Component, Debug)]
 pub struct EvaluatingScorer {
     scorer: Scorer,
     evaluator: Arc<dyn Evaluator>,
@@ -518,15 +666,16 @@ impl EvaluatingScorer {
         EvaluatingScorerBuilder {
             evaluator: Arc::new(evaluator),
             scorer: Arc::new(scorer),
+            label: None,
         }
     }
 }
 
 pub fn evaluating_scorer_system(
-    query: Query<(Entity, &EvaluatingScorer)>,
+    query: Query<(Entity, &EvaluatingScorer, &ScorerSpan)>,
     mut scores: Query<&mut Score>,
 ) {
-    for (sos_ent, eval_scorer) in query.iter() {
+    for (sos_ent, eval_scorer, span) in query.iter() {
         // Get the inner score
         let inner_score = scores
             .get(eval_scorer.scorer.0)
@@ -539,18 +688,32 @@ pub fn evaluating_scorer_system(
             0.0,
             1.0,
         ));
+        #[cfg(feature = "trace")]
+        {
+            let _guard = span.span().enter();
+            trace!(
+                "EvaluatingScorer score: {}, from score: {}",
+                score.get(),
+                inner_score
+            );
+        }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct EvaluatingScorerBuilder {
-    pub scorer: Arc<dyn ScorerBuilder>,
-    pub evaluator: Arc<dyn Evaluator>,
+    scorer: Arc<dyn ScorerBuilder>,
+    evaluator: Arc<dyn Evaluator>,
+    label: Option<String>,
 }
 
 impl ScorerBuilder for EvaluatingScorerBuilder {
+    fn label(&self) -> Option<&str> {
+        self.label.as_deref().or(Some("EvaluatingScorer"))
+    }
+
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
-        let inner_scorer = self.scorer.spawn_scorer(cmd, actor);
+        let inner_scorer = spawn_scorer(&*self.scorer, cmd, actor);
         let scorers = vec![inner_scorer];
         cmd.entity(scorer)
             .insert(Transform::default())
