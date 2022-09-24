@@ -263,8 +263,6 @@ impl ScorerBuilder for AllOrNothingBuilder {
             .collect();
         cmd.entity(scorer)
             .insert(Score::default())
-            .insert(Transform::default())
-            .insert(GlobalTransform::default())
             .push_children(&scorers[..])
             .insert(Name::new("Scorer"))
             .insert(AllOrNothing {
@@ -374,8 +372,6 @@ impl ScorerBuilder for SumOfScorersBuilder {
             .map(|scorer| spawn_scorer(&**scorer, cmd, actor))
             .collect();
         cmd.entity(scorer)
-            .insert(Transform::default())
-            .insert(GlobalTransform::default())
             .push_children(&scorers[..])
             .insert(SumOfScorers {
                 threshold: self.threshold,
@@ -513,8 +509,6 @@ impl ScorerBuilder for ProductOfScorersBuilder {
             .map(|scorer| spawn_scorer(&**scorer, cmd, actor))
             .collect();
         cmd.entity(scorer)
-            .insert(Transform::default())
-            .insert(GlobalTransform::default())
             .push_children(&scorers[..])
             .insert(ProductOfScorers {
                 threshold: self.threshold,
@@ -629,8 +623,6 @@ impl ScorerBuilder for WinningScorerBuilder {
             .map(|scorer| spawn_scorer(&**scorer, cmd, actor))
             .collect();
         cmd.entity(scorer)
-            .insert(Transform::default())
-            .insert(GlobalTransform::default())
             .push_children(&scorers[..])
             .insert(WinningScorer {
                 threshold: self.threshold,
@@ -716,8 +708,6 @@ impl ScorerBuilder for EvaluatingScorerBuilder {
         let inner_scorer = spawn_scorer(&*self.scorer, cmd, actor);
         let scorers = vec![inner_scorer];
         cmd.entity(scorer)
-            .insert(Transform::default())
-            .insert(GlobalTransform::default())
             .push_children(&scorers[..])
             .insert(EvaluatingScorer {
                 evaluator: self.evaluator.clone(),
