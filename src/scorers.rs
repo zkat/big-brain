@@ -5,6 +5,7 @@ Scorers look at the world and boil down arbitrary characteristics into a range o
 use std::{cmp::Ordering, sync::Arc};
 
 use bevy::prelude::*;
+#[cfg(feature = "trace")]
 use bevy::utils::tracing::trace;
 
 use crate::{
@@ -129,10 +130,10 @@ impl FixedScore {
 }
 
 pub fn fixed_score_system(mut query: Query<(&FixedScore, &mut Score, &ScorerSpan)>) {
-    for (FixedScore(fixed), mut score, span) in query.iter_mut() {
+    for (FixedScore(fixed), mut score, _span) in query.iter_mut() {
         #[cfg(feature = "trace")]
         {
-            let _guard = span.span().enter();
+            let _guard = _span.span().enter();
             trace!("FixedScore: {}", fixed);
         }
         score.set(*fixed);
@@ -202,7 +203,7 @@ pub fn all_or_nothing_system(
             threshold,
             scorers: children,
         },
-        span,
+        _span,
     ) in query.iter()
     {
         let mut sum = 0.0;
@@ -219,7 +220,7 @@ pub fn all_or_nothing_system(
         score.set(crate::evaluators::clamp(sum, 0.0, 1.0));
         #[cfg(feature = "trace")]
         {
-            let _guard = span.span().enter();
+            let _guard = _span.span().enter();
             trace!("AllOrNothing score: {}", score.get());
         }
     }
@@ -312,7 +313,7 @@ pub fn sum_of_scorers_system(
             threshold,
             scorers: children,
         },
-        span,
+        _span,
     ) in query.iter()
     {
         let mut sum = 0.0;
@@ -327,7 +328,7 @@ pub fn sum_of_scorers_system(
         score.set(crate::evaluators::clamp(sum, 0.0, 1.0));
         #[cfg(feature = "trace")]
         {
-            let _guard = span.span().enter();
+            let _guard = _span.span().enter();
             trace!(
                 "SumOfScorers score: {}, from {} scores",
                 score.get(),
@@ -429,7 +430,7 @@ pub fn product_of_scorers_system(
             use_compensation,
             scorers: children,
         },
-        span,
+        _span,
     ) in query.iter()
     {
         let mut product = 1.0;
@@ -456,7 +457,7 @@ pub fn product_of_scorers_system(
         score.set(product.clamp(0.0, 1.0));
         #[cfg(feature = "trace")]
         {
-            let _guard = span.span().enter();
+            let _guard = _span.span().enter();
             trace!(
                 "ProductOfScorers score: {}, from {} scores",
                 score.get(),
@@ -553,7 +554,7 @@ pub fn winning_scorer_system(
     mut query: Query<(Entity, &mut WinningScorer, &ScorerSpan)>,
     mut scores: Query<&mut Score>,
 ) {
-    for (sos_ent, mut winning_scorer, span) in query.iter_mut() {
+    for (sos_ent, mut winning_scorer, _span) in query.iter_mut() {
         let (threshold, children) = (winning_scorer.threshold, &mut winning_scorer.scorers);
         let mut all_scores = children
             .iter()
@@ -575,7 +576,7 @@ pub fn winning_scorer_system(
         score.set(crate::evaluators::clamp(winning_score_or_zero, 0.0, 1.0));
         #[cfg(feature = "trace")]
         {
-            let _guard = span.span().enter();
+            let _guard = _span.span().enter();
             trace!(
                 "WinningScorer score: {}, from {} scores",
                 score.get(),
@@ -667,7 +668,7 @@ pub fn evaluating_scorer_system(
     query: Query<(Entity, &EvaluatingScorer, &ScorerSpan)>,
     mut scores: Query<&mut Score>,
 ) {
-    for (sos_ent, eval_scorer, span) in query.iter() {
+    for (sos_ent, eval_scorer, _span) in query.iter() {
         // Get the inner score
         let inner_score = scores
             .get(eval_scorer.scorer.0)
@@ -682,7 +683,7 @@ pub fn evaluating_scorer_system(
         ));
         #[cfg(feature = "trace")]
         {
-            let _guard = span.span().enter();
+            let _guard = _span.span().enter();
             trace!(
                 "EvaluatingScorer score: {}, from score: {}",
                 score.get(),

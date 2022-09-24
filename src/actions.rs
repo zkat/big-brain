@@ -4,7 +4,7 @@ Defines Action-related functionality. This module includes the ActionBuilder tra
 use std::sync::Arc;
 
 use bevy::prelude::*;
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use bevy::utils::tracing::trace;
 
 use crate::thinker::{Action, ActionSpan, Actor};
@@ -237,12 +237,12 @@ pub fn steps_system(
     for (seq_ent, Actor(actor), mut steps_action, _span) in steps_q.iter_mut() {
         let active_ent = steps_action.active_ent.entity();
         let current_state = states.get_mut(seq_ent).unwrap().clone();
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         let _guard = _span.span().enter();
         match current_state {
             Requested => {
                 // Begin at the beginning
-                #[cfg(feature = "tracing")]
+                #[cfg(feature = "trace")]
                 trace!(
                     "Initializing StepsAction and requesting first step: {:?}",
                     active_ent
@@ -265,7 +265,7 @@ pub fn steps_system(
                     }
                     Failure => {
                         // Fail ourselves
-                        #[cfg(feature = "tracing")]
+                        #[cfg(feature = "trace")]
                         trace!("Step {:?} failed. Failing entire StepsAction.", active_ent);
                         let step_state = step_state.clone();
                         let mut seq_state = states.get_mut(seq_ent).expect("idk");
@@ -275,7 +275,7 @@ pub fn steps_system(
                     }
                     Success if steps_action.active_step == steps_action.steps.len() - 1 => {
                         // We're done! Let's just be successful
-                        #[cfg(feature = "tracing")]
+                        #[cfg(feature = "trace")]
                         trace!("StepsAction completed all steps successfully.");
                         let step_state = step_state.clone();
                         let mut seq_state = states.get_mut(seq_ent).expect("idk");
@@ -284,7 +284,7 @@ pub fn steps_system(
                             .despawn_recursive();
                     }
                     Success => {
-                        #[cfg(feature = "tracing")]
+                        #[cfg(feature = "trace")]
                         trace!("Step succeeded, but there's more steps. Spawning next action.");
                         // Deactivate current step and go to the next step
                         cmd.entity(steps_action.active_ent.entity())
@@ -293,7 +293,7 @@ pub fn steps_system(
                         steps_action.active_step += 1;
                         let step_builder = steps_action.steps[steps_action.active_step].clone();
                         let step_ent = spawn_action(step_builder.as_ref(), &mut cmd, *actor);
-                        #[cfg(feature = "tracing")]
+                        #[cfg(feature = "trace")]
                         trace!("Spawned next step: {:?}", step_ent);
                         cmd.entity(seq_ent).push_children(&[step_ent]);
                         steps_action.active_ent = Action(step_ent);
@@ -302,7 +302,7 @@ pub fn steps_system(
             }
             Cancelled => {
                 // Cancel current action
-                #[cfg(feature = "tracing")]
+                #[cfg(feature = "trace")]
                 trace!("StepsAction has been cancelled. Cancelling current step {:?} before finalizing.", active_ent);
                 let mut step_state = states.get_mut(active_ent).expect("oops");
                 if *step_state == Requested || *step_state == Executing {
@@ -407,11 +407,11 @@ pub fn concurrent_system(
     use ActionState::*;
     for (seq_ent, concurrent_action, _span) in concurrent_q.iter() {
         let current_state = states_q.get_mut(seq_ent).expect("uh oh").clone();
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         let _guard = _span.span.enter();
         match current_state {
             Requested => {
-                #[cfg(feature = "tracing")]
+                #[cfg(feature = "trace")]
                 trace!(
                     "Initializing Concurrently action with {} children.",
                     concurrent_action.actions.len()
@@ -435,7 +435,7 @@ pub fn concurrent_system(
                         Failure => {
                             failed_idx = Some(idx);
                             all_success = false;
-                            #[cfg(feature = "tracing")]
+                            #[cfg(feature = "trace")]
                             trace!("Concurrently action has failed. Cancelling all other actions that haven't completed yet.");
                         }
                         Success => {}
@@ -488,11 +488,11 @@ pub fn concurrent_system(
                 if all_done {
                     let mut state_var = states_q.get_mut(seq_ent).expect("uh oh");
                     if any_failed {
-                        #[cfg(feature = "tracing")]
+                        #[cfg(feature = "trace")]
                         trace!("Concurrently action has failed due to failed children.");
                         *state_var = Failure;
                     } else {
-                        #[cfg(feature = "tracing")]
+                        #[cfg(feature = "trace")]
                         trace!("All Concurrently children have completed Successfully.");
                         *state_var = Success;
                     }

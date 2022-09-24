@@ -7,10 +7,13 @@ use std::sync::Arc;
 use bevy::{
     prelude::*,
     utils::{
-        tracing::{debug, field, span, trace, Level, Span},
+        tracing::{debug, field, span, Level, Span},
         Duration, Instant,
     },
 };
+
+#[cfg(feature = "trace")]
+use bevy::utils::tracing::trace;
 
 use crate::{
     actions::{self, ActionBuilder, ActionBuilderWrapper, ActionState},
