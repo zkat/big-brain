@@ -362,11 +362,10 @@ pub fn thinker_system(
                         &action_spans,
                         Some((&scorer, score)),
                         &scorer_spans,
+                        true,
                     );
                 } else if let Some(default_action_ent) = &thinker.otherwise {
                     // Otherwise, let's just execute the default one! (if it's there)
-                    #[cfg(feature = "trace")]
-                    trace!("No action was picked. Executing `otherwise` clause.");
                     let default_action_ent = default_action_ent.clone();
                     exec_picked_action(
                         &mut cmd,
@@ -377,6 +376,7 @@ pub fn thinker_system(
                         &action_spans,
                         None,
                         &scorer_spans,
+                        false,
                     );
                 } else {
                     #[cfg(feature = "trace")]
@@ -418,6 +418,7 @@ fn exec_picked_action(
     action_spans: &Query<&ActionSpan>,
     scorer_info: Option<(&Scorer, &Score)>,
     scorer_spans: &Query<&ScorerSpan>,
+    override_current: bool,
 ) {
     // If we do find one, then we need to grab the corresponding
     // component for it. The "action" that `picker.pick()` returns
@@ -440,14 +441,20 @@ fn exec_picked_action(
         );
         let action_span = action_spans.get(action_ent.0).expect("Where is it?");
         let _guard = action_span.span.enter();
-        if !Arc::ptr_eq(current_id, &picked_action.0) || previous_done {
+        if (!Arc::ptr_eq(current_id, &picked_action.0) && override_current) || previous_done {
             // So we've picked a different action than we were
             // currently executing. Just like before, we grab the
             // actual Action component (and we assume it exists).
             // If the action is executing, or was requested, we
             // need to cancel it to make sure it stops.
             if !previous_done {
-                debug!("Picked a different action than the current one.",);
+                if override_current {
+                    #[cfg(feature = "trace")]
+                    trace!("Falling back to `otherwise` clause.",);
+                } else {
+                    #[cfg(feature = "trace")]
+                    trace!("Picked a different action than the current one.",);
+                }
             }
             match *curr_action_state {
                 ActionState::Executing | ActionState::Requested => {
@@ -485,9 +492,12 @@ fn exec_picked_action(
                 *curr_action_state = ActionState::Requested;
             }
             #[cfg(feature = "trace")]
-            trace!("Current action was still picked. Continuing execution of current action.",)
+            trace!("Continuing execution of current action.",)
         }
     } else {
+        #[cfg(feature = "trace")]
+        trace!("Falling back to `otherwise` clause.",);
+
         // This branch arm is called when there's no
         // current_action in the thinker. The logic here is pretty
         // straightforward -- we set the action, Request it, and
