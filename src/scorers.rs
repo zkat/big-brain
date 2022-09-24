@@ -648,8 +648,7 @@ pub struct MeasuredScorerBuilder {
 }
 
 impl MeasuredScorerBuilder {
-    /// To account for the fact that the total score will be reduced for scores with more inputs,
-    /// we can optionally apply a compensation factor by calling this and passing `true`
+    /// Sets the measure to be used to combine the child scorers
     pub fn measure(mut self, measure: impl Measure + 'static) -> Self {
         self.measure = Arc::new(measure);
         self

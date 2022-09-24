@@ -11,7 +11,7 @@ pub trait Measure: std::fmt::Debug + Sync + Send {
     fn calculate(&self, scores: Vec<&Score>) -> f32;
 }
 
-/// A basic measure that just adds all the elements together
+/// A measure that adds all the elements together
 #[derive(Debug, Clone)]
 pub struct SumMeasure;
 
@@ -21,7 +21,17 @@ impl Measure for SumMeasure {
     }
 }
 
-/// A basic measure that just multiplies all the elements together
+/// A measure that adds all the elements together and multiplies them by the weight
+#[derive(Debug, Clone)]
+pub struct WeightedSumMeasure(pub f32);
+
+impl Measure for WeightedSumMeasure {
+    fn calculate(&self, scores: Vec<&Score>) -> f32 {
+        scores.iter().fold(0f32, |acc, item| acc + item.0) * self.0
+    }
+}
+
+/// A measure that multiplies all the elements together
 #[derive(Debug, Clone)]
 pub struct ProductMeasure;
 
