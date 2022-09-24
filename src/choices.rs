@@ -4,14 +4,14 @@ use bevy::prelude::*;
 
 use crate::{
     actions::{ActionBuilder, ActionBuilderWrapper},
-    scorers::{Score, ScorerBuilder},
-    thinker::ScorerEnt,
+    scorers::{self, Score, ScorerBuilder},
+    thinker::Scorer,
 };
 
 // Contains different types of Considerations and Actions
 #[derive(Debug, Clone)]
 pub struct Choice {
-    pub(crate) scorer: ScorerEnt,
+    pub(crate) scorer: Scorer,
     pub(crate) action: ActionBuilderWrapper,
 }
 impl Choice {
@@ -37,10 +37,10 @@ impl ChoiceBuilder {
     }
 
     pub fn build(&self, cmd: &mut Commands, actor: Entity, parent: Entity) -> Choice {
-        let scorer_ent = self.when.spawn_scorer(cmd, actor);
+        let scorer_ent = scorers::spawn_scorer(&*self.when, cmd, actor);
         cmd.entity(parent).push_children(&[scorer_ent]);
         Choice {
-            scorer: ScorerEnt(scorer_ent),
+            scorer: Scorer(scorer_ent),
             action: ActionBuilderWrapper::new(self.then.clone()),
         }
     }
