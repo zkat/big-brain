@@ -95,17 +95,17 @@ fn eat_thing_action<
         if let Ok(mut item) = items.get_mut(*actor) {
             match *state {
                 ActionState::Requested => {
-                    info!("Time to eat something - {:?}", action_marker);
+                    info!("Time to {:?}", action_marker);
                     *state = ActionState::Executing;
                 }
                 ActionState::Executing => {
-                    debug!("Eating {:?}", action_marker);
+                    debug!("You should {:?}", action_marker);
 
                     item.eat(time.delta_seconds() * 5.0);
 
                     // we should stop at some eating pancakes at some point, unfortunately
                     if item.get() > 80.0 {
-                        info!("Done eating {:?}", action_marker);
+                        info!("You shouldn't {:?}", action_marker);
                         *state = ActionState::Success;
                     }
                 }
@@ -143,7 +143,7 @@ pub fn craving_food_scorer<
             // we don't want to get too full here, so lets say we only eat if we get below 0.5
             let current_food = item.get();
 
-            if current_food >= 0.5 {
+            if current_food >= 50.0 {
                 score.set(0.0);
             } else {
                 // if we're hungry let's get increasingly angry about it, so it increases
@@ -162,7 +162,7 @@ pub fn init_entities(mut cmd: Commands) {
         .insert(
             Thinker::build()
                 .label("Hungry Thinker")
-                .picker(Highest)
+                .picker(FirstToScore::new(0.5))
                 // we use our custom measure here. The impact of the custom measure is that the
                 // pancakes should be down-weighted. This means despite this being listed first,
                 // all things being equal we should consume pancakes before waffles.
