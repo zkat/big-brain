@@ -10,7 +10,7 @@ use bevy::utils::tracing::trace;
 
 use crate::{
     evaluators::Evaluator,
-    measures::{Measure, SumMeasure},
+    measures::{Measure, WeightedSumMeasure},
     thinker::{Actor, Scorer, ScorerSpan},
 };
 
@@ -752,14 +752,14 @@ Thinker::build()
 pub struct MeasuredScorer {
     threshold: f32,
     measure: Arc<dyn Measure>,
-    scorers: Vec<Scorer>,
+    scorers: Vec<(Scorer, f32)>,
 }
 
 impl MeasuredScorer {
     pub fn build(threshold: f32) -> MeasuredScorerBuilder {
         MeasuredScorerBuilder {
             threshold,
-            measure: Arc::new(SumMeasure),
+            measure: Arc::new(WeightedSumMeasure),
             scorers: Vec::new(),
             label: None,
         }
@@ -767,7 +767,7 @@ impl MeasuredScorer {
 }
 
 pub fn measured_scorers_system(
-    query: Query<(Entity, &MeasuredScorer)>,
+    query: Query<(Entity, &MeasuredScorer, &ScorerSpan)>,
     mut scores: Query<&mut Score>,
 ) {
     for (
@@ -777,12 +777,13 @@ pub fn measured_scorers_system(
             measure,
             scorers: children,
         },
+        _span,
     ) in query.iter()
     {
         let measured_score = measure.calculate(
             children
                 .iter()
-                .map(|s| scores.get(s.0).expect("where is it?"))
+                .map(|(scorer, weight)| (scores.get(scorer.0).expect("where is it?"), *weight))
                 .collect::<Vec<_>>(),
         );
         let mut score = scores.get_mut(sos_ent).expect("where did it go?");
@@ -792,6 +793,15 @@ pub fn measured_scorers_system(
         } else {
             score.set(measured_score.clamp(0.0, 1.0));
         }
+        #[cfg(feature = "trace")]
+        {
+            let _guard = _span.span().enter();
+            trace!(
+                "MeasuredScorer score: {}, from {} scores",
+                score.get(),
+                children.len()
+            );
+        }
     }
 }
 
@@ -799,7 +809,7 @@ pub fn measured_scorers_system(
 pub struct MeasuredScorerBuilder {
     threshold: f32,
     measure: Arc<dyn Measure>,
-    scorers: Vec<Arc<dyn ScorerBuilder>>,
+    scorers: Vec<(Arc<dyn ScorerBuilder>, f32)>,
     label: Option<String>,
 }
 
@@ -810,8 +820,8 @@ impl MeasuredScorerBuilder {
         self
     }
 
-    pub fn push(mut self, scorer: impl ScorerBuilder + 'static) -> Self {
-        self.scorers.push(Arc::new(scorer));
+    pub fn push(mut self, scorer: impl ScorerBuilder + 'static, weight: f32) -> Self {
+        self.scorers.push((Arc::new(scorer), weight));
         self
     }
 }
@@ -826,13 +836,18 @@ impl ScorerBuilder for MeasuredScorerBuilder {
         let scorers: Vec<_> = self
             .scorers
             .iter()
-            .map(|scorer| spawn_scorer(&**scorer, cmd, actor))
+            .map(|(scorer, _)| spawn_scorer(&**scorer, cmd, actor))
             .collect();
         cmd.entity(scorer)
             .push_children(&scorers[..])
-            .insert(SumOfScorers {
+            .insert(MeasuredScorer {
                 threshold: self.threshold,
-                scorers: scorers.into_iter().map(Scorer).collect(),
+                measure: self.measure.clone(),
+                scorers: scorers
+                    .into_iter()
+                    .map(Scorer)
+                    .zip(self.scorers.iter().map(|(_, weight)| *weight))
+                    .collect(),
             });
     }
 }
