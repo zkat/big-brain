@@ -1,5 +1,37 @@
 # `big-brain` Release Changelog
 
+<a name="0.14.0"></a>
+## 0.14.0 (2022-09-25)
+
+This is a fairly beefy release. The two main changes are the addition of
+significant new observability features, which let you debug/trace both
+big-brain and your own Scorers and Actions more easily in an integrated
+manner. Additionally, a new advanced composite Scorer was added,
+MeasuredScorer, which can be used to create some interesting behaviors when
+you have want to factor in multiple scorers when adding cases to Thinker.
+
+Besides that, there's several bugfixes to long-standing bugs and a couple of
+other features.
+
+Enjoy!
+
+### Features
+
+* **entities:** Rename ActionEnt and ScorerEnt to Action and Scorer ([43f37959](https://github.com/zkat/big-brain/commit/43f3795929a4a67806a3a50113e9573d7dc95895))
+    * **BREAKING CHANGE**: These are externally-exported, so you'll have to rename them yourself, too
+* **tracing:** add tracing support for Thinker/Action/Scorer (#55) ([a32bc01d](https://github.com/zkat/big-brain/commit/a32bc01d4280bad060f998782f03cbf82ce481cf))
+    * **BREAKING CHANGE**: In the process of doing this, `spawn_action` and `spawn_scorer` were moved out of `ActionBuilder` and `ScorerBuilder` traits, respectively. This will likely affect any user-side composite actions and scorers. Use `scorers::spawn_scorer` and `actions::spawn_action` instead.
+* **thinker:** Add support for scheduling one-off Actions on a Thinker (#57) ([382d2014](https://github.com/zkat/big-brain/commit/382d20148d654ac65027e4ec68d964eb37364cac))
+* **measures:** Implement MeasuredScorer and some initial measures (#54) ([c6a6c5c9](https://github.com/zkat/big-brain/commit/c6a6c5c9d685c14f13b3906097a7231a3d648718))
+
+### Bug Fixes
+
+* **actions,scorers:** Transform/GlobalTransform are no longer needed for hierarchies. ([df10f034](https://github.com/zkat/big-brain/commit/df10f034595d2f8800e4c68473c6039e4754a1ec))
+* **tracing:** fix warnings and wrong cfg feature name ([5ff39632](https://github.com/zkat/big-brain/commit/5ff396326e236aa4b408503696cf46121183e520))
+* **thinker:** `otherwise` clause no longer overrides running action (#56) ([849ab346](https://github.com/zkat/big-brain/commit/849ab3460e17c47796d2f5948b002973867411a1))
+    * **BREAKING CHANGE**: This patch changes the behavior for `otherwise` such that it won't override an existing action if it's still running, but it'll still execute as soon as that action finishes. I think this is really what people expect this to do, so let's give it a shot!
+* **tracing:** drop action span scope before spawning next action ([ee899e4a](https://github.com/zkat/big-brain/commit/ee899e4a841fbfaf3c1e3541171a7533cd339ec2))
+
 <a name="0.13.0"></a>
 ## 0.13.0 (2022-09-21)
 
