@@ -56,7 +56,7 @@ Picker that chooses the `Choice` with the highest non-zero [`Score`], and the fi
 
 ```no_run
 Thinker::build()
-    .picker(HighestThenFirst)
+    .picker(Highest)
     // .when(...)
 ```
  */

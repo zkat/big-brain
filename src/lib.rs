@@ -129,6 +129,7 @@ pub mod pickers;
 
 pub mod actions;
 pub mod choices;
+pub mod measures;
 pub mod scorers;
 pub mod thinker;
 
@@ -141,6 +142,7 @@ pub mod prelude {
     pub use super::BigBrainPlugin;
     pub use super::BigBrainStage;
     pub use actions::{ActionBuilder, ActionState, Concurrently, Steps};
+    pub use measures::{ChebyshevDistance, Measure, WeightedProduct, WeightedSum};
     pub use pickers::{FirstToScore, Highest, Picker};
     pub use scorers::{
         AllOrNothing, FixedScore, ProductOfScorers, Score, ScorerBuilder, SumOfScorers,
@@ -179,6 +181,7 @@ impl Plugin for BigBrainPlugin {
             BigBrainStage::Scorers,
             SystemSet::new()
                 .with_system(scorers::fixed_score_system)
+                .with_system(scorers::measured_scorers_system)
                 .with_system(scorers::all_or_nothing_system)
                 .with_system(scorers::sum_of_scorers_system)
                 .with_system(scorers::product_of_scorers_system)
