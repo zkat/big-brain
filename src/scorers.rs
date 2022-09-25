@@ -10,7 +10,7 @@ use bevy::utils::tracing::trace;
 
 use crate::{
     evaluators::Evaluator,
-    measures::{Measure, WeightedSumMeasure},
+    measures::{Measure, WeightedMeasure},
     thinker::{Actor, Scorer, ScorerSpan},
 };
 
@@ -759,7 +759,7 @@ impl MeasuredScorer {
     pub fn build(threshold: f32) -> MeasuredScorerBuilder {
         MeasuredScorerBuilder {
             threshold,
-            measure: Arc::new(WeightedSumMeasure),
+            measure: Arc::new(WeightedMeasure),
             scorers: Vec::new(),
             label: None,
         }
@@ -822,6 +822,14 @@ impl MeasuredScorerBuilder {
 
     pub fn push(mut self, scorer: impl ScorerBuilder + 'static, weight: f32) -> Self {
         self.scorers.push((Arc::new(scorer), weight));
+        self
+    }
+
+    /**
+     * Set a label for this ScorerBuilder.
+     */
+    pub fn label(mut self, label: impl AsRef<str>) -> Self {
+        self.label = Some(label.as_ref().into());
         self
     }
 }

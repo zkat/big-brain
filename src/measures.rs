@@ -13,9 +13,9 @@ pub trait Measure: std::fmt::Debug + Sync + Send {
 
 /// A measure that adds all the elements together and multiplies them by the weight
 #[derive(Debug, Clone)]
-pub struct WeightedSumMeasure;
+pub struct WeightedSum;
 
-impl Measure for WeightedSumMeasure {
+impl Measure for WeightedSum {
     fn calculate(&self, scores: Vec<(&Score, f32)>) -> f32 {
         scores
             .iter()
@@ -25,9 +25,9 @@ impl Measure for WeightedSumMeasure {
 
 /// A measure that multiplies all the elements together
 #[derive(Debug, Clone)]
-pub struct WeightedProductMeasure;
+pub struct WeightedProduct;
 
-impl Measure for WeightedProductMeasure {
+impl Measure for WeightedProduct {
     fn calculate(&self, scores: Vec<(&Score, f32)>) -> f32 {
         scores
             .iter()
@@ -38,12 +38,32 @@ impl Measure for WeightedProductMeasure {
 /// A measure that returns the max of the weighted child scares based on the one-dimensional
 /// (Chebychev Distance)[https://en.wikipedia.org/wiki/Chebyshev_distance]
 #[derive(Debug, Clone)]
-pub struct ChebyshevDistanceMeasure;
+pub struct ChebyshevDistance;
 
-impl Measure for ChebyshevDistanceMeasure {
+impl Measure for ChebyshevDistance {
     fn calculate(&self, scores: Vec<(&Score, f32)>) -> f32 {
         scores
             .iter()
             .fold(0f32, |best, (score, weight)| (score.0 * weight).max(best))
+    }
+}
+
+/// The default measure which uses
+#[derive(Debug, Clone, Default)]
+pub struct WeightedMeasure;
+
+impl Measure for WeightedMeasure {
+    fn calculate(&self, scores: Vec<(&Score, f32)>) -> f32 {
+        let wsum: f32 = scores.iter().map(|(_score, weight)| weight).sum();
+
+        if wsum == 0.0 {
+            0.0
+        } else {
+            scores
+                .iter()
+                .map(|(score, weight)| weight / wsum * score.get().powf(2.0))
+                .sum::<f32>()
+                .powf(1.0 / 2.0)
+        }
     }
 }
