@@ -2,7 +2,7 @@
 Thinkers are the "brain" of an entity. You attach Scorers to it, and the Thinker picks the right Action to run based on the resulting Scores.
 */
 
-use std::sync::Arc;
+use std::{collections::VecDeque, sync::Arc};
 
 use bevy::{
     prelude::*,
@@ -118,6 +118,7 @@ pub struct Thinker {
     choices: Vec<Choice>,
     current_action: Option<(Action, ActionBuilderWrapper)>,
     span: Span,
+    scheduled_actions: VecDeque<ActionBuilderWrapper>,
 }
 
 impl Thinker {
@@ -126,6 +127,11 @@ impl Thinker {
      */
     pub fn build() -> ThinkerBuilder {
         ThinkerBuilder::new()
+    }
+
+    pub fn schedule_action(&mut self, action: impl ActionBuilder + 'static) {
+        self.scheduled_actions
+            .push_back(ActionBuilderWrapper::new(Arc::new(action)));
     }
 }
 
@@ -189,10 +195,6 @@ impl ThinkerBuilder {
 }
 
 impl ActionBuilder for ThinkerBuilder {
-    fn label(&self) -> Option<&str> {
-        self.label.as_deref()
-    }
-
     fn build(&self, cmd: &mut Commands, action_ent: Entity, actor: Entity) {
         let span = span!(
             Level::DEBUG,
@@ -214,13 +216,18 @@ impl ActionBuilder for ThinkerBuilder {
                     .picker
                     .clone()
                     .expect("ThinkerBuilder must have a Picker"),
-                choices,
                 otherwise: self.otherwise.clone(),
+                choices,
                 current_action: None,
                 span,
+                scheduled_actions: VecDeque::new(),
             })
             .insert(Name::new("Thinker"))
             .insert(ActionState::Requested);
+    }
+
+    fn label(&self) -> Option<&str> {
+        self.label.as_deref()
     }
 }
 
@@ -259,6 +266,12 @@ pub fn actor_gone_cleanup(
 
 #[derive(Component, Debug)]
 pub struct HasThinker(Entity);
+
+impl HasThinker {
+    pub fn entity(&self) -> Entity {
+        self.0
+    }
+}
 
 pub struct ThinkerIterations {
     index: usize,
@@ -364,6 +377,14 @@ pub fn thinker_system(
                         &scorer_spans,
                         true,
                     );
+                } else if should_schedule_action(&mut thinker, &mut action_states) {
+                    debug!("Spawning scheduled action.");
+                    let action = thinker
+                        .scheduled_actions
+                        .pop_front()
+                        .expect("we literally just checked if it was there.");
+                    let new_action = actions::spawn_action(action.1.as_ref(), &mut cmd, *actor);
+                    thinker.current_action = Some((Action(new_action), action.clone()));
                 } else if let Some(default_action_ent) = &thinker.otherwise {
                     // Otherwise, let's just execute the default one! (if it's there)
                     let default_action_ent = default_action_ent.clone();
@@ -380,11 +401,11 @@ pub fn thinker_system(
                     );
                 } else {
                     #[cfg(feature = "trace")]
-                    trace!("No action was picked. No `otherwise` clause. Thinker sitting quietly for now.");
+                    trace!("No action was picked. No `otherwise` clause. No scheduled actions. Thinker sitting quietly for now.");
                     if let Some((action_ent, _)) = &thinker.current_action {
                         let action_span = action_spans.get(action_ent.0).expect("Where is it?");
                         let _guard = action_span.span.enter();
-                        let curr_action_state = action_states.get_mut(action_ent.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
+                        let mut curr_action_state = action_states.get_mut(action_ent.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
                         let previous_done = matches!(
                             *curr_action_state,
                             ActionState::Success | ActionState::Failure
@@ -396,6 +417,8 @@ pub fn thinker_system(
                             // Despawn the action itself.
                             cmd.entity(action_ent.0).despawn_recursive();
                             thinker.current_action = None;
+                        } else if *curr_action_state == ActionState::Init {
+                            *curr_action_state = ActionState::Requested;
                         }
                     }
                 }
@@ -406,6 +429,39 @@ pub fn thinker_system(
         }
     }
     iterations.index = 0;
+}
+
+fn should_schedule_action(
+    thinker: &mut Mut<Thinker>,
+    states: &mut Query<&mut ActionState>,
+) -> bool {
+    #[cfg(feature = "trace")]
+    let thinker_span = thinker.span.clone();
+    #[cfg(feature = "trace")]
+    let _thinker_span_guard = thinker_span.enter();
+    if thinker.scheduled_actions.is_empty() {
+        #[cfg(feature = "trace")]
+        trace!("No scheduled actions. Not scheduling anything.");
+        false
+    } else if let Some((action_ent, _)) = &mut thinker.current_action {
+        let curr_action_state = states.get_mut(action_ent.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
+        if matches!(
+            *curr_action_state,
+            ActionState::Success | ActionState::Failure
+        ) {
+            #[cfg(feature = "trace")]
+            trace!("Current action is already done. Can schedule.");
+            true
+        } else {
+            #[cfg(feature = "trace")]
+            trace!("Current action is still executing. Not scheduling anything.");
+            false
+        }
+    } else {
+        #[cfg(feature = "trace")]
+        trace!("No current action actions. Can schedule.");
+        true
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -470,6 +526,7 @@ fn exec_picked_action(
                         let _guard = scorer_span.span.enter();
                         debug!("Winning scorer chosen with score {}", score.get());
                     }
+                    std::mem::drop(_guard);
                     debug!("Spawning next action");
                     let new_action =
                         Action(actions::spawn_action(picked_action.1.as_ref(), cmd, actor));
