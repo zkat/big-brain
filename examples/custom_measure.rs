@@ -25,7 +25,8 @@ impl Measure for SumWithDecreasingWeightMeasure {
 }
 
 // We'll keep this example fairly simple, let's have Waffles and Pancakes, and
-// try to optimise our happiness based. Its like the thirst example but sweeter.
+// try to optimise our happiness based on keeping our waffle and pancake level high.
+// Its kind of like the thirst example but sweeter.
 #[derive(Component, Debug)]
 pub struct Pancakes(pub f32);
 
