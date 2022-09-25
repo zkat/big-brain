@@ -526,6 +526,7 @@ fn exec_picked_action(
                         let _guard = scorer_span.span.enter();
                         debug!("Winning scorer chosen with score {}", score.get());
                     }
+                    std::mem::drop(_guard);
                     debug!("Spawning next action");
                     let new_action =
                         Action(actions::spawn_action(picked_action.1.as_ref(), cmd, actor));
