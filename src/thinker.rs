@@ -1,6 +1,5 @@
-/*!
-Thinkers are the "brain" of an entity. You attach Scorers to it, and the Thinker picks the right Action to run based on the resulting Scores.
-*/
+//! Thinkers are the "brain" of an entity. You attach Scorers to it, and the
+//! Thinker picks the right Action to run based on the resulting Scores.
 
 use std::{collections::VecDeque, sync::Arc};
 
@@ -23,20 +22,34 @@ use crate::{
 };
 
 /**
-Wrapper for Actor entities. In terms of Scorers, Thinkers, and Actions, this is the [`Entity`] actually _performing_ the action, rather than the entity a Scorer/Thinker/Action is attached to. Generally, you will use this entity when writing Queries for Action and Scorer systems.
+ * Wrapper for Actor entities. In terms of Scorers, Thinkers, and Actions, this
+ * is the [`Entity`] actually _performing_ the action, rather than the entity a
+ * Scorer/Thinker/Action is attached to. Generally, you will use this entity
+ * when writing Queries for Action and Scorer systems.
  */
 #[derive(Debug, Clone, Component, Copy)]
 pub struct Actor(pub Entity);
 
+/**
+ * Newtype for [`bevy::prelude::Entity`]s that are Actions.
+ */
 #[derive(Debug, Clone, Copy)]
 pub struct Action(pub Entity);
 
 impl Action {
+    /**
+     * Returns the [`bevy::prelude::Entity`] wrapped by this [`Action`].
+     */
     pub fn entity(&self) -> Entity {
         self.0
     }
 }
 
+/**
+ * Component attached to Action entities that contains this Action's
+ * [`bevy::utils::tracing::Span`], which can be queried and used to log events
+ * in the context of this action. See [`ActionSpan::span()`] for details.
+ */
 #[derive(Debug, Clone, Component)]
 pub struct ActionSpan {
     pub(crate) span: Span,
@@ -56,14 +69,70 @@ impl ActionSpan {
         Self { span }
     }
 
+    /// Returns a reference to this [`ActionSpan`]'s
+    /// [`bevy::utils::tracing::Span`]. You can use `.enter()` on the returned
+    /// `Span` to enter the span's context, making it so all tracing events
+    /// will be logged in the context of this action.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// fn drink_action_system(
+    ///     mut thirsts: Query<&mut Thirst>,
+    ///     mut query: Query<(&Actor, &mut ActionState, &Drink, &ActionSpan)>,
+    /// ) {
+    ///     for (Actor(actor), mut state, drink, span) in &mut query {
+    ///         let _guard = span.span().enter();
+    ///         if let Ok(mut thirst) = thirsts.get_mut(*actor) {
+    ///             match *state {
+    ///                 ActionState::Requested => {
+    ///                     debug!("Time to drink some water!");
+    ///                     *state = ActionState::Executing;
+    ///                 }
+    ///                 ActionState::Executing => {
+    ///                     trace!("Drinking...");
+    ///                     thirst.thirst -=
+    ///                         drink.per_second * (time.delta().as_micros() as f32 / 1_000_000.0);
+    ///                     if thirst.thirst <= drink.until {
+    ///                         debug!("Done drinking water");
+    ///                         *state = ActionState::Success;
+    ///                     }
+    ///                 }
+    ///                 ActionState::Cancelled => {
+    ///                     debug!("Action was cancelled. Considering this a failure.");
+    ///                     *state = ActionState::Failure;
+    ///                 }
+    ///                 _ => {}
+    ///             }
+    ///         }
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// Will output something like:
+    /// ```text
+    /// 2022-09-25T18:11:21.932161Z DEBUG action{ent=1v0 label="My Thinker"}:thinker{actor=0v0}: big_brain::thinker: No current action. Spawning new action.
+    /// 2022-09-25T18:11:21.932454Z DEBUG action{ent=1v0 label="My Thinker"}:thinker{actor=0v0}:action{ent=3v0}: big_brain::actions: New Action spawned.
+    /// 2022-09-25T18:11:21.952848Z DEBUG action{ent=1v0 label="My Thinker"}:thinker{actor=0v0}:action{ent=3v0}: thirst: Time to drink some water!
+    /// 2022-09-25T18:11:25.315702Z DEBUG action{ent=1v0 label="My Thinker"}:thinker{actor=0v0}:action{ent=3v0}: thirst: Done drinking water
+    /// 2022-09-25T18:11:25.331333Z DEBUG action{ent=1v0 label="My Thinker"}:thinker{actor=0v0}:action{ent=3v0}: big_brain::thinker: Action completed and nothing was picked. Despawning action entity.
+    /// ```
     pub fn span(&self) -> &Span {
         &self.span
     }
 }
 
+/**
+ * Newtype for [`bevy::prelude::Entity`]s that are Scorers.
+ */
 #[derive(Debug, Clone, Copy)]
 pub struct Scorer(pub Entity);
 
+/**
+ * Component attached to Scorer entities that contains this Scorer's
+ * [`bevy::utils::tracing::Span`], which can be queried and used to log events
+ * in the context of this scorer. See [`ScorerSpan::span()`] for details.
+ */
 #[derive(Debug, Clone, Component)]
 pub struct ScorerSpan {
     pub(crate) span: Span,
@@ -84,33 +153,72 @@ impl ScorerSpan {
         Self { span }
     }
 
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// pub fn thirsty_scorer_system(
+    ///     thirsts: Query<&Thirst>,
+    ///     mut query: Query<(&Actor, &mut Score, &ScorerSpan), With<Thirsty>>,
+    /// ) {
+    ///     for (Actor(actor), mut score, span) in &mut query {
+    ///         if let Ok(thirst) = thirsts.get(*actor) {
+    ///             score.set(thirst.thirst / 100.0);
+    ///             if thirst.thirst >= 80.0 {
+    ///                 let _guard = span.span().enter();
+    ///                 debug!("Thirst above threshold! Score: {}", thirst.thirst / 100.0);
+    ///             }
+    ///         }
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// Will output something like:
+    /// ```text
+    /// 2022-09-25T18:11:19.400914Z DEBUG action{ent=1v0 label="My Thinker"}:thinker{actor=0v0}: big_brain::thinker: Thinker requested. Starting execution.
+    /// 2022-09-25T18:11:21.931412Z DEBUG action{ent=1v0 label="My Thinker"}:thinker{actor=0v0}:scorer{ent=2v0}: thirst: Thirst above threshold! Score: 0.8002861
+    /// 2022-09-25T18:11:21.931872Z DEBUG action{ent=1v0 label="My Thinker"}:thinker{actor=0v0}:scorer{ent=2v0}: big_brain::thinker: Winning scorer chosen with score 0.8002861
+    /// 2022-09-25T18:11:21.951915Z DEBUG action{ent=1v0 label="My Thinker"}:thinker{actor=0v0}:scorer{ent=2v0}: thirst: Thirst above threshold! Score: 0.8006189
+    /// 2022-09-25T18:11:21.968241Z DEBUG action{ent=1v0 label="My Thinker"}:thinker{actor=0v0}:scorer{ent=2v0}: thirst: Thirst above threshold! Score: 0.8010323
+    /// 2022-09-25T18:11:21.984116Z DEBUG action{ent=1v0 label="My Thinker"}:thinker{actor=0v0}:scorer{ent=2v0}: thirst: Thirst above threshold! Score: 0.80053884
+    /// 2022-09-25T18:11:22.000637Z DEBUG action{ent=1v0 label="My Thinker"}:thinker{actor=0v0}:scorer{ent=2v0}: thirst: Thirst above threshold! Score: 0.80006266
+    /// ```
     pub fn span(&self) -> &Span {
         &self.span
     }
 }
 
-/**
-The "brains" behind this whole operation. A `Thinker` is what glues together `Actions` and `Scorers` and shapes larger, intelligent-seeming systems.
-
-Note: Thinkers are also Actions, so anywhere you can pass in an Action (or [`ActionBuilder`]), you can pass in a Thinker (or [`ThinkerBuilder`]).
-
-### Example
-
-```no_run
-pub fn init_entities(mut cmd: Commands) {
-    cmd.spawn()
-        .insert(Thirst::new(70.0, 2.0))
-        .insert(Hunger::new(50.0, 3.0))
-        .insert(
-            Thinker::build()
-                .picker(FirstToScore::new(80.0))
-                .when(Thirsty::build(), Drink::build())
-                .when(Hungry::build(), Eat::build())
-                .otherwise(Meander::build()),
-        );
-}
-```
- */
+/// The "brains" behind this whole operation. A `Thinker` is what glues
+/// together [`Action`] and [`Scorer`] and shapes larger, intelligent-seeming
+/// systems.
+///
+/// To declare a system, you first create a [`ThinkerBuilder`] with
+/// [`Thinker::build()`], then use a series of chained methods to configure
+/// it.
+///
+/// `Thinker`s themselves are not attached as components to entities directly.
+/// Instead, a [`ThinkerBuilder`] is attached, which will later be used to to
+/// spawn a `Thinker` as _a separate, child entity_.
+///
+/// Internally, `Thinker`s themselves are executed like `Action`s, and have
+/// [`ActionState`]s associated with them.
+///
+/// # Example
+///
+/// ```rust
+/// pub fn init_entities(mut cmd: Commands) {
+///     cmd.spawn()
+///         .insert(Thirst::new(70.0, 2.0))
+///         .insert(Hunger::new(50.0, 3.0))
+///         .insert(
+///             Thinker::build()
+///                 .picker(FirstToScore::new(80.0))
+///                 .when(Thirsty, Drink)
+///                 .when(Hungry, Eat)
+///                 .otherwise(Meander),
+///         );
+/// }
+/// ```
 #[derive(Component, Debug)]
 pub struct Thinker {
     picker: Arc<dyn Picker>,

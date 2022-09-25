@@ -35,8 +35,9 @@ impl Measure for WeightedProduct {
     }
 }
 
-/// A measure that returns the max of the weighted child scares based on the one-dimensional
-/// (Chebychev Distance)[https://en.wikipedia.org/wiki/Chebyshev_distance]
+/// A measure that returns the max of the weighted child scores based on the
+/// one-dimensional [Chebychev
+/// Distance](https://en.wikipedia.org/wiki/Chebyshev_distance)
 #[derive(Debug, Clone)]
 pub struct ChebyshevDistance;
 
