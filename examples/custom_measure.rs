@@ -162,7 +162,7 @@ pub fn init_entities(mut cmd: Commands) {
                         .measure(SumWithDecreasingWeightMeasure)
                         .push(CravingWaffles, 0.5)
                         .push(CravingPancakes, 0.5),
-                    EatPancakes,
+                    EatWaffles,
                 )
                 // we use the default measure here
                 .when(
