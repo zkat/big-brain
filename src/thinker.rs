@@ -43,7 +43,7 @@ pub struct ActionSpan {
 }
 
 impl ActionSpan {
-    pub fn new(action: Entity, label: Option<&str>) -> Self {
+    pub(crate) fn new(action: Entity, label: Option<&str>) -> Self {
         let span = span!(
             Level::DEBUG,
             "action",
