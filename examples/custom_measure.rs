@@ -3,7 +3,7 @@
 
 use bevy::log::LogSettings;
 use bevy::prelude::*;
-use bevy::utils::tracing::{debug, trace};
+use bevy::utils::tracing::debug;
 use big_brain::prelude::*;
 use big_brain::scorers::MeasuredScorer;
 
@@ -95,22 +95,23 @@ fn eat_thing_action<
         if let Ok(mut item) = items.get_mut(*actor) {
             match *state {
                 ActionState::Requested => {
-                    debug!("Time to eat something - {:?}", action_marker);
+                    info!("Time to eat something - {:?}", action_marker);
                     *state = ActionState::Executing;
                 }
                 ActionState::Executing => {
-                    trace!("Eating {:?}", action_marker);
+                    debug!("Eating {:?}", action_marker);
 
                     item.eat(time.delta_seconds() * 5.0);
 
-                    if item.get() > 95.0 {
-                        debug!("Done eating {:?}", action_marker);
+                    // we should stop at some eating pancakes at some point, unfortunately
+                    if item.get() > 80.0 {
+                        info!("Done eating {:?}", action_marker);
                         *state = ActionState::Success;
                     }
                 }
                 // All Actions should make sure to handle cancellations!
                 ActionState::Cancelled => {
-                    debug!(
+                    info!(
                         "Cancelled eating {:?}. Considering this a failure.",
                         action_marker
                     );
@@ -139,7 +140,16 @@ pub fn craving_food_scorer<
 ) {
     for (Actor(actor), mut score) in &mut query {
         if let Ok(item) = items.get(*actor) {
-            score.set((1.0 - item.get() / 100.0).clamp(0.0, 1.0));
+            // we don't want to get too full here, so lets say we only eat if we get below 0.5
+            let current_food = item.get();
+
+            if current_food >= 0.5 {
+                score.set(0.0);
+            } else {
+                // if we're hungry let's get increasingly angry about it, so it increases
+                // from 0 to 1.0 as our food level goes from 50 to 0
+                score.set((1.0 - current_food / 50.0).clamp(0.0, 1.0));
+            }
         }
     }
 }
@@ -157,19 +167,19 @@ pub fn init_entities(mut cmd: Commands) {
                 // pancakes should be down-weighted. This means despite this being listed first,
                 // all things being equal we should consume pancakes before waffles.
                 .when(
-                    MeasuredScorer::build(0.05)
-                        .label("waffles")
+                    MeasuredScorer::build(0.1)
+                        .label("eat some waffles")
                         .measure(SumWithDecreasingWeightMeasure)
-                        .push(CravingWaffles, 0.5)
-                        .push(CravingPancakes, 0.5),
+                        .push(CravingWaffles, 1.0)
+                        .push(CravingPancakes, 1.0),
                     EatWaffles,
                 )
                 // we use the default measure here
                 .when(
-                    MeasuredScorer::build(0.05)
-                        .label("pancakes")
-                        .push(CravingPancakes, 0.5)
-                        .push(CravingWaffles, 0.5),
+                    MeasuredScorer::build(0.1)
+                        .label("eat some pancakes")
+                        .push(CravingPancakes, 1.0)
+                        .push(CravingWaffles, 1.0),
                     EatPancakes,
                 ),
         );
@@ -179,9 +189,9 @@ fn main() {
     // Once all that's done, we just add our systems and off we go!
     App::new()
         .insert_resource(LogSettings {
-            // Use `RUST_LOG=big_brain=trace,thirst=trace cargo run --example
+            // Use `RUST_LOG=big_brain=trace,custom_measure=trace cargo run --example
             // custom_measure --features=trace` to see extra tracing output.
-            filter: "big_brain=debug,thirst=debug".to_string(),
+            filter: "big_brain=debug,custom_measure=debug".to_string(),
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
