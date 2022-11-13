@@ -1,7 +1,7 @@
 //! This example demonstrates how to build a custom measure and use that
 //! in a Thinker.
 
-use bevy::log::LogSettings;
+use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use bevy::utils::tracing::debug;
 use big_brain::prelude::*;
@@ -156,45 +156,43 @@ pub fn craving_food_scorer<
 
 // Let's set up our world
 pub fn init_entities(mut cmd: Commands) {
-    cmd.spawn()
-        .insert(Pancakes(50.0))
-        .insert(Waffles(50.0))
-        .insert(
-            Thinker::build()
-                .label("Hungry Thinker")
-                .picker(FirstToScore::new(0.5))
-                // we use our custom measure here. The impact of the custom measure is that the
-                // pancakes should be down-weighted. This means despite this being listed first,
-                // all things being equal we should consume pancakes before waffles.
-                .when(
-                    MeasuredScorer::build(0.1)
-                        .label("eat some waffles")
-                        .measure(SumWithDecreasingWeightMeasure)
-                        .push(CravingWaffles, 1.0)
-                        .push(CravingPancakes, 1.0),
-                    EatWaffles,
-                )
-                // we use the default measure here
-                .when(
-                    MeasuredScorer::build(0.1)
-                        .label("eat some pancakes")
-                        .push(CravingPancakes, 1.0)
-                        .push(CravingWaffles, 1.0),
-                    EatPancakes,
-                ),
-        );
+    cmd.spawn((
+        Pancakes(50.0),
+        Waffles(50.0),
+        Thinker::build()
+            .label("Hungry Thinker")
+            .picker(FirstToScore::new(0.5))
+            // we use our custom measure here. The impact of the custom measure is that the
+            // pancakes should be down-weighted. This means despite this being listed first,
+            // all things being equal we should consume pancakes before waffles.
+            .when(
+                MeasuredScorer::build(0.1)
+                    .label("eat some waffles")
+                    .measure(SumWithDecreasingWeightMeasure)
+                    .push(CravingWaffles, 1.0)
+                    .push(CravingPancakes, 1.0),
+                EatWaffles,
+            )
+            // we use the default measure here
+            .when(
+                MeasuredScorer::build(0.1)
+                    .label("eat some pancakes")
+                    .push(CravingPancakes, 1.0)
+                    .push(CravingWaffles, 1.0),
+                EatPancakes,
+            ),
+    ));
 }
 
 fn main() {
     // Once all that's done, we just add our systems and off we go!
     App::new()
-        .insert_resource(LogSettings {
+        .add_plugins(DefaultPlugins.set(LogPlugin {
             // Use `RUST_LOG=big_brain=trace,custom_measure=trace cargo run --example
             // custom_measure --features=trace` to see extra tracing output.
             filter: "big_brain=debug,custom_measure=debug".to_string(),
-            ..Default::default()
-        })
-        .add_plugins(DefaultPlugins)
+            ..default()
+        }))
         .add_plugin(BigBrainPlugin)
         .add_startup_system(init_entities)
         .add_system(eat_dessert)

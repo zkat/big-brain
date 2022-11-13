@@ -1,4 +1,4 @@
-use bevy::log::LogSettings;
+use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use bevy::utils::tracing::{debug, trace};
 use big_brain::prelude::*;
@@ -26,11 +26,12 @@ fn one_off_action_system(mut query: Query<(&mut ActionState, &ActionSpan), With<
 pub fn init_entities(mut cmd: Commands) {
     // You at least need to have a Thinker in order to schedule one-off
     // actions. It's not a general-purpose task scheduler.
-    cmd.spawn().insert(Thirst::new(75.0, 2.0)).insert(
+    cmd.spawn((
+        Thirst::new(75.0, 2.0),
         Thinker::build()
             .label("My Thinker")
             .picker(FirstToScore { threshold: 0.8 }),
-    );
+    ));
 }
 
 #[derive(Component, Debug)]
@@ -69,13 +70,12 @@ pub fn thirst_system(
 fn main() {
     // Once all that's done, we just add our systems and off we go!
     App::new()
-        .insert_resource(LogSettings {
+        .add_plugins(DefaultPlugins.set(LogPlugin {
             // Use `RUST_LOG=big_brain=trace,thirst=trace cargo run --example
             // one_off --features=trace` to see extra tracing output.
             filter: "big_brain=debug,one_off=debug".to_string(),
-            ..Default::default()
-        })
-        .add_plugins(DefaultPlugins)
+            ..default()
+        }))
         .add_plugin(BigBrainPlugin)
         .add_startup_system(init_entities)
         .add_system(thirst_system)

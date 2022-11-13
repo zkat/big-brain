@@ -95,7 +95,7 @@ pub fn spawn_scorer<T: ScorerBuilder + ?Sized>(
     cmd: &mut Commands,
     actor: Entity,
 ) -> Entity {
-    let scorer_ent = cmd.spawn().id();
+    let scorer_ent = cmd.spawn_empty().id();
     let span = ScorerSpan::new(scorer_ent, ScorerBuilder::label(builder));
     let _guard = span.span().enter();
     debug!("New Scorer spawned.");

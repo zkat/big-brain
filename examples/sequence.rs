@@ -6,7 +6,7 @@
 //! Note that it does not matter if the actor is already near a water source:
 //! the MoveToWaterSource action will simply terminate immediately.
 
-use bevy::log::LogSettings;
+use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use bevy::utils::tracing::{debug, trace};
 use big_brain::prelude::*;
@@ -239,13 +239,19 @@ pub fn thirsty_scorer_system(
 
 pub fn init_entities(mut cmd: Commands) {
     // Spawn two water sources.
-    cmd.spawn().insert(WaterSource).insert(Position {
-        position: Vec2::new(10.0, 10.0),
-    });
+    cmd.spawn((
+        WaterSource,
+        Position {
+            position: Vec2::new(10.0, 10.0),
+        },
+    ));
 
-    cmd.spawn().insert(WaterSource).insert(Position {
-        position: Vec2::new(-10.0, 0.0),
-    });
+    cmd.spawn((
+        WaterSource,
+        Position {
+            position: Vec2::new(-10.0, 0.0),
+        },
+    ));
 
     // We use the Steps struct to essentially build a "MoveAndDrink" action by composing
     // the MoveToWaterSource and Drink actions.
@@ -269,23 +275,23 @@ pub fn init_entities(mut cmd: Commands) {
         .picker(FirstToScore { threshold: 0.8 })
         .when(Thirsty, move_and_drink);
 
-    cmd.spawn()
-        .insert(Thirst::new(75.0, 2.0))
-        .insert(Position {
+    cmd.spawn((
+        Thirst::new(75.0, 2.0),
+        Position {
             position: Vec2::new(0.0, 0.0),
-        })
-        .insert(thinker);
+        },
+        thinker,
+    ));
 }
 
 fn main() {
     // Once all that's done, we just add our systems and off we go!
     App::new()
-        .insert_resource(LogSettings {
+        .add_plugins(DefaultPlugins.set(LogPlugin {
             // Use `RUST_LOG=big_brain=trace,thirst=trace cargo run --example thirst --features=trace` to see extra tracing output.
             filter: "big_brain=debug,sequence=debug".to_string(),
-            ..Default::default()
-        })
-        .add_plugins(DefaultPlugins)
+            ..default()
+        }))
         .add_plugin(BigBrainPlugin)
         .add_startup_system(init_entities)
         .add_system(thirst_system)
