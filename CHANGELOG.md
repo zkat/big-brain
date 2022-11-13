@@ -1,5 +1,17 @@
 # `big-brain` Release Changelog
 
+<a name="0.15.0"></a>
+## 0.15.0 (2022-11-13)
+
+### Features
+
+* **deps:** Update to Bevy 0.9 (#59) ([8ce5cd1b](https://github.com/zkat/big-brain/commit/8ce5cd1b57a2de0c10bcbc1c1686187d680134d9))
+
+### Bug Fixes
+
+* **spans:** Make ActionSpan::new() private ([4486af1d](https://github.com/zkat/big-brain/commit/4486af1db83fc4fdf50acd2eacfa7d96e64501f3))
+    * **BREAKING CHANGE**: This function was previously public, but it was never meant to be used.
+
 <a name="0.14.0"></a>
 ## 0.14.0 (2022-09-25)
 
