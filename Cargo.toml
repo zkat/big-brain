@@ -12,10 +12,10 @@ repository = "https://github.com/zkat/big-brain"
 homepage = "https://github.com/zkat/big-brain"
 
 [dependencies]
-bevy = { version = "0.8.1", default-features = false }
+bevy = { version = "0.9.0", default-features = false }
 
 [dev-dependencies]
-bevy = { version = "0.8.1", default-features = true }
+bevy = { version = "0.9.0", default-features = true }
 
 [features]
 trace = []
