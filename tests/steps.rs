@@ -127,7 +127,7 @@ fn failure_action(
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 struct GlobalState {
     failure: bool,
 }
