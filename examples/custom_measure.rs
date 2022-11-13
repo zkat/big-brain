@@ -156,33 +156,32 @@ pub fn craving_food_scorer<
 
 // Let's set up our world
 pub fn init_entities(mut cmd: Commands) {
-    cmd.spawn_empty()
-        .insert(Pancakes(50.0))
-        .insert(Waffles(50.0))
-        .insert(
-            Thinker::build()
-                .label("Hungry Thinker")
-                .picker(FirstToScore::new(0.5))
-                // we use our custom measure here. The impact of the custom measure is that the
-                // pancakes should be down-weighted. This means despite this being listed first,
-                // all things being equal we should consume pancakes before waffles.
-                .when(
-                    MeasuredScorer::build(0.1)
-                        .label("eat some waffles")
-                        .measure(SumWithDecreasingWeightMeasure)
-                        .push(CravingWaffles, 1.0)
-                        .push(CravingPancakes, 1.0),
-                    EatWaffles,
-                )
-                // we use the default measure here
-                .when(
-                    MeasuredScorer::build(0.1)
-                        .label("eat some pancakes")
-                        .push(CravingPancakes, 1.0)
-                        .push(CravingWaffles, 1.0),
-                    EatPancakes,
-                ),
-        );
+    cmd.spawn((
+        Pancakes(50.0),
+        Waffles(50.0),
+        Thinker::build()
+            .label("Hungry Thinker")
+            .picker(FirstToScore::new(0.5))
+            // we use our custom measure here. The impact of the custom measure is that the
+            // pancakes should be down-weighted. This means despite this being listed first,
+            // all things being equal we should consume pancakes before waffles.
+            .when(
+                MeasuredScorer::build(0.1)
+                    .label("eat some waffles")
+                    .measure(SumWithDecreasingWeightMeasure)
+                    .push(CravingWaffles, 1.0)
+                    .push(CravingPancakes, 1.0),
+                EatWaffles,
+            )
+            // we use the default measure here
+            .when(
+                MeasuredScorer::build(0.1)
+                    .label("eat some pancakes")
+                    .push(CravingPancakes, 1.0)
+                    .push(CravingWaffles, 1.0),
+                EatPancakes,
+            ),
+    ));
 }
 
 fn main() {

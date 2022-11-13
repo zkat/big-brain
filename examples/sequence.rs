@@ -239,13 +239,19 @@ pub fn thirsty_scorer_system(
 
 pub fn init_entities(mut cmd: Commands) {
     // Spawn two water sources.
-    cmd.spawn_empty().insert(WaterSource).insert(Position {
-        position: Vec2::new(10.0, 10.0),
-    });
+    cmd.spawn((
+        WaterSource,
+        Position {
+            position: Vec2::new(10.0, 10.0),
+        },
+    ));
 
-    cmd.spawn_empty().insert(WaterSource).insert(Position {
-        position: Vec2::new(-10.0, 0.0),
-    });
+    cmd.spawn((
+        WaterSource,
+        Position {
+            position: Vec2::new(-10.0, 0.0),
+        },
+    ));
 
     // We use the Steps struct to essentially build a "MoveAndDrink" action by composing
     // the MoveToWaterSource and Drink actions.
@@ -269,12 +275,13 @@ pub fn init_entities(mut cmd: Commands) {
         .picker(FirstToScore { threshold: 0.8 })
         .when(Thirsty, move_and_drink);
 
-    cmd.spawn_empty()
-        .insert(Thirst::new(75.0, 2.0))
-        .insert(Position {
+    cmd.spawn((
+        Thirst::new(75.0, 2.0),
+        Position {
             position: Vec2::new(0.0, 0.0),
-        })
-        .insert(thinker);
+        },
+        thinker,
+    ));
 }
 
 fn main() {

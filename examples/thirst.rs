@@ -136,7 +136,8 @@ pub fn thirsty_scorer_system(
 // to have AI behavior should have one *or more* Thinkers attached to it.
 pub fn init_entities(mut cmd: Commands) {
     // Create the entity and throw the Thirst component in there. Nothing special here.
-    cmd.spawn_empty().insert(Thirst::new(75.0, 2.0)).insert(
+    cmd.spawn((
+        Thirst::new(75.0, 2.0),
         Thinker::build()
             .label("My Thinker")
             .picker(FirstToScore { threshold: 0.8 })
@@ -149,7 +150,7 @@ pub fn init_entities(mut cmd: Commands) {
                     per_second: 5.0,
                 },
             ),
-    );
+    ));
 }
 
 fn main() {
