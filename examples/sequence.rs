@@ -239,11 +239,11 @@ pub fn thirsty_scorer_system(
 
 pub fn init_entities(mut cmd: Commands) {
     // Spawn two water sources.
-    cmd.spawn().insert(WaterSource).insert(Position {
+    cmd.spawn_empty().insert(WaterSource).insert(Position {
         position: Vec2::new(10.0, 10.0),
     });
 
-    cmd.spawn().insert(WaterSource).insert(Position {
+    cmd.spawn_empty().insert(WaterSource).insert(Position {
         position: Vec2::new(-10.0, 0.0),
     });
 
@@ -269,7 +269,7 @@ pub fn init_entities(mut cmd: Commands) {
         .picker(FirstToScore { threshold: 0.8 })
         .when(Thirsty, move_and_drink);
 
-    cmd.spawn()
+    cmd.spawn_empty()
         .insert(Thirst::new(75.0, 2.0))
         .insert(Position {
             position: Vec2::new(0.0, 0.0),

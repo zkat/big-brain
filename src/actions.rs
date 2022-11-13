@@ -130,7 +130,7 @@ pub fn spawn_action<T: ActionBuilder + ?Sized>(
     cmd: &mut Commands,
     actor: Entity,
 ) -> Entity {
-    let action_ent = Action(cmd.spawn().id());
+    let action_ent = Action(cmd.spawn_empty().id());
     let span = ActionSpan::new(action_ent.entity(), ActionBuilder::label(builder));
     let _guard = span.span().enter();
     debug!("New Action spawned.");

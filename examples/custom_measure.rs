@@ -156,7 +156,7 @@ pub fn craving_food_scorer<
 
 // Let's set up our world
 pub fn init_entities(mut cmd: Commands) {
-    cmd.spawn()
+    cmd.spawn_empty()
         .insert(Pancakes(50.0))
         .insert(Waffles(50.0))
         .insert(

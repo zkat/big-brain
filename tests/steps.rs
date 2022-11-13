@@ -20,7 +20,7 @@ fn steps() {
 }
 
 fn setup(mut cmds: Commands) {
-    cmds.spawn().insert(
+    cmds.spawn_empty().insert(
         Thinker::build()
             .picker(pickers::FirstToScore::new(0.5))
             .when(NoFailureScore, Steps::build().step(FailureAction))

@@ -26,7 +26,7 @@ fn one_off_action_system(mut query: Query<(&mut ActionState, &ActionSpan), With<
 pub fn init_entities(mut cmd: Commands) {
     // You at least need to have a Thinker in order to schedule one-off
     // actions. It's not a general-purpose task scheduler.
-    cmd.spawn().insert(Thirst::new(75.0, 2.0)).insert(
+    cmd.spawn_empty().insert(Thirst::new(75.0, 2.0)).insert(
         Thinker::build()
             .label("My Thinker")
             .picker(FirstToScore { threshold: 0.8 }),
