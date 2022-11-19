@@ -105,14 +105,8 @@ fn move_to_water_source_action_system(
 
                     // How far can we travel during this frame?
                     let step_size = time.delta_seconds() * move_to.speed;
-
-                    let step = if step_size > distance {
-                        // We'll move by the full step
-                        delta / distance * step_size
-                    } else {
-                        // Move only the remaining distance, or we might overshoot.
-                        delta
-                    };
+                    // Travel towards the water-source position, but make sure to not overstep it.
+                    let step = delta.normalize() * step_size.min(distance);
 
                     // Move the actor.
                     actor_position.position += step;
