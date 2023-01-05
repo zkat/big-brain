@@ -123,9 +123,8 @@ pub fn thirsty_scorer_system(
             // The score here must be between 0.0 and 1.0.
             score.set(thirst.thirst / 100.0);
             if thirst.thirst >= 80.0 {
-                span.span().in_scope(|| {
-                    debug!("Thirst above threshold! Score: {}", thirst.thirst / 100.0)
-                });
+                let _guard = span.span().enter();
+                debug!("Thirst above threshold! Score: {}", thirst.thirst / 100.0);
             }
         }
     }
