@@ -74,7 +74,7 @@ pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
     struct MyScorer;
 
     impl ScorerBuilder for MyBuilder {
-        fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity) {
+        fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
             cmd.entity(action).insert(MyScorer);
         }
     }
@@ -113,8 +113,8 @@ impl<T> ScorerBuilder for T
 where
     T: Component + Clone + std::fmt::Debug + Send + Sync,
 {
-    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
-        cmd.entity(action).insert(T::clone(self));
+    fn build(&self, cmd: &mut Commands, scorer: Entity, _actor: Entity) {
+        cmd.entity(scorer).insert(T::clone(self));
     }
 }
 
