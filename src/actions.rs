@@ -396,7 +396,7 @@ pub struct Concurrently {
     actions: Vec<Action>,
 }
 
-#[derive(Copy, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum ConcurrentMode {
     /// Reaches success when any of the concurrent actions reaches Success
     AnySuccess,
@@ -488,7 +488,7 @@ pub fn concurrent_system(
                         }
                     }
                     ConcurrentMode::AnySuccess => {
-                        let mut any_success = false;
+                        let mut all_failure = true;
                         let mut succeed_idx = None;
                         for (idx, action) in concurrent_action.actions.iter().enumerate() {
                             let child_ent = action.entity();
@@ -496,33 +496,35 @@ pub fn concurrent_system(
                             match *child_state {
                                 Failure => {}
                                 Success => {
+                                    succeed_idx = Some(idx);
+                                    all_failure = false;
                                     #[cfg(feature = "trace")]
                                     trace!("Concurrently action (Mode: AnySuccess) has succeeded. Cancelling all other actions that haven't completed yet.");
-                                    succeed_idx = Some(idx);
-                                    any_success = true;
                                 }
                                 _ => {
+                                    all_failure = false;
                                     if succeed_idx.is_some() {
                                         *child_state = Cancelled;
                                     }
                                 }
                             }
                         }
-                        if any_success {
+                        if all_failure {
                             let mut state_var = states_q.get_mut(seq_ent).expect("uh oh");
-                            *state_var = Success;
-                            if let Some(idx) = succeed_idx {
-                                for action in concurrent_action.actions.iter().take(idx) {
-                                    let child_ent = action.entity();
-                                    let mut child_state = states_q.get_mut(child_ent).expect("uh oh");
-                                    match *child_state {
-                                        Failure | Success => {}
-                                        _ => {
-                                            *child_state = Cancelled;
-                                        }
+                            *state_var = Failure;
+                        } else if let Some(idx) = succeed_idx {
+                            for action in concurrent_action.actions.iter().take(idx) {
+                                let child_ent = action.entity();
+                                let mut child_state = states_q.get_mut(child_ent).expect("uh oh");
+                                match *child_state {
+                                    Failure | Success => {}
+                                    _ => {
+                                        *child_state = Cancelled;
                                     }
                                 }
                             }
+                            let mut state_var = states_q.get_mut(seq_ent).expect("uh oh");
+                            *state_var = Success;
                         }
                     }
                 }
