@@ -1,0 +1,22 @@
+[package]
+name = "big-brain-derive"
+version = "0.1.0"
+authors = ["Kat Marchán <kzm@zkat.tech>"]
+description = "Procedural macros to simplify implementation of Big Brain traits"
+documentation = "https://docs.rs/big-brain-derive"
+homepage = "https://github.com/zkat/big-brain"
+repository = "https://github.com/zkat/big-brain"
+keywords = ["utility-ai", "bevy", "ai", "ecs"]
+categories = ["game-development"]
+license = "Apache-2.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[features]
+
+[dependencies]
+proc-macro2 = "1.0"
+syn = { version = "1.0", features = ["parsing"]}
+quote = "1.0"

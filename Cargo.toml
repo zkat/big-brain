@@ -11,8 +11,11 @@ categories = ["game-development"]
 repository = "https://github.com/zkat/big-brain"
 homepage = "https://github.com/zkat/big-brain"
 
+[workspace]
+
 [dependencies]
 bevy = { version = "0.9.0", default-features = false }
+big-brain-derive = { version = "0.1.0", path = "./derive" }
 
 [dev-dependencies]
 bevy = { version = "0.9.0", default-features = true }

@@ -43,11 +43,12 @@ pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
 // These actions will be spawned and queued by the game engine when their
 // conditions trigger (we'll configure what these are later).
 //
-// NOTE: In this example, we're not implementing ActionBuilder ourselves, but
-// instead just relying on the blanket implementation for anything that
-// implements Clone. So, the Clone derive matters here. This is enough in most
-// cases.
-#[derive(Clone, Component, Debug)]
+// In most cases, the ActionBuilder just attaches the Action component to the
+// actor entity. In this case, you can use the derive macro `ActionBuilder`
+// to make your Action Component implement the ActionBuilder trait.
+// You need your type to implement Clone and Debug (necessary for ActionBuilder)
+#[derive(Clone, Component, Debug, ActionBuilder)]
+#[label = "DrinkAction"]
 pub struct Drink {
     until: f32,
     per_second: f32,
@@ -100,10 +101,12 @@ fn drink_action_system(
 // run in the background, calculating a "Score" value, which is what Big Brain
 // will use to pick which Actions to execute.
 //
-// Just like with Actions, there's two pieces to this: the Scorer and the
-// ScorerBuilder. And just like with Actions, there's a blanket implementation
-// for Clone, so we only need the Component here.
-#[derive(Clone, Component, Debug)]
+// Just like with Actions, there is a distinction between Scorer components
+// and the ScorerBuilder which will attach those components to the Actor entity.
+//
+// Again, in most cases, you can use the `ScorerBuilder` derive macro to make your
+// Scorer Component act as a ScorerBuilder. You need it to implement Clone and Debug.
+#[derive(Clone, Component, Debug, ScorerBuilder)]
 pub struct Thirsty;
 
 // Looks familiar? It's a lot like Actions!
