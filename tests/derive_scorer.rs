@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 use big_brain::prelude::*;
 
-
 #[derive(Debug, Clone, Component, ScorerBuilder)]
-#[label="MyLabel"]
+#[label = "MyLabel"]
 pub struct MyScorer;
 
 #[test]

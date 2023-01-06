@@ -6,7 +6,6 @@ mod scorer;
 use action::action_builder_impl;
 use scorer::scorer_builder_impl;
 
-
 /// Derives ActionBuilder for a struct that implements Component + Clone
 #[proc_macro_derive(ActionBuilder, attributes(label))]
 pub fn action_builder_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

@@ -139,10 +139,10 @@ pub mod prelude {
     */
     use super::*;
 
-    pub use big_brain_derive::{ScorerBuilder, ActionBuilder};
     pub use super::BigBrainPlugin;
     pub use super::BigBrainStage;
     pub use actions::{ActionBuilder, ActionState, Concurrently, Steps};
+    pub use big_brain_derive::{ActionBuilder, ScorerBuilder};
     pub use measures::{ChebyshevDistance, Measure, WeightedProduct, WeightedSum};
     pub use pickers::{FirstToScore, Highest, Picker};
     pub use scorers::{

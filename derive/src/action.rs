@@ -1,8 +1,7 @@
 //! Derive ActionBuilder on a given struct
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, Ident, Lit, Meta, LitStr};
-
+use syn::{parse_macro_input, DeriveInput, Ident, Lit, LitStr, Meta};
 
 /// Derive ActionBuilder on a struct that implements Component + Clone
 pub fn action_builder_impl(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -14,7 +13,7 @@ pub fn action_builder_impl(input: proc_macro::TokenStream) -> proc_macro::TokenS
     let build_method = build_method(&component_name);
     let label_method = label_method(label);
 
-    let gen = quote!{
+    let gen = quote! {
         impl ActionBuilder for #component_name {
             #build_method
             #label_method
@@ -46,9 +45,7 @@ fn get_label(input: &DeriveInput) -> Option<LitStr> {
     label
 }
 
-fn build_method(
-    component_name: &Ident,
-) -> TokenStream {
+fn build_method(component_name: &Ident) -> TokenStream {
     quote! {
         fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
             cmd.entity(action).insert(#component_name::clone(self));
@@ -58,9 +55,9 @@ fn build_method(
 
 fn label_method(label_option: Option<LitStr>) -> TokenStream {
     let inner = if let Some(label) = label_option {
-        quote!{Some(#label)}
+        quote! {Some(#label)}
     } else {
-        quote!{None}
+        quote! {None}
     };
     quote! {
         fn label(&self) -> Option<&str> {

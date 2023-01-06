@@ -114,7 +114,6 @@ pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
     }
 }
 
-
 /**
  * Spawns a new Action Component, using the given ActionBuilder. This is useful when you're doing things like writing composite Actions.
  */
