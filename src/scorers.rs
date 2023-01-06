@@ -75,7 +75,7 @@ pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
     struct MyScorer;
 
     impl ScorerBuilder for MyBuilder {
-        fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity) {
+        fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
             cmd.entity(action).insert(MyScorer);
         }
     }
