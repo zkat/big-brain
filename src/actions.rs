@@ -86,7 +86,7 @@ pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
 
     ```no_run
     #[derive(Debug, Clone, Component, ActionBuilder)]
-    #[label = "MyActionLabel"]
+    #[action_label = "MyActionLabel"]
     struct MyAction;
     ```
 

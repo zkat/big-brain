@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use big_brain::prelude::*;
 
 #[derive(Debug, Clone, Component, ScorerBuilder)]
-#[label = "MyLabel"]
+#[scorer_label = "MyLabel"]
 pub struct MyScorer;
 
 #[test]

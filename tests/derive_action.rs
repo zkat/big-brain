@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use big_brain::prelude::*;
 
 #[derive(Debug, Clone, Component, ActionBuilder)]
-#[label = "MyLabel"]
+#[action_label = "MyLabel"]
 pub struct MyAction;
 
 #[test]

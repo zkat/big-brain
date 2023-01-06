@@ -32,11 +32,11 @@ fn get_label(input: &DeriveInput) -> Option<LitStr> {
             let path = meta_name_value.path;
             let lit = meta_name_value.lit;
             if let Some(ident) = path.get_ident() {
-                if ident == "label" {
+                if ident == "scorer_label" {
                     if let Lit::Str(lit_str) = lit {
                         label = Some(lit_str);
                     } else {
-                        panic!("Must specify a string for the `label` attribute")
+                        panic!("Must specify a string for the `scorer_label` attribute")
                     }
                 }
             }

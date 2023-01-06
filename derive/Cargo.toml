@@ -1,6 +1,6 @@
 [package]
 name = "big-brain-derive"
-version = "0.1.0"
+version = "0.2.1"
 authors = ["Kat Marchán <kzm@zkat.tech>"]
 description = "Procedural macros to simplify implementation of Big Brain traits"
 documentation = "https://docs.rs/big-brain-derive"

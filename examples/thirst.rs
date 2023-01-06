@@ -48,7 +48,7 @@ pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
 // to make your Action Component implement the ActionBuilder trait.
 // You need your type to implement Clone and Debug (necessary for ActionBuilder)
 #[derive(Clone, Component, Debug, ActionBuilder)]
-#[label = "DrinkAction"]
+#[action_label = "DrinkAction"]
 pub struct Drink {
     until: f32,
     per_second: f32,

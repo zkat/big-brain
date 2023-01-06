@@ -63,7 +63,7 @@ pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
 
     ```no_run
     #[derive(Debug, Clone, Component, ScorerBuilder)]
-    #[label = "MyScorerLabel"]
+    #[scorer_label = "MyScorerLabel"]
     struct MyScorer;
     ```
 
