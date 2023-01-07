@@ -16,6 +16,22 @@ bevy = { version = "0.9.0", default-features = false }
 
 [dev-dependencies]
 bevy = { version = "0.9.0", default-features = true }
+rand = { version = "0.8.5", default-features = false, features = ["small_rng", "std"] }
 
 [features]
 trace = []
+
+[[example]]
+name = "custom_measure"
+
+[[example]]
+name = "one_off"
+
+[[example]]
+name = "sequence"
+
+[[example]]
+name = "thirst"
+
+[[example]]
+name = "concurrent"

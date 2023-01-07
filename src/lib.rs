@@ -141,7 +141,7 @@ pub mod prelude {
 
     pub use super::BigBrainPlugin;
     pub use super::BigBrainStage;
-    pub use actions::{ActionBuilder, ActionState, ConcurrentMode, Concurrently, Steps};
+    pub use actions::{ActionBuilder, ActionState, Race, Join, Steps};
     pub use measures::{ChebyshevDistance, Measure, WeightedProduct, WeightedSum};
     pub use pickers::{FirstToScore, Highest, Picker};
     pub use scorers::{
