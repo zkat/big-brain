@@ -40,7 +40,8 @@ actual behavior.
 use bevy::prelude::*;
 use big_brain::prelude::*;
 
-#[derive(Debug, Clone, Component)]
+#[derive(Debug, Clone, Component, ScorerBuilder)]
+#[scorer_label = "Thirsty"]
 pub struct Thirsty;
 
 pub fn thirsty_scorer_system(
@@ -65,7 +66,8 @@ state of the state machine.
 use bevy::prelude::*;
 use big_brain::prelude::*;
 
-#[derive(Debug, Clone, Component)]
+#[derive(Debug, Clone, Component, ActionBuilder)]
+#[action_label = "Drink"]
 pub struct Drink;
 
 fn drink_action_system(

@@ -53,16 +53,17 @@ pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
     MUST insert your concrete Scorer component into the Scorer [`Entity`], using
      `cmd`. You _may_ use `actor`, but it's perfectly normal to just ignore it.
 
-    Note that this method is automatically implemented for any Components that
-    implement Clone, so you don't need to define it yourself unless you want
-    more complex parameterization of your Actions.
+    In most cases, your `ScorerBuilder` and `Scorer` can be the same type.
+    The only requirement is that your struct implements `Debug`, `Component, `Clone`.
+    You can then use the derive macro `ScorerBuilder` to turn your struct into a `ScorerBuilder`
 
     ### Example
 
-    Using `Clone` (the easy way):
+    Using the derive macro (the easy way):
 
     ```no_run
-    #[derive(Debug, Clone, Component)]
+    #[derive(Debug, Clone, Component, ScorerBuilder)]
+    #[scorer_label = "MyScorerLabel"]
     struct MyScorer;
     ```
 
@@ -107,15 +108,6 @@ pub fn spawn_scorer<T: ScorerBuilder + ?Sized>(
     std::mem::drop(_guard);
     cmd.entity(scorer_ent).insert(span);
     scorer_ent
-}
-
-impl<T> ScorerBuilder for T
-where
-    T: Component + Clone + std::fmt::Debug + Send + Sync,
-{
-    fn build(&self, cmd: &mut Commands, scorer: Entity, _actor: Entity) {
-        cmd.entity(scorer).insert(T::clone(self));
-    }
 }
 
 /**

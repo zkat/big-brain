@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy::utils::tracing::{debug, trace};
 use big_brain::prelude::*;
 
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, ActionBuilder)]
 struct OneOff;
 
 fn one_off_action_system(mut query: Query<(&mut ActionState, &ActionSpan), With<OneOff>>) {

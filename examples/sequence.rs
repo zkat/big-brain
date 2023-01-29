@@ -52,7 +52,7 @@ pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
 }
 
 /// An action where the actor moves to the closest water source
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, ActionBuilder)]
 pub struct MoveToWaterSource {
     // The movement speed of the actor.
     speed: f32,
@@ -147,7 +147,7 @@ fn find_closest_water_source(
 }
 
 /// A simple action: the actor's thirst shall decrease, but only if they are near a water source.
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, ActionBuilder)]
 pub struct Drink {
     per_second: f32,
 }
@@ -217,7 +217,7 @@ fn drink_action_system(
 }
 
 // Scorers are the same as in the thirst example.
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, ScorerBuilder)]
 pub struct Thirsty;
 
 pub fn thirsty_scorer_system(

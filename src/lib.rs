@@ -35,7 +35,8 @@ actual behavior.
 use bevy::prelude::*;
 use big_brain::prelude::*;
 
-#[derive(Debug, Clone, Component)]
+#[derive(Debug, Clone, Component, ScorerBuilder)]
+#[scorer_label = "Thirsty"]
 pub struct Thirsty;
 
 pub fn thirsty_scorer_system(
@@ -60,7 +61,8 @@ state of the state machine.
 use bevy::prelude::*;
 use big_brain::prelude::*;
 
-#[derive(Debug, Clone, Component)]
+#[derive(Debug, Clone, Component, ActionBuilder)]
+#[action_label = "Drink"]
 pub struct Drink;
 
 fn drink_action_system(
@@ -142,6 +144,7 @@ pub mod prelude {
     pub use super::BigBrainPlugin;
     pub use super::BigBrainStage;
     pub use actions::{ActionBuilder, ActionState, Concurrently, Steps};
+    pub use big_brain_derive::{ActionBuilder, ScorerBuilder};
     pub use measures::{ChebyshevDistance, Measure, WeightedProduct, WeightedSum};
     pub use pickers::{FirstToScore, Highest, Picker};
     pub use scorers::{

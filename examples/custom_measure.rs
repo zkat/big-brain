@@ -73,10 +73,10 @@ impl EatFood for Waffles {
 }
 
 // ok so now we can specify our actions
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, ActionBuilder)]
 pub struct EatPancakes;
 
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, ActionBuilder)]
 pub struct EatWaffles;
 
 fn eat_thing_action<
@@ -124,10 +124,10 @@ fn eat_thing_action<
 }
 
 // Next we need to implement our Scorers, one for each of our Pancake and Waffle eating habits.
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, ScorerBuilder)]
 pub struct CravingPancakes;
 
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, ScorerBuilder)]
 pub struct CravingWaffles;
 
 // We can make our Scorer generic as well I guess?

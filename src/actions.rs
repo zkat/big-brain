@@ -76,16 +76,17 @@ pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
     MUST insert your concrete Action component into the Scorer [`Entity`], using
      `cmd`. You _may_ use `actor`, but it's perfectly normal to just ignore it.
 
-    Note that this method is automatically implemented for any Components that
-    implement Clone, so you don't need to define it yourself unless you want
-    more complex parameterization of your Actions.
+    In most cases, your `ActionBuilder` and `Action` can be the same type.
+    The only requirement is that your struct implements `Debug`, `Component, `Clone`.
+    You can then use the derive macro `ActionBuilder` to turn your struct into a `ActionBuilder`
 
     ### Example
 
-    Using `Clone` (the easy way):
+    Using the derive macro (the easy way):
 
     ```no_run
-    #[derive(Debug, Clone, Component)]
+    #[derive(Debug, Clone, Component, ActionBuilder)]
+    #[action_label = "MyActionLabel"]
     struct MyAction;
     ```
 
@@ -110,15 +111,6 @@ pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
      */
     fn label(&self) -> Option<&str> {
         None
-    }
-}
-
-impl<T> ActionBuilder for T
-where
-    T: Component + Clone + std::fmt::Debug + Send + Sync,
-{
-    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
-        cmd.entity(action).insert(T::clone(self));
     }
 }
 
