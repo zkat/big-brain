@@ -1,6 +1,5 @@
-/*!
-Thinkers are the "brain" of an entity. You attach Scorers to it, and the Thinker picks the right Action to run based on the resulting Scores.
-*/
+//! Thinkers are the "brain" of an entity. You attach Scorers to it, and the
+//! Thinker picks the right Action to run based on the resulting Scores.
 
 use std::{collections::VecDeque, sync::Arc};
 
@@ -22,9 +21,10 @@ use crate::{
     scorers::{Score, ScorerBuilder},
 };
 
-/**
-Wrapper for Actor entities. In terms of Scorers, Thinkers, and Actions, this is the [`Entity`] actually _performing_ the action, rather than the entity a Scorer/Thinker/Action is attached to. Generally, you will use this entity when writing Queries for Action and Scorer systems.
- */
+/// Wrapper for Actor entities. In terms of Scorers, Thinkers, and Actions,
+/// this is the [`Entity`] actually _performing_ the action, rather than the
+/// entity a Scorer/Thinker/Action is attached to. Generally, you will use
+/// this entity when writing Queries for Action and Scorer systems.
 #[derive(Debug, Clone, Component, Copy)]
 pub struct Actor(pub Entity);
 
