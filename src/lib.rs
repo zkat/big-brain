@@ -173,7 +173,7 @@ pub mod prelude {
 
     pub use super::BigBrainPlugin;
     pub use super::BigBrainStage;
-    pub use actions::{ActionBuilder, ActionState, Concurrently, Steps};
+    pub use actions::{ActionBuilder, ActionState, ConcurrentMode, Concurrently, Steps};
     pub use big_brain_derive::{ActionBuilder, ScorerBuilder};
     pub use evaluators::{Evaluator, LinearEvaluator, PowerEvaluator, SigmoidEvaluator};
     pub use measures::{ChebyshevDistance, Measure, WeightedProduct, WeightedSum};
