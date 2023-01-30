@@ -28,15 +28,8 @@ fn setup(mut cmds: Commands) {
     );
 }
 
-#[derive(Component, Debug, Default)]
+#[derive(Clone, Component, Debug, ActionBuilder)]
 struct Action1;
-impl ActionBuilder for Action1 {
-    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
-        cmd.entity(action)
-            .insert(Self)
-            .insert(ActionState::Requested);
-    }
-}
 
 fn action1(mut query: Query<(&Actor, &mut ActionState), With<Action1>>) {
     for (Actor(_actor), mut state) in query.iter_mut() {
@@ -50,15 +43,8 @@ fn action1(mut query: Query<(&Actor, &mut ActionState), With<Action1>>) {
     }
 }
 
-#[derive(Component, Debug, Default)]
+#[derive(Clone, Component, Debug, ActionBuilder)]
 struct Action2;
-impl ActionBuilder for Action2 {
-    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
-        cmd.entity(action)
-            .insert(Self)
-            .insert(ActionState::Requested);
-    }
-}
 
 fn action2(mut query: Query<(&Actor, &mut ActionState), With<Action2>>) {
     for (Actor(_actor), mut state) in query.iter_mut() {
@@ -72,15 +58,8 @@ fn action2(mut query: Query<(&Actor, &mut ActionState), With<Action2>>) {
     }
 }
 
-#[derive(Component, Debug, Default)]
+#[derive(Clone, Component, Debug, Default, ActionBuilder)]
 struct ExitAction;
-impl ActionBuilder for ExitAction {
-    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
-        cmd.entity(action)
-            .insert(Self)
-            .insert(ActionState::Requested);
-    }
-}
 
 fn exit_action(
     mut query: Query<(&Actor, &mut ActionState), With<ExitAction>>,
@@ -101,15 +80,8 @@ fn last() {
     println!();
 }
 
-#[derive(Component, Debug, Default)]
+#[derive(Clone, Component, Debug, Default, ActionBuilder)]
 struct FailureAction;
-impl ActionBuilder for FailureAction {
-    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
-        cmd.entity(action)
-            .insert(Self)
-            .insert(ActionState::Requested);
-    }
-}
 
 fn failure_action(
     mut query: Query<(&Actor, &mut ActionState), With<FailureAction>>,
@@ -132,7 +104,7 @@ struct GlobalState {
     failure: bool,
 }
 
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, ScorerBuilder)]
 struct NoFailureScore;
 
 fn no_failure_score(

@@ -10,11 +10,14 @@ pub fn action_builder_impl(input: proc_macro::TokenStream) -> proc_macro::TokenS
     let label = get_label(&input);
 
     let component_name = input.ident;
+    let component_string = component_name.to_string();
     let build_method = build_method(&component_name);
-    let label_method = label_method(label);
+    let label_method = label_method(
+        label.unwrap_or_else(|| LitStr::new(&component_string, component_name.span())),
+    );
 
     let gen = quote! {
-        impl ActionBuilder for #component_name {
+        impl ::big_brain::actions::ActionBuilder for #component_name {
             #build_method
             #label_method
         }
@@ -47,21 +50,16 @@ fn get_label(input: &DeriveInput) -> Option<LitStr> {
 
 fn build_method(component_name: &Ident) -> TokenStream {
     quote! {
-        fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
+        fn build(&self, cmd: &mut ::bevy::ecs::system::Commands, action: ::bevy::ecs::entity::Entity, _actor: ::bevy::ecs::entity::Entity) {
             cmd.entity(action).insert(#component_name::clone(self));
         }
     }
 }
 
-fn label_method(label_option: Option<LitStr>) -> TokenStream {
-    let inner = if let Some(label) = label_option {
-        quote! {Some(#label)}
-    } else {
-        quote! {None}
-    };
+fn label_method(label: LitStr) -> TokenStream {
     quote! {
-        fn label(&self) -> Option<&str> {
-            #inner
+        fn label(&self) -> ::std::option::Option<&str> {
+            ::std::option::Option::Some(#label)
         }
     }
 }
