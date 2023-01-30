@@ -9,6 +9,7 @@ use crate::{choices::Choice, scorers::Score};
 ///
 /// Implementations of `pick` must return `Some(Choice)` for the `Choice` that
 /// was picked, or `None`.
+#[reflect_trait]
 pub trait Picker: std::fmt::Debug + Sync + Send {
     fn pick<'a>(&self, choices: &'a [Choice], scores: &Query<&Score>) -> Option<&'a Choice>;
 }

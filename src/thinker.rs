@@ -25,10 +25,10 @@ use crate::{
 /// this is the [`Entity`] actually _performing_ the action, rather than the
 /// entity a Scorer/Thinker/Action is attached to. Generally, you will use
 /// this entity when writing Queries for Action and Scorer systems.
-#[derive(Debug, Clone, Component, Copy)]
+#[derive(Debug, Clone, Component, Copy, Reflect)]
 pub struct Actor(pub Entity);
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Reflect, FromReflect)]
 pub struct Action(pub Entity);
 
 impl Action {
@@ -61,7 +61,7 @@ impl ActionSpan {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Reflect, FromReflect)]
 pub struct Scorer(pub Entity);
 
 #[derive(Debug, Clone, Component)]
@@ -127,13 +127,20 @@ impl ScorerSpan {
 ///     ));
 /// }
 /// ```
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
 pub struct Thinker {
+    #[reflect(ignore)]
     picker: Arc<dyn Picker>,
+    #[reflect(ignore)]
     otherwise: Option<ActionBuilderWrapper>,
+    #[reflect(ignore)]
     choices: Vec<Choice>,
+    #[reflect(ignore)]
     current_action: Option<(Action, ActionBuilderWrapper)>,
+    current_action_label: Option<Option<String>>,
+    #[reflect(ignore)]
     span: Span,
+    #[reflect(ignore)]
     scheduled_actions: VecDeque<ActionBuilderWrapper>,
 }
 
@@ -227,6 +234,7 @@ impl ActionBuilder for ThinkerBuilder {
                 otherwise: self.otherwise.clone(),
                 choices,
                 current_action: None,
+                current_action_label: None,
                 span,
                 scheduled_actions: VecDeque::new(),
             })
@@ -272,7 +280,7 @@ pub fn actor_gone_cleanup(
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
 pub struct HasThinker(Entity);
 
 impl HasThinker {
@@ -393,6 +401,7 @@ pub fn thinker_system(
                         .expect("we literally just checked if it was there.");
                     let new_action = actions::spawn_action(action.1.as_ref(), &mut cmd, *actor);
                     thinker.current_action = Some((Action(new_action), action.clone()));
+                    thinker.current_action_label = Some(action.1.label().map(|s| s.into()));
                 } else if let Some(default_action_ent) = &thinker.otherwise {
                     // Otherwise, let's just execute the default one! (if it's there)
                     let default_action_ent = default_action_ent.clone();
@@ -539,6 +548,7 @@ fn exec_picked_action(
                     let new_action =
                         Action(actions::spawn_action(picked_action.1.as_ref(), cmd, actor));
                     thinker.current_action = Some((new_action, picked_action.clone()));
+                    thinker.current_action_label = Some(picked_action.1.label().map(|s| s.into()));
                 }
                 ActionState::Cancelled => {
                     #[cfg(feature = "trace")]
@@ -575,5 +585,6 @@ fn exec_picked_action(
         debug!("No current action. Spawning new action.");
         let new_action = actions::spawn_action(picked_action.1.as_ref(), cmd, actor);
         thinker.current_action = Some((Action(new_action), picked_action.clone()));
+        thinker.current_action_label = Some(picked_action.1.label().map(|s| s.into()));
     }
 }

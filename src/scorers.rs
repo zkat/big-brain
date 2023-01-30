@@ -15,7 +15,7 @@ use crate::{
 };
 
 /// Score value between `0.0..=1.0` associated with a Scorer.
-#[derive(Clone, Component, Debug, Default)]
+#[derive(Clone, Component, Debug, Default, Reflect)]
 pub struct Score(pub(crate) f32);
 
 impl Score {
@@ -44,6 +44,7 @@ impl Score {
 ///
 /// The `build()` method MUST be implemented for any `ScorerBuilder`s you want
 /// to define.
+#[reflect_trait]
 pub trait ScorerBuilder: std::fmt::Debug + Sync + Send {
     /// MUST insert your concrete Scorer component into the Scorer [`Entity`],
     ///  using `cmd`. You _may_ use `actor`, but it's perfectly normal to just
@@ -111,7 +112,7 @@ pub fn spawn_scorer<T: ScorerBuilder + ?Sized>(
 
 /// Scorer that always returns the same, fixed score. Good for combining with
 /// things creatively!
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, Reflect)]
 pub struct FixedScore(pub f32);
 
 impl FixedScore {
@@ -131,7 +132,7 @@ pub fn fixed_score_system(mut query: Query<(&FixedScore, &mut Score, &ScorerSpan
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Reflect)]
 pub struct FixedScorerBuilder {
     score: f32,
     label: Option<String>,
@@ -179,7 +180,7 @@ impl ScorerBuilder for FixedScorerBuilder {
 /// # ;
 /// # }
 /// ```
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
 pub struct AllOrNothing {
     threshold: f32,
     scorers: Vec<Scorer>,
@@ -190,6 +191,7 @@ impl AllOrNothing {
         AllOrNothingBuilder {
             threshold,
             scorers: Vec::new(),
+            scorer_labels: Vec::new(),
             label: None,
         }
     }
@@ -228,16 +230,23 @@ pub fn all_or_nothing_system(
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
 pub struct AllOrNothingBuilder {
     threshold: f32,
+    #[reflect(ignore)]
     scorers: Vec<Arc<dyn ScorerBuilder>>,
+    scorer_labels: Vec<String>,
     label: Option<String>,
 }
 
 impl AllOrNothingBuilder {
     /// Add another Scorer to this [`ScorerBuilder`].
     pub fn push(mut self, scorer: impl ScorerBuilder + 'static) -> Self {
+        if let Some(label) = scorer.label() {
+            self.scorer_labels.push(label.into());
+        } else {
+            self.scorer_labels.push("Unnamed Scorer".into());
+        }
         self.scorers.push(Arc::new(scorer));
         self
     }
@@ -294,10 +303,11 @@ impl ScorerBuilder for AllOrNothingBuilder {
 /// # ;
 /// # }
 /// ```
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
 pub struct SumOfScorers {
     threshold: f32,
     scorers: Vec<Scorer>,
+    scorer_labels: Vec<String>,
 }
 
 impl SumOfScorers {
@@ -305,6 +315,7 @@ impl SumOfScorers {
         SumOfScorersBuilder {
             threshold,
             scorers: Vec::new(),
+            scorer_labels: Vec::new(),
             label: None,
         }
     }
@@ -319,6 +330,7 @@ pub fn sum_of_scorers_system(
         SumOfScorers {
             threshold,
             scorers: children,
+            ..
         },
         _span,
     ) in query.iter()
@@ -345,16 +357,23 @@ pub fn sum_of_scorers_system(
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
 pub struct SumOfScorersBuilder {
     threshold: f32,
+    #[reflect(ignore)]
     scorers: Vec<Arc<dyn ScorerBuilder>>,
+    scorer_labels: Vec<String>,
     label: Option<String>,
 }
 
 impl SumOfScorersBuilder {
     /// Add a new Scorer to this [`SumOfScorersBuilder`].
     pub fn push(mut self, scorer: impl ScorerBuilder + 'static) -> Self {
+        if let Some(label) = scorer.label() {
+            self.scorer_labels.push(label.into());
+        } else {
+            self.scorer_labels.push("Unnamed Scorer".into());
+        }
         self.scorers.push(Arc::new(scorer));
         self
     }
@@ -383,6 +402,7 @@ impl ScorerBuilder for SumOfScorersBuilder {
             .insert(SumOfScorers {
                 threshold: self.threshold,
                 scorers: scorers.into_iter().map(Scorer).collect(),
+                scorer_labels: self.scorer_labels.clone(),
             });
     }
 }
@@ -418,11 +438,12 @@ impl ScorerBuilder for SumOfScorersBuilder {
 /// # }
 /// ```
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
 pub struct ProductOfScorers {
     threshold: f32,
     use_compensation: bool,
     scorers: Vec<Scorer>,
+    scorer_labels: Vec<String>,
 }
 
 impl ProductOfScorers {
@@ -431,6 +452,7 @@ impl ProductOfScorers {
             threshold,
             use_compensation: false,
             scorers: Vec::new(),
+            scorer_labels: Vec::new(),
             label: None,
         }
     }
@@ -446,6 +468,7 @@ pub fn product_of_scorers_system(
             threshold,
             use_compensation,
             scorers: children,
+            ..
         },
         _span,
     ) in query.iter()
@@ -490,6 +513,7 @@ pub struct ProductOfScorersBuilder {
     threshold: f32,
     use_compensation: bool,
     scorers: Vec<Arc<dyn ScorerBuilder>>,
+    scorer_labels: Vec<String>,
     label: Option<String>,
 }
 
@@ -504,6 +528,11 @@ impl ProductOfScorersBuilder {
 
     /// Add a new scorer to this [`ProductOfScorersBuilder`].
     pub fn push(mut self, scorer: impl ScorerBuilder + 'static) -> Self {
+        if let Some(label) = scorer.label() {
+            self.scorer_labels.push(label.into());
+        } else {
+            self.scorer_labels.push("Unnamed Scorer".into());
+        }
         self.scorers.push(Arc::new(scorer));
         self
     }
@@ -533,6 +562,7 @@ impl ScorerBuilder for ProductOfScorersBuilder {
                 threshold: self.threshold,
                 use_compensation: self.use_compensation,
                 scorers: scorers.into_iter().map(Scorer).collect(),
+                scorer_labels: self.scorer_labels.clone(),
             });
     }
 }
@@ -563,10 +593,11 @@ impl ScorerBuilder for ProductOfScorersBuilder {
 /// # }
 /// ```
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
 pub struct WinningScorer {
     threshold: f32,
     scorers: Vec<Scorer>,
+    scorer_labels: Vec<String>,
 }
 
 impl WinningScorer {
@@ -574,6 +605,7 @@ impl WinningScorer {
         WinningScorerBuilder {
             threshold,
             scorers: Vec::new(),
+            scorer_labels: Vec::new(),
             label: None,
         }
     }
@@ -615,16 +647,23 @@ pub fn winning_scorer_system(
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
 pub struct WinningScorerBuilder {
     threshold: f32,
+    #[reflect(ignore)]
     scorers: Vec<Arc<dyn ScorerBuilder>>,
+    scorer_labels: Vec<String>,
     label: Option<String>,
 }
 
 impl WinningScorerBuilder {
     /// Add another Scorer to this [`WinningScorerBuilder`].
     pub fn push(mut self, scorer: impl ScorerBuilder + 'static) -> Self {
+        if let Some(label) = scorer.label() {
+            self.scorer_labels.push(label.into());
+        } else {
+            self.scorer_labels.push("Unnamed Scorer".into())
+        }
         self.scorers.push(Arc::new(scorer));
         self
     }
@@ -653,6 +692,7 @@ impl ScorerBuilder for WinningScorerBuilder {
             .insert(WinningScorer {
                 threshold: self.threshold,
                 scorers: scorers.into_iter().map(Scorer).collect(),
+                scorer_labels: self.scorer_labels.clone(),
             });
     }
 }
@@ -685,9 +725,11 @@ impl ScorerBuilder for WinningScorerBuilder {
 /// # ;
 /// # }
 /// ```
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
 pub struct EvaluatingScorer {
     scorer: Scorer,
+    evaluator_string: String,
+    #[reflect(ignore)]
     evaluator: Arc<dyn Evaluator>,
 }
 
@@ -697,6 +739,7 @@ impl EvaluatingScorer {
         evaluator: impl Evaluator + 'static,
     ) -> EvaluatingScorerBuilder {
         EvaluatingScorerBuilder {
+            scorer_label: scorer.label().map(|s| s.into()),
             evaluator: Arc::new(evaluator),
             scorer: Arc::new(scorer),
             label: None,
@@ -733,9 +776,12 @@ pub fn evaluating_scorer_system(
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Reflect)]
 pub struct EvaluatingScorerBuilder {
+    #[reflect(ignore)]
     scorer: Arc<dyn ScorerBuilder>,
+    scorer_label: Option<String>,
+    #[reflect(ignore)]
     evaluator: Arc<dyn Evaluator>,
     label: Option<String>,
 }
@@ -753,6 +799,7 @@ impl ScorerBuilder for EvaluatingScorerBuilder {
             .insert(EvaluatingScorer {
                 evaluator: self.evaluator.clone(),
                 scorer: Scorer(inner_scorer),
+                evaluator_string: format!("{:#?}", self.evaluator),
             });
     }
 }
@@ -807,10 +854,12 @@ impl ScorerBuilder for EvaluatingScorerBuilder {
 /// # }
 /// ```
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
 pub struct MeasuredScorer {
     threshold: f32,
+    #[reflect(ignore)]
     measure: Arc<dyn Measure>,
+    measure_string: String,
     scorers: Vec<(Scorer, f32)>,
 }
 
@@ -819,7 +868,9 @@ impl MeasuredScorer {
         MeasuredScorerBuilder {
             threshold,
             measure: Arc::new(WeightedMeasure),
+            measure_string: format!("{:#?}", WeightedMeasure),
             scorers: Vec::new(),
+            scorer_labels: Vec::new(),
             label: None,
         }
     }
@@ -835,6 +886,7 @@ pub fn measured_scorers_system(
             threshold,
             measure,
             scorers: children,
+            ..
         },
         _span,
     ) in query.iter()
@@ -864,22 +916,32 @@ pub fn measured_scorers_system(
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Reflect)]
 pub struct MeasuredScorerBuilder {
     threshold: f32,
+    #[reflect(ignore)]
     measure: Arc<dyn Measure>,
+    measure_string: String,
+    #[reflect(ignore)]
     scorers: Vec<(Arc<dyn ScorerBuilder>, f32)>,
+    scorer_labels: Vec<String>,
     label: Option<String>,
 }
 
 impl MeasuredScorerBuilder {
     /// Sets the measure to be used to combine the child scorers
     pub fn measure(mut self, measure: impl Measure + 'static) -> Self {
+        self.measure_string = format!("{:#?}", measure);
         self.measure = Arc::new(measure);
         self
     }
 
     pub fn push(mut self, scorer: impl ScorerBuilder + 'static, weight: f32) -> Self {
+        if let Some(label) = scorer.label() {
+            self.scorer_labels.push(label.into());
+        } else {
+            self.scorer_labels.push("Unnamed Scorer".into());
+        }
         self.scorers.push((Arc::new(scorer), weight));
         self
     }
@@ -913,6 +975,7 @@ impl ScorerBuilder for MeasuredScorerBuilder {
                     .map(Scorer)
                     .zip(self.scorers.iter().map(|(_, weight)| *weight))
                     .collect(),
+                measure_string: self.measure_string.clone(),
             });
     }
 }

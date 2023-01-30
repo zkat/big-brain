@@ -9,11 +9,14 @@ use crate::{
 };
 
 /// Contains different types of Considerations and Actions
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
 pub struct Choice {
     pub(crate) scorer: Scorer,
+    #[reflect(ignore)]
     pub(crate) action: ActionBuilderWrapper,
+    pub(crate) action_label: Option<String>,
 }
+
 impl Choice {
     pub fn calculate(&self, scores: &Query<&Score>) -> f32 {
         scores
@@ -24,15 +27,21 @@ impl Choice {
 }
 
 /// Builds a new [`Choice`].
-#[derive(Debug)]
+#[derive(Debug, Reflect)]
 pub struct ChoiceBuilder {
+    when_label: Option<String>,
+    #[reflect(ignore)]
     pub when: Arc<dyn ScorerBuilder>,
+    then_label: Option<String>,
+    #[reflect(ignore)]
     pub then: Arc<dyn ActionBuilder>,
 }
 impl ChoiceBuilder {
     pub fn new(scorer: Arc<dyn ScorerBuilder>, action: Arc<dyn ActionBuilder>) -> Self {
         Self {
+            when_label: scorer.label().map(|s| s.into()),
             when: scorer,
+            then_label: action.label().map(|s| s.into()),
             then: action,
         }
     }
@@ -42,6 +51,7 @@ impl ChoiceBuilder {
         cmd.entity(parent).push_children(&[scorer_ent]);
         Choice {
             scorer: Scorer(scorer_ent),
+            action_label: self.then.label().map(|s| s.into()),
             action: ActionBuilderWrapper::new(self.then.clone()),
         }
     }
