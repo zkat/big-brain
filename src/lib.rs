@@ -213,13 +213,11 @@ use bevy::prelude::*;
 /// use bevy::prelude::*;
 /// use big_brain::prelude::*;
 ///
-/// fn main() {
-///     App::new()
-///         .add_plugins(DefaultPlugins)
-///         .add_plugin(BigBrainPlugin)
-///         // ...insert entities and other systems.
-///         .run();
-/// }
+/// App::new()
+///     .add_plugins(DefaultPlugins)
+///     .add_plugin(BigBrainPlugin)
+///     // ...insert entities and other systems.
+///     .run();
 #[derive(Debug, Clone, Reflect)]
 pub struct BigBrainPlugin;
 

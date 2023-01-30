@@ -868,7 +868,7 @@ impl MeasuredScorer {
         MeasuredScorerBuilder {
             threshold,
             measure: Arc::new(WeightedMeasure),
-            measure_string: format!("{:#?}", WeightedMeasure),
+            measure_string: format!("{WeightedMeasure:#?}"),
             scorers: Vec::new(),
             scorer_labels: Vec::new(),
             label: None,
@@ -931,7 +931,7 @@ pub struct MeasuredScorerBuilder {
 impl MeasuredScorerBuilder {
     /// Sets the measure to be used to combine the child scorers
     pub fn measure(mut self, measure: impl Measure + 'static) -> Self {
-        self.measure_string = format!("{:#?}", measure);
+        self.measure_string = format!("{measure:#?}");
         self.measure = Arc::new(measure);
         self
     }

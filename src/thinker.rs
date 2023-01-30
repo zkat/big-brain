@@ -51,7 +51,7 @@ impl ActionSpan {
             label = field::Empty,
         );
         if let Some(label) = label {
-            span.record("label", &label);
+            span.record("label", label);
         }
         Self { span }
     }
@@ -79,7 +79,7 @@ impl ScorerSpan {
         );
 
         if let Some(label) = label {
-            span.record("label", &label);
+            span.record("label", label);
         }
         Self { span }
     }
@@ -416,27 +416,23 @@ pub fn thinker_system(
                         &scorer_spans,
                         false,
                     );
-                } else {
-                    #[cfg(feature = "trace")]
-                    trace!("No action was picked. No `otherwise` clause. No scheduled actions. Thinker sitting quietly for now.");
-                    if let Some((action_ent, _)) = &thinker.current_action {
-                        let action_span = action_spans.get(action_ent.0).expect("Where is it?");
-                        let _guard = action_span.span.enter();
-                        let mut curr_action_state = action_states.get_mut(action_ent.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
-                        let previous_done = matches!(
-                            *curr_action_state,
-                            ActionState::Success | ActionState::Failure
+                } else if let Some((action_ent, _)) = &thinker.current_action {
+                    let action_span = action_spans.get(action_ent.0).expect("Where is it?");
+                    let _guard = action_span.span.enter();
+                    let mut curr_action_state = action_states.get_mut(action_ent.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
+                    let previous_done = matches!(
+                        *curr_action_state,
+                        ActionState::Success | ActionState::Failure
+                    );
+                    if previous_done {
+                        debug!(
+                            "Action completed and nothing was picked. Despawning action entity.",
                         );
-                        if previous_done {
-                            debug!(
-                                "Action completed and nothing was picked. Despawning action entity.",
-                            );
-                            // Despawn the action itself.
-                            cmd.entity(action_ent.0).despawn_recursive();
-                            thinker.current_action = None;
-                        } else if *curr_action_state == ActionState::Init {
-                            *curr_action_state = ActionState::Requested;
-                        }
+                        // Despawn the action itself.
+                        cmd.entity(action_ent.0).despawn_recursive();
+                        thinker.current_action = None;
+                    } else if *curr_action_state == ActionState::Init {
+                        *curr_action_state = ActionState::Requested;
                     }
                 }
             }
@@ -462,18 +458,20 @@ fn should_schedule_action(
         false
     } else if let Some((action_ent, _)) = &mut thinker.current_action {
         let curr_action_state = states.get_mut(action_ent.0).expect("Couldn't find a component corresponding to the current action. This is definitely a bug.");
-        if matches!(
+
+        let action_done = matches!(
             *curr_action_state,
             ActionState::Success | ActionState::Failure
-        ) {
-            #[cfg(feature = "trace")]
+        );
+
+        #[cfg(feature = "trace")]
+        if action_done {
             trace!("Current action is already done. Can schedule.");
-            true
         } else {
-            #[cfg(feature = "trace")]
             trace!("Current action is still executing. Not scheduling anything.");
-            false
         }
+
+        action_done
     } else {
         #[cfg(feature = "trace")]
         trace!("No current action actions. Can schedule.");
