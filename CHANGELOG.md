@@ -1,5 +1,27 @@
 # `big-brain` Release Changelog
 
+<a name="0.16.0"></a>
+## 0.16.0 (2023-01-30)
+
+Probably the biggest change in this release is removal of the blanket
+`ActionBuilder` and `ScorerBuilder` implementations for `Clone` types. This is
+a fairly significant breaking change, but one that is fairly easy to resolve:
+simply use the new `#[derive(ActionBuilder)]` and `#[derive(ScorerBuilder)]`
+macros to derive the necessary implementations for your Action and Scorer
+Components and you should be good to go.
+
+### Features
+
+* **derive:** Add derive macros for Action and Scorer (#65) ([359bccef](https://github.com/zkat/big-brain/commit/359bccef46f67d286c7f89cbe1b93b7b37b46588))
+    * **BREAKING CHANGE**: This gets rid of the blanket implementation for Action/ScorerBuilder on Clone things, and instead requires that people use derive macros (or manually implement the traits), if they want to go the clone-to-instantiate route.
+* **concurrenty:** Add ConcurrentMode configuration to Concurrently Action (#68) ([f6d04feb](https://github.com/zkat/big-brain/commit/f6d04feb18927250304554467da2cb1c6583fc2d))
+* **reflection:** Implement Reflect trait for all relevant types (#69) ([31543c78](https://github.com/zkat/big-brain/commit/31543c78bd398e7781ced90701e73691b265a6ce))
+
+### Bug Fixes
+
+* **typo:** fix scorer argument name (#63) ([5be71335](https://github.com/zkat/big-brain/commit/5be71335b3a4429ed05c1d3e0969dc521400df09))
+* **derive:** some tweaks to new derive macros ([4a622a90](https://github.com/zkat/big-brain/commit/4a622a90bf895d35ec255971b5ca7d1c5c95b120))
+
 <a name="0.15.0"></a>
 ## 0.15.0 (2022-11-13)
 
