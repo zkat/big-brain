@@ -89,28 +89,44 @@ impl ScorerSpan {
     }
 }
 
-/**
-The "brains" behind this whole operation. A `Thinker` is what glues together `Actions` and `Scorers` and shapes larger, intelligent-seeming systems.
-
-Note: Thinkers are also Actions, so anywhere you can pass in an Action (or [`ActionBuilder`]), you can pass in a Thinker (or [`ThinkerBuilder`]).
-
-### Example
-
-```no_run
-pub fn init_entities(mut cmd: Commands) {
-    cmd.spawn()
-        .insert(Thirst::new(70.0, 2.0))
-        .insert(Hunger::new(50.0, 3.0))
-        .insert(
-            Thinker::build()
-                .picker(FirstToScore::new(80.0))
-                .when(Thirsty::build(), Drink::build())
-                .when(Hungry::build(), Eat::build())
-                .otherwise(Meander::build()),
-        );
-}
-```
- */
+/// The "brains" behind this whole operation. A `Thinker` is what glues
+/// together `Actions` and `Scorers` and shapes larger, intelligent-seeming
+/// systems.
+///
+/// Note: Thinkers are also Actions, so anywhere you can pass in an Action (or
+/// [`ActionBuilder`]), you can pass in a Thinker (or [`ThinkerBuilder`]).
+///
+/// ### Example
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use big_brain::prelude::*;
+/// # #[derive(Component, Debug)]
+/// # struct Thirst(f32, f32);
+/// # #[derive(Component, Debug)]
+/// # struct Hunger(f32, f32);
+/// # #[derive(Clone, Component, Debug, ScorerBuilder)]
+/// # struct Thirsty;
+/// # #[derive(Clone, Component, Debug, ScorerBuilder)]
+/// # struct Hungry;
+/// # #[derive(Clone, Component, Debug, ActionBuilder)]
+/// # struct Drink;
+/// # #[derive(Clone, Component, Debug, ActionBuilder)]
+/// # struct Eat;
+/// # #[derive(Clone, Component, Debug, ActionBuilder)]
+/// # struct Meander;
+/// pub fn init_entities(mut cmd: Commands) {
+///     cmd.spawn((
+///         Thirst(70.0, 2.0),
+///         Hunger(50.0, 3.0),
+///         Thinker::build()
+///             .picker(FirstToScore::new(80.0))
+///             .when(Thirsty, Drink)
+///             .when(Hungry, Eat)
+///             .otherwise(Meander),
+///     ));
+/// }
+/// ```
 #[derive(Component, Debug)]
 pub struct Thinker {
     picker: Arc<dyn Picker>,
@@ -122,9 +138,8 @@ pub struct Thinker {
 }
 
 impl Thinker {
-    /**
-    Make a new [`ThinkerBuilder`]. This is what you'll actually use to configure Thinker behavior.
-     */
+    /// Make a new [`ThinkerBuilder`]. This is what you'll actually use to
+    /// configure Thinker behavior.
     pub fn build() -> ThinkerBuilder {
         ThinkerBuilder::new()
     }
@@ -135,9 +150,8 @@ impl Thinker {
     }
 }
 
-/**
-This is what you actually use to configure Thinker behavior. It's a plain old [`ActionBuilder`], as well.
- */
+/// This is what you actually use to configure Thinker behavior. It's a plain
+/// old [`ActionBuilder`], as well.
 #[derive(Component, Debug, Default)]
 pub struct ThinkerBuilder {
     picker: Option<Arc<dyn Picker>>,
@@ -156,17 +170,14 @@ impl ThinkerBuilder {
         }
     }
 
-    /**
-    Define a [`Picker`](crate::pickers::Picker) for this Thinker.
-     */
+    /// Define a [`Picker`](crate::pickers::Picker) for this Thinker.
     pub fn picker(mut self, picker: impl Picker + 'static) -> Self {
         self.picker = Some(Arc::new(picker));
         self
     }
 
-    /**
-    Define an [`ActionBuilder`](crate::actions::ActionBuilder) and [`ScorerBuilder`](crate::scorers::ScorerBuilder) pair.
-     */
+    /// Define an [`ActionBuilder`](crate::actions::ActionBuilder) and
+    /// [`ScorerBuilder`](crate::scorers::ScorerBuilder) pair.
     pub fn when(
         mut self,
         scorer: impl ScorerBuilder + 'static,
@@ -177,17 +188,14 @@ impl ThinkerBuilder {
         self
     }
 
-    /**
-    Default `Action` to execute if the `Picker` did not pick any of the given choices.
-     */
+    /// Default `Action` to execute if the `Picker` did not pick any of the
+    /// given choices.
     pub fn otherwise(mut self, otherwise: impl ActionBuilder + 'static) -> Self {
         self.otherwise = Some(ActionBuilderWrapper::new(Arc::new(otherwise)));
         self
     }
 
-    /**
-     * Configures a label to use for the thinker when logging.
-     */
+    /// * Configures a label to use for the thinker when logging.
     pub fn label(mut self, label: impl AsRef<str>) -> Self {
         self.label = Some(label.as_ref().to_string());
         self

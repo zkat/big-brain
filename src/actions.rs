@@ -1,6 +1,5 @@
-/*!
-Defines Action-related functionality. This module includes the ActionBuilder trait and some Composite Actions for utility.
-*/
+//! Defines Action-related functionality. This module includes the
+//! ActionBuilder trait and some Composite Actions for utility.
 use std::sync::Arc;
 
 use bevy::prelude::*;
@@ -9,35 +8,42 @@ use bevy::utils::tracing::trace;
 
 use crate::thinker::{Action, ActionSpan, Actor};
 
-/**
-The current state for an Action.
-*/
+/// The current state for an Action. These states are changed by a combination
+/// of the Thinker that spawned it, and the actual Action system executing the
+/// Action itself.
+///
+/// Action system implementors should be mindful of taking appropriate action
+/// on all of these states, and be particularly careful when ignoring
+/// variants.
 #[derive(Debug, Clone, Component, Eq, PartialEq)]
 #[component(storage = "SparseSet")]
 pub enum ActionState {
-    /**
-    Initial state. No action should be performed.
-    */
+    /// Initial state. No action should be performed.
     Init,
-    /**
-    Action requested. The Action-handling system should start executing this Action ASAP and change the status to the next state.
-    */
+
+    /// Action requested. The Action-handling system should start executing
+    /// this Action ASAP and change the status to the next state.
     Requested,
-    /**
-    The action has ongoing execution. The associated Thinker will try to keep executing this Action as-is until it changes state or it gets Cancelled.
-    */
+
+    /// The action has ongoing execution. The associated Thinker will try to
+    /// keep executing this Action as-is until it changes state or it gets
+    /// Cancelled.
     Executing,
-    /**
-    An ongoing Action has been cancelled. The Thinker might set this action for you, so for Actions that execute for longer than a single tick, **you must check whether the Cancelled state was set** and change do either Success or Failure. Thinkers will wait on Cancelled actions to do any necessary cleanup work, so this can hang your AI if you don't look for it.
-    */
+
+    /// An ongoing Action has been cancelled. The Thinker might set this
+    /// action for you, so for Actions that execute for longer than a single
+    /// tick, **you must check whether the Cancelled state was set** and
+    /// change do either Success or Failure. Thinkers will wait on Cancelled
+    /// actions to do any necessary cleanup work, so this can hang your AI if
+    /// you don't look for it.
     Cancelled,
-    /**
-    The Action was a success. This is used by Composite Actions to determine whether to continue execution.
-    */
+
+    /// The Action was a success. This is used by Composite Actions to
+    /// determine whether to continue execution.
     Success,
-    /**
-    The Action failed. This is used by Composite Actions to determine whether to halt execution.
-    */
+
+    /// The Action failed. This is used by Composite Actions to determine
+    /// whether to halt execution.
     Failure,
 }
 
@@ -65,45 +71,51 @@ impl ActionBuilderWrapper {
     }
 }
 
-/**
-Trait that must be defined by types in order to be `ActionBuilder`s. `ActionBuilder`s' job is to spawn new `Action` entities on demand. In general, most of this is already done for you, and the only method you really have to implement is `.build()`.
-
-The `build()` method MUST be implemented for any `ActionBuilder`s you want to define.
-*/
+/// Trait that must be defined by types in order to be `ActionBuilder`s.
+/// `ActionBuilder`s' job is to spawn new `Action` entities on demand. In
+/// general, most of this is already done for you, and the only method you
+/// really have to implement is `.build()`.
+///
+/// The `build()` method MUST be implemented for any `ActionBuilder`s you want
+/// to define.
 pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
-    /**
-
-    MUST insert your concrete Action component into the Scorer [`Entity`], using
-     `cmd`. You _may_ use `actor`, but it's perfectly normal to just ignore it.
-
-    In most cases, your `ActionBuilder` and `Action` can be the same type.
-    The only requirement is that your struct implements `Debug`, `Component, `Clone`.
-    You can then use the derive macro `ActionBuilder` to turn your struct into a `ActionBuilder`
-
-    ### Example
-
-    Using the derive macro (the easy way):
-
-    ```no_run
-    #[derive(Debug, Clone, Component, ActionBuilder)]
-    #[action_label = "MyActionLabel"] // Optional. Defaults to type name.
-    struct MyAction;
-    ```
-
-    Implementing it manually:
-
-    ```no_run
-    struct MyBuilder;
-    #[derive(Debug, Component)]
-    struct MyAction;
-
-    impl ActionBuilder for MyBuilder {
-        fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity) {
-            cmd.entity(action).insert(MyAction);
-        }
-    }
-    ```
-    */
+    /// MUST insert your concrete Action component into the Scorer [`Entity`],
+    /// using `cmd`. You _may_ use `actor`, but it's perfectly normal to just
+    /// ignore it.
+    ///
+    /// In most cases, your `ActionBuilder` and `Action` can be the same type.
+    /// The only requirement is that your struct implements `Debug`,
+    /// `Component, `Clone`. You can then use the derive macro `ActionBuilder`
+    /// to turn your struct into a `ActionBuilder`
+    ///
+    /// ### Example
+    ///
+    /// Using the derive macro (the easy way):
+    ///
+    /// ```
+    /// # use bevy::prelude::*;
+    /// # use big_brain::prelude::*;
+    /// #[derive(Debug, Clone, Component, ActionBuilder)]
+    /// #[action_label = "MyActionLabel"] // Optional. Defaults to type name.
+    /// struct MyAction;
+    /// ```
+    ///
+    /// Implementing it manually:
+    ///
+    /// ```
+    /// # use bevy::prelude::*;
+    /// # use big_brain::prelude::*;
+    /// #[derive(Debug)]
+    /// struct MyBuilder;
+    /// #[derive(Debug, Component)]
+    /// struct MyAction;
+    ///
+    /// impl ActionBuilder for MyBuilder {
+    ///   fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity) {
+    ///     cmd.entity(action).insert(MyAction);
+    ///   }
+    /// }
+    /// ```
     fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity);
 
     /**
@@ -114,9 +126,8 @@ pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
     }
 }
 
-/**
- * Spawns a new Action Component, using the given ActionBuilder. This is useful when you're doing things like writing composite Actions.
- */
+/// Spawns a new Action Component, using the given ActionBuilder. This is
+/// useful when you're doing things like writing composite Actions.
 pub fn spawn_action<T: ActionBuilder + ?Sized>(
     builder: &T,
     cmd: &mut Commands,
@@ -136,9 +147,8 @@ pub fn spawn_action<T: ActionBuilder + ?Sized>(
     action_ent.entity()
 }
 
-/**
-[`ActionBuilder`] for the [`Steps`] component. Constructed through `Steps::build()`.
-*/
+/// [`ActionBuilder`] for the [`Steps`] component. Constructed through
+/// `Steps::build()`.
 #[derive(Debug)]
 pub struct StepsBuilder {
     label: Option<String>,
@@ -146,17 +156,13 @@ pub struct StepsBuilder {
 }
 
 impl StepsBuilder {
-    /**
-     * Sets the logging label for the Action
-     */
+    /// Sets the logging label for the Action
     pub fn label<S: Into<String>>(mut self, label: S) -> Self {
         self.label = Some(label.into());
         self
     }
 
-    /**
-    Adds an action step. Order matters.
-    */
+    /// Adds an action step. Order matters.
     pub fn step(mut self, action_builder: impl ActionBuilder + 'static) -> Self {
         self.steps.push(Arc::new(action_builder));
         self
@@ -183,21 +189,31 @@ impl ActionBuilder for StepsBuilder {
     }
 }
 
-/**
-Composite Action that executes a series of steps in sequential order, as long as each step results in a `Success`ful [`ActionState`].
-
-### Example
-
-```ignore
-Thinker::build()
-    .when(
-        MyScorer,
-        Steps::build()
-            .step(MyAction)
-            .step(MyNextAction)
-        )
-```
-*/
+/// Composite Action that executes a series of steps in sequential order, as
+/// long as each step results in a `Success`ful [`ActionState`].
+///
+/// ### Example
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use big_brain::prelude::*;
+/// # #[derive(Debug, Clone, Component, ScorerBuilder)]
+/// # struct MyScorer;
+/// # #[derive(Debug, Clone, Component, ActionBuilder)]
+/// # struct MyAction;
+/// # #[derive(Debug, Clone, Component, ActionBuilder)]
+/// # struct MyNextAction;
+/// # fn main() {
+/// Thinker::build()
+///     .when(
+///         MyScorer,
+///         Steps::build()
+///             .step(MyAction)
+///             .step(MyNextAction)
+///         )
+/// # ;
+/// # }
+/// ```
 #[derive(Component, Debug)]
 pub struct Steps {
     steps: Vec<Arc<dyn ActionBuilder>>,
@@ -206,9 +222,7 @@ pub struct Steps {
 }
 
 impl Steps {
-    /**
-    Construct a new [`StepsBuilder`] to define the steps to take.
-    */
+    /// Construct a new [`StepsBuilder`] to define the steps to take.
     pub fn build() -> StepsBuilder {
         StepsBuilder {
             steps: Vec::new(),
@@ -217,9 +231,7 @@ impl Steps {
     }
 }
 
-/**
-System that takes care of executing any existing [`Steps`] Actions.
-*/
+/// System that takes care of executing any existing [`Steps`] Actions.
 pub fn steps_system(
     mut cmd: Commands,
     mut steps_q: Query<(Entity, &Actor, &mut Steps, &ActionSpan)>,
@@ -310,9 +322,8 @@ pub fn steps_system(
     }
 }
 
-/**
-[`ActionBuilder`] for the [`Concurrently`] component. Constructed through `Concurrently::build()`.
-*/
+/// [`ActionBuilder`] for the [`Concurrently`] component. Constructed through
+/// `Concurrently::build()`.
 #[derive(Debug)]
 pub struct ConcurrentlyBuilder {
     actions: Vec<Arc<dyn ActionBuilder>>,
@@ -320,17 +331,13 @@ pub struct ConcurrentlyBuilder {
 }
 
 impl ConcurrentlyBuilder {
-    /**
-     * Sets the logging label for the Action
-     */
+    /// Sets the logging label for the Action
     pub fn label<S: Into<String>>(mut self, label: S) -> Self {
         self.label = Some(label.into());
         self
     }
 
-    /**
-    Add an action to execute. Order does not matter.
-    */
+    /// Add an action to execute. Order does not matter.
     pub fn push(mut self, action_builder: impl ActionBuilder + 'static) -> Self {
         self.actions.push(Arc::new(action_builder));
         self
@@ -357,30 +364,37 @@ impl ActionBuilder for ConcurrentlyBuilder {
     }
 }
 
-/**
-Composite Action that executes a number of Actions concurrently, as long as they all result in a `Success`ful [`ActionState`].
-
-### Example
-
-```ignore
-Thinker::build()
-    .when(
-        MyScorer,
-        Concurrent::build()
-            .push(MyAction)
-            .push(MyOtherAction)
-        )
-```
-*/
+/// Composite Action that executes a number of Actions concurrently, as long as they all result in a `Success`ful [`ActionState`].
+///
+/// ### Example
+///
+/// ```
+/// # use bevy::prelude::*;
+/// # use big_brain::prelude::*;
+/// # #[derive(Debug, Clone, Component, ScorerBuilder)]
+/// # struct MyScorer;
+/// # #[derive(Debug, Clone, Component, ActionBuilder)]
+/// # struct MyAction;
+/// # #[derive(Debug, Clone, Component, ActionBuilder)]
+/// # struct MyOtherAction;
+/// # fn main() {
+/// Thinker::build()
+///     .when(
+///         MyScorer,
+///         Concurrently::build()
+///             .push(MyAction)
+///             .push(MyOtherAction)
+///         )
+/// # ;
+/// # }
+/// ```
 #[derive(Component, Debug)]
 pub struct Concurrently {
     actions: Vec<Action>,
 }
 
 impl Concurrently {
-    /**
-    Construct a new [`ConcurrentlyBuilder`] to define the actions to take.
-    */
+    /// Construct a new [`ConcurrentlyBuilder`] to define the actions to take.
     pub fn build() -> ConcurrentlyBuilder {
         ConcurrentlyBuilder {
             actions: Vec::new(),
@@ -389,9 +403,7 @@ impl Concurrently {
     }
 }
 
-/**
-System that takes care of executing any existing [`Concurrently`] Actions.
-*/
+/// System that takes care of executing any existing [`Concurrently`] Actions.
 pub fn concurrent_system(
     concurrent_q: Query<(Entity, &Concurrently, &ActionSpan)>,
     mut states_q: Query<&mut ActionState>,

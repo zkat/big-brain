@@ -99,11 +99,14 @@ Finally, you can use it when define the `Thinker`, which you can attach as
 a regular Component:
 
 ```rust
-cmd.spawn().insert(Thirst::new(70.0, 2.0)).insert(
-    Thinker::build()
-        .picker(FirstToScore { threshold: 0.8 })
-        .when(Thirsty, Drink),
-);
+fn spawn_entity(cmd: &mut Commands) {
+    cmd.spawn((
+        Thirst(70.0, 2.0),
+        Thinker::build()
+            .picker(FirstToScore { threshold: 0.8 })
+            .when(Thirsty, Drink),
+    ));
+}
 ```
 
 ##### App
@@ -111,14 +114,16 @@ cmd.spawn().insert(Thirst::new(70.0, 2.0)).insert(
 Once all that's done, we just add our systems and off we go!
 
 ```rust
-App::new()
-    .add_plugins(DefaultPlugins)
-    .add_plugin(BigBrainPlugin)
-    .add_startup_system(init_entities)
-    .add_system(thirst_system)
-    .add_system_to_stage(BigBrainStage::Actions, drink_action_system)
-    .add_system_to_stage(BigBrainStage::Scorers, thirsty_scorer_system)
-    .run();
+fn main() {
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugin(BigBrainPlugin)
+        .add_startup_system(init_entities)
+        .add_system(thirst_system)
+        .add_system_to_stage(BigBrainStage::Actions, drink_action_system)
+        .add_system_to_stage(BigBrainStage::Scorers, thirsty_scorer_system)
+        .run();
+}
 ```
 
 #### bevy version

@@ -8,7 +8,7 @@ use crate::{
     thinker::Scorer,
 };
 
-// Contains different types of Considerations and Actions
+/// Contains different types of Considerations and Actions
 #[derive(Debug, Clone)]
 pub struct Choice {
     pub(crate) scorer: Scorer,
@@ -23,6 +23,7 @@ impl Choice {
     }
 }
 
+/// Builds a new [`Choice`].
 #[derive(Debug)]
 pub struct ChoiceBuilder {
     pub when: Arc<dyn ScorerBuilder>,

@@ -1,17 +1,17 @@
-/*!
- * A series of [Measures](https://en.wikipedia.org/wiki/Measure_(mathematics)) used to
- * weight score.
- */
+//! * A series of
+//!   [Measures](https://en.wikipedia.org/wiki/Measure_(mathematics)) used to
+//!  * weight score.
 
 use crate::prelude::Score;
 
-/// A Measure trait describes a way to combine scores together
+/// A Measure trait describes a way to combine scores together.
 pub trait Measure: std::fmt::Debug + Sync + Send {
     /// Calculates a score from the child scores
     fn calculate(&self, inputs: Vec<(&Score, f32)>) -> f32;
 }
 
-/// A measure that adds all the elements together and multiplies them by the weight
+/// A measure that adds all the elements together and multiplies them by the
+/// weight.
 #[derive(Debug, Clone)]
 pub struct WeightedSum;
 
@@ -23,7 +23,7 @@ impl Measure for WeightedSum {
     }
 }
 
-/// A measure that multiplies all the elements together
+/// A measure that multiplies all the elements together.
 #[derive(Debug, Clone)]
 pub struct WeightedProduct;
 
@@ -35,8 +35,9 @@ impl Measure for WeightedProduct {
     }
 }
 
-/// A measure that returns the max of the weighted child scares based on the one-dimensional
-/// (Chebychev Distance)[https://en.wikipedia.org/wiki/Chebyshev_distance]
+/// A measure that returns the max of the weighted child scares based on the
+/// one-dimensional (Chebychev
+/// Distance)[https://en.wikipedia.org/wiki/Chebyshev_distance].
 #[derive(Debug, Clone)]
 pub struct ChebyshevDistance;
 
@@ -48,7 +49,7 @@ impl Measure for ChebyshevDistance {
     }
 }
 
-/// The default measure which uses
+/// The default measure which uses a weight to provide an intuitive curve.
 #[derive(Debug, Clone, Default)]
 pub struct WeightedMeasure;
 

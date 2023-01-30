@@ -1,6 +1,4 @@
-/*!
-Utilities for turning values within a certain range into different curves.
-*/
+//! Utilities for turning values within a certain range into different curves.
 
 /**
 Trait that any evaluators must implement. Must return an `f32` value between `0.0..=100.0`.

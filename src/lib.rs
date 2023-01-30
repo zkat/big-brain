@@ -41,6 +41,8 @@
 //! ```rust
 //! use bevy::prelude::*;
 //! use big_brain::prelude::*;
+//! # #[derive(Component, Debug)]
+//! # struct Thirst { thirst: f32 }
 //!
 //! #[derive(Debug, Clone, Component, ScorerBuilder)]
 //! pub struct Thirsty;
@@ -66,6 +68,8 @@
 //! ```rust
 //! use bevy::prelude::*;
 //! use big_brain::prelude::*;
+//! # #[derive(Component, Debug)]
+//! # struct Thirst { thirst: f32 }
 //!
 //! #[derive(Debug, Clone, Component, ActionBuilder)]
 //! pub struct Drink;
@@ -97,26 +101,45 @@
 //! a regular Component:
 //!
 //! ```rust
-//! cmd.spawn().insert(Thirst::new(70.0, 2.0)).insert(
-//!     Thinker::build()
-//!         .picker(FirstToScore { threshold: 0.8 })
-//!         .when(Thirsty, Drink),
-//! );
+//! # use bevy::prelude::*;
+//! # use big_brain::prelude::*;
+//! # #[derive(Debug, Component)]
+//! # struct Thirst(f32, f32);
+//! # #[derive(Debug, Clone, Component, ScorerBuilder)]
+//! # struct Thirsty;
+//! # #[derive(Debug, Clone, Component, ActionBuilder)]
+//! # struct Drink;
+//! fn spawn_entity(cmd: &mut Commands) {
+//!     cmd.spawn((
+//!         Thirst(70.0, 2.0),
+//!         Thinker::build()
+//!             .picker(FirstToScore { threshold: 0.8 })
+//!             .when(Thirsty, Drink),
+//!     ));
+//! }
 //! ```
 //!
 //! #### App
 //!
 //! Once all that's done, we just add our systems and off we go!
 //!
-//! ```rust
-//! App::new()
-//!     .add_plugins(DefaultPlugins)
-//!     .add_plugin(BigBrainPlugin)
-//!     .add_startup_system(init_entities)
-//!     .add_system(thirst_system)
-//!     .add_system_to_stage(BigBrainStage::Actions, drink_action_system)
-//!     .add_system_to_stage(BigBrainStage::Scorers, thirsty_scorer_system)
-//!     .run();
+//! ```no_run
+//! # use bevy::prelude::*;
+//! # use big_brain::prelude::*;
+//! # fn init_entities() {}
+//! # fn thirst_system() {}
+//! # fn drink_action_system() {}
+//! # fn thirsty_scorer_system() {}
+//! fn main() {
+//!     App::new()
+//!         .add_plugins(DefaultPlugins)
+//!         .add_plugin(BigBrainPlugin)
+//!         .add_startup_system(init_entities)
+//!         .add_system(thirst_system)
+//!         .add_system_to_stage(BigBrainStage::Actions, drink_action_system)
+//!         .add_system_to_stage(BigBrainStage::Scorers, thirsty_scorer_system)
+//!         .run();
+//! }
 //! ```
 //!
 //! ### bevy version
@@ -152,11 +175,12 @@ pub mod prelude {
     pub use super::BigBrainStage;
     pub use actions::{ActionBuilder, ActionState, Concurrently, Steps};
     pub use big_brain_derive::{ActionBuilder, ScorerBuilder};
+    pub use evaluators::{Evaluator, LinearEvaluator, PowerEvaluator, SigmoidEvaluator};
     pub use measures::{ChebyshevDistance, Measure, WeightedProduct, WeightedSum};
     pub use pickers::{FirstToScore, Highest, Picker};
     pub use scorers::{
-        AllOrNothing, FixedScore, ProductOfScorers, Score, ScorerBuilder, SumOfScorers,
-        WinningScorer,
+        AllOrNothing, EvaluatingScorer, FixedScore, MeasuredScorer, ProductOfScorers, Score,
+        ScorerBuilder, SumOfScorers, WinningScorer,
     };
     pub use thinker::{
         Action, ActionSpan, Actor, HasThinker, Scorer, ScorerSpan, Thinker, ThinkerBuilder,
@@ -165,21 +189,22 @@ pub mod prelude {
 
 use bevy::prelude::*;
 
-/**
-Core [`Plugin`] for Big Brain behavior. Required for any of the [`Thinker`](thinker::Thinker)-related magic to work.
-
-### Example
-
-```no_run
-use bevy::prelude::*;
-use big_brain::prelude::*;
-
-App::build()
-    .add_plugins(DefaultPlugins)
-    .add_plugin(BigBrainPlugin)
-    // ...insert entities and other systems.
-    .run();
-*/
+/// Core [`Plugin`] for Big Brain behavior. Required for any of the
+/// [`Thinker`](thinker::Thinker)-related magic to work.
+///
+/// ### Example
+///
+/// ```no_run
+/// use bevy::prelude::*;
+/// use big_brain::prelude::*;
+///
+/// fn main() {
+///     App::new()
+///         .add_plugins(DefaultPlugins)
+///         .add_plugin(BigBrainPlugin)
+///         // ...insert entities and other systems.
+///         .run();
+/// }
 pub struct BigBrainPlugin;
 
 impl Plugin for BigBrainPlugin {
@@ -225,9 +250,8 @@ impl Plugin for BigBrainPlugin {
     }
 }
 
-/**
-BigBrainPlugin execution stages. Use these to schedule your own actions/scorers/etc.
-*/
+/// [`BigBrainPlugin`] execution stages. Use these to schedule your own
+/// actions/scorers/etc.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, StageLabel)]
 pub enum BigBrainStage {
     /// Scorers are evaluated in this stage.
