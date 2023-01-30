@@ -15,7 +15,7 @@ use crate::thinker::{Action, ActionSpan, Actor};
 /// Action system implementors should be mindful of taking appropriate action
 /// on all of these states, and be particularly careful when ignoring
 /// variants.
-#[derive(Debug, Clone, Component, Eq, PartialEq)]
+#[derive(Debug, Clone, Component, Eq, PartialEq, Reflect)]
 #[component(storage = "SparseSet")]
 pub enum ActionState {
     /// Initial state. No action should be performed.
@@ -78,6 +78,7 @@ impl ActionBuilderWrapper {
 ///
 /// The `build()` method MUST be implemented for any `ActionBuilder`s you want
 /// to define.
+#[reflect_trait]
 pub trait ActionBuilder: std::fmt::Debug + Send + Sync {
     /// MUST insert your concrete Action component into the Scorer [`Entity`],
     /// using `cmd`. You _may_ use `actor`, but it's perfectly normal to just
@@ -149,9 +150,12 @@ pub fn spawn_action<T: ActionBuilder + ?Sized>(
 
 /// [`ActionBuilder`] for the [`Steps`] component. Constructed through
 /// `Steps::build()`.
-#[derive(Debug)]
+#[derive(Debug, Reflect)]
+#[reflect(ActionBuilder)]
 pub struct StepsBuilder {
     label: Option<String>,
+    steps_labels: Vec<String>,
+    #[reflect(ignore)]
     steps: Vec<Arc<dyn ActionBuilder>>,
 }
 
@@ -164,6 +168,11 @@ impl StepsBuilder {
 
     /// Adds an action step. Order matters.
     pub fn step(mut self, action_builder: impl ActionBuilder + 'static) -> Self {
+        if let Some(label) = action_builder.label() {
+            self.steps_labels.push(label.into());
+        } else {
+            self.steps_labels.push("Unlabeled Action".into());
+        }
         self.steps.push(Arc::new(action_builder));
         self
     }
@@ -183,6 +192,7 @@ impl ActionBuilder for StepsBuilder {
                     active_step: 0,
                     active_ent: Action(child_action),
                     steps: self.steps.clone(),
+                    steps_labels: self.steps_labels.clone(),
                 })
                 .push_children(&[child_action]);
         }
@@ -214,9 +224,11 @@ impl ActionBuilder for StepsBuilder {
 /// # ;
 /// # }
 /// ```
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
 pub struct Steps {
+    #[reflect(ignore)]
     steps: Vec<Arc<dyn ActionBuilder>>,
+    steps_labels: Vec<String>,
     active_step: usize,
     active_ent: Action,
 }
@@ -226,6 +238,7 @@ impl Steps {
     pub fn build() -> StepsBuilder {
         StepsBuilder {
             steps: Vec::new(),
+            steps_labels: Vec::new(),
             label: None,
         }
     }
@@ -323,7 +336,7 @@ pub fn steps_system(
 }
 
 /// Configures what mode the [`Concurrently`] action will run in.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Reflect)]
 pub enum ConcurrentMode {
     /// Reaches success when any of the concurrent actions reaches [`ActionState::Success`].
     Race,
@@ -333,10 +346,12 @@ pub enum ConcurrentMode {
 
 /// [`ActionBuilder`] for the [`Concurrently`] component. Constructed through
 /// `Concurrently::build()`.
-#[derive(Debug)]
+#[derive(Debug, Reflect)]
 pub struct ConcurrentlyBuilder {
     mode: ConcurrentMode,
+    #[reflect(ignore)]
     actions: Vec<Arc<dyn ActionBuilder>>,
+    action_labels: Vec<String>,
     label: Option<String>,
 }
 
@@ -349,6 +364,11 @@ impl ConcurrentlyBuilder {
 
     /// Add an action to execute. Order does not matter.
     pub fn push(mut self, action_builder: impl ActionBuilder + 'static) -> Self {
+        if let Some(label) = action_builder.label() {
+            self.action_labels.push(label.into());
+        } else {
+            self.action_labels.push("Unnamed Action".into());
+        }
         self.actions.push(Arc::new(action_builder));
         self
     }
@@ -376,6 +396,7 @@ impl ActionBuilder for ConcurrentlyBuilder {
             .push_children(&children[..])
             .insert(Concurrently {
                 actions: children.into_iter().map(Action).collect(),
+                action_labels: self.action_labels.clone(),
                 mode: self.mode,
             });
     }
@@ -411,10 +432,11 @@ impl ActionBuilder for ConcurrentlyBuilder {
 /// # }
 /// ```
 ///
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
 pub struct Concurrently {
     mode: ConcurrentMode,
     actions: Vec<Action>,
+    action_labels: Vec<String>,
 }
 
 impl Concurrently {
@@ -422,6 +444,7 @@ impl Concurrently {
     pub fn build() -> ConcurrentlyBuilder {
         ConcurrentlyBuilder {
             actions: Vec::new(),
+            action_labels: Vec::new(),
             mode: ConcurrentMode::Join,
             label: None,
         }

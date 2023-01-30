@@ -1,8 +1,11 @@
 //! Utilities for turning values within a certain range into different curves.
 
+use bevy::prelude::*;
+
 /**
 Trait that any evaluators must implement. Must return an `f32` value between `0.0..=100.0`.
  */
+#[reflect_trait]
 pub trait Evaluator: std::fmt::Debug + Sync + Send {
     fn evaluate(&self, value: f32) -> f32;
 }
@@ -10,7 +13,7 @@ pub trait Evaluator: std::fmt::Debug + Sync + Send {
 /**
 [`Evaluator`] for linear values. That is, there's no curve to the value mapping.
  */
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
 pub struct LinearEvaluator {
     xa: f32,
     ya: f32,
@@ -57,7 +60,7 @@ impl Evaluator for LinearEvaluator {
 /**
 [`Evaluator`] with an exponent curve. The value will grow according to its `power` parameter.
  */
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
 pub struct PowerEvaluator {
     xa: f32,
     ya: f32,
@@ -100,7 +103,7 @@ impl Evaluator for PowerEvaluator {
 /**
 [`Evaluator`] with a "Sigmoid", or "S-like" curve.
  */
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
 pub struct SigmoidEvaluator {
     xa: f32,
     xb: f32,

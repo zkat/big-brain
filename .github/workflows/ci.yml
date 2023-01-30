@@ -28,7 +28,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        rust: [1.56.0, stable]
+        rust: [stable]
         os: [ubuntu-latest, macOS-latest, windows-latest]
 
     steps:
@@ -40,6 +40,8 @@ jobs:
           toolchain: ${{ matrix.rust }}
           components: clippy
           override: true
+      - if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev
       - name: Clippy
         run: cargo clippy --all -- -D warnings
       - name: Run tests

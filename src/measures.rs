@@ -2,9 +2,12 @@
 //!   [Measures](https://en.wikipedia.org/wiki/Measure_(mathematics)) used to
 //!  * weight score.
 
+use bevy::prelude::*;
+
 use crate::prelude::Score;
 
 /// A Measure trait describes a way to combine scores together.
+#[reflect_trait]
 pub trait Measure: std::fmt::Debug + Sync + Send {
     /// Calculates a score from the child scores
     fn calculate(&self, inputs: Vec<(&Score, f32)>) -> f32;
@@ -12,7 +15,7 @@ pub trait Measure: std::fmt::Debug + Sync + Send {
 
 /// A measure that adds all the elements together and multiplies them by the
 /// weight.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
 pub struct WeightedSum;
 
 impl Measure for WeightedSum {
@@ -24,7 +27,7 @@ impl Measure for WeightedSum {
 }
 
 /// A measure that multiplies all the elements together.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
 pub struct WeightedProduct;
 
 impl Measure for WeightedProduct {
@@ -38,7 +41,7 @@ impl Measure for WeightedProduct {
 /// A measure that returns the max of the weighted child scares based on the
 /// one-dimensional (Chebychev
 /// Distance)[https://en.wikipedia.org/wiki/Chebyshev_distance].
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
 pub struct ChebyshevDistance;
 
 impl Measure for ChebyshevDistance {
@@ -50,7 +53,7 @@ impl Measure for ChebyshevDistance {
 }
 
 /// The default measure which uses a weight to provide an intuitive curve.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Reflect)]
 pub struct WeightedMeasure;
 
 impl Measure for WeightedMeasure {

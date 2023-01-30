@@ -1,6 +1,7 @@
 //! [![crates.io](https://img.shields.io/crates/v/big-brain.svg)](https://crates.io/crates/big-brain)
 //! [![docs.rs](https://docs.rs/big-brain/badge.svg)](https://docs.rs/big-brain)
-//! [![Apache 2.0](https://img.shields.io/badge/license-Apache-blue.svg)](./LICENSE.md)
+//! [![Apache
+//! 2.0](https://img.shields.io/badge/license-Apache-blue.svg)](./LICENSE.md)
 //!
 //! `big-brain` is a [Utility
 //! AI](https://en.wikipedia.org/wiki/Utility_system) library for games, built
@@ -142,9 +143,23 @@
 //! }
 //! ```
 //!
-//! ### bevy version
+//! ### bevy version and MSRV
 //!
 //! The current version of `big-brain` is compatible with `bevy` 0.9.0.
+//!
+//! The Minimum Supported Rust Version for `big-brain` should be considered to
+//! be the same as `bevy`'s, which as of the time of this writing was "the
+//! latest stable release".
+//!
+//! ### Reflection
+//!
+//! All relevant `big-brain` types implement the bevy `Reflect` trait, so you
+//! should be able to get some useful display info while using things like
+//! [`bevy_inspector_egui`](https://crates.io/crates/bevy_inspector_egui).
+//!
+//! This implementation should **not** be considered stable, and individual
+//! fields made visible may change at **any time** and not be considered
+//! towards semver. Please use this feature **only for debugging**.
 //!
 //! ### Contributing
 //!
@@ -198,13 +213,12 @@ use bevy::prelude::*;
 /// use bevy::prelude::*;
 /// use big_brain::prelude::*;
 ///
-/// fn main() {
-///     App::new()
-///         .add_plugins(DefaultPlugins)
-///         .add_plugin(BigBrainPlugin)
-///         // ...insert entities and other systems.
-///         .run();
-/// }
+/// App::new()
+///     .add_plugins(DefaultPlugins)
+///     .add_plugin(BigBrainPlugin)
+///     // ...insert entities and other systems.
+///     .run();
+#[derive(Debug, Clone, Reflect)]
 pub struct BigBrainPlugin;
 
 impl Plugin for BigBrainPlugin {
@@ -252,7 +266,7 @@ impl Plugin for BigBrainPlugin {
 
 /// [`BigBrainPlugin`] execution stages. Use these to schedule your own
 /// actions/scorers/etc.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, StageLabel)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, StageLabel, Reflect)]
 pub enum BigBrainStage {
     /// Scorers are evaluated in this stage.
     Scorers,

@@ -33,7 +33,7 @@ struct Action1;
 
 fn action1(mut query: Query<(&Actor, &mut ActionState), With<Action1>>) {
     for (Actor(_actor), mut state) in query.iter_mut() {
-        println!("action1 {:?}", state);
+        println!("action1 {state:?}");
         if *state == ActionState::Requested {
             *state = ActionState::Executing;
         }
@@ -48,7 +48,7 @@ struct Action2;
 
 fn action2(mut query: Query<(&Actor, &mut ActionState), With<Action2>>) {
     for (Actor(_actor), mut state) in query.iter_mut() {
-        println!("action2 {:?}", state);
+        println!("action2 {state:?}");
         if *state == ActionState::Requested {
             *state = ActionState::Executing;
         }
@@ -66,7 +66,7 @@ fn exit_action(
     mut app_exit_events: EventWriter<AppExit>,
 ) {
     for (Actor(_actor), mut state) in query.iter_mut() {
-        println!("exit_action {:?}", state);
+        println!("exit_action {state:?}");
         if *state == ActionState::Requested {
             *state = ActionState::Executing;
         }
@@ -88,7 +88,7 @@ fn failure_action(
     mut global_state: ResMut<GlobalState>,
 ) {
     for (Actor(_actor), mut state) in query.iter_mut() {
-        println!("failure_action {:?}", state);
+        println!("failure_action {state:?}");
         if *state == ActionState::Requested {
             *state = ActionState::Executing;
         }
