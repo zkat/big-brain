@@ -1,4 +1,4 @@
-# `big-brain``
+# `big-brain`
 
 [![crates.io](https://img.shields.io/crates/v/big-brain.svg)](https://crates.io/crates/big-brain)
 [![docs.rs](https://docs.rs/big-brain/badge.svg)](https://docs.rs/big-brain)
