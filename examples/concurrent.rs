@@ -135,7 +135,7 @@ fn main() {
         }))
         .add_plugin(BigBrainPlugin)
         .add_startup_system(init_entities)
-        .add_system_to_stage(BigBrainStage::Actions, guess_number_action)
-        .add_system_to_stage(BigBrainStage::Scorers, dummy_scorer_system)
+        .add_system(guess_number_action.in_set(BigBrainSet::Actions))
+        .add_system(dummy_scorer_system.in_set(BigBrainSet::Scorers))
         .run();
 }

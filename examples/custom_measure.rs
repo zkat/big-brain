@@ -196,21 +196,19 @@ fn main() {
         .add_plugin(BigBrainPlugin)
         .add_startup_system(init_entities)
         .add_system(eat_dessert)
-        .add_system_to_stage(
-            BigBrainStage::Actions,
-            eat_thing_action::<EatPancakes, Pancakes>,
+        .add_systems(
+            (
+                eat_thing_action::<EatPancakes, Pancakes>,
+                eat_thing_action::<EatWaffles, Waffles>,
+            )
+                .in_set(BigBrainSet::Actions),
         )
-        .add_system_to_stage(
-            BigBrainStage::Actions,
-            eat_thing_action::<EatWaffles, Waffles>,
-        )
-        .add_system_to_stage(
-            BigBrainStage::Scorers,
-            craving_food_scorer::<CravingPancakes, Pancakes>,
-        )
-        .add_system_to_stage(
-            BigBrainStage::Scorers,
-            craving_food_scorer::<CravingWaffles, Waffles>,
+        .add_systems(
+            (
+                craving_food_scorer::<CravingPancakes, Pancakes>,
+                craving_food_scorer::<CravingWaffles, Waffles>,
+            )
+                .in_set(BigBrainSet::Scorers),
         )
         .run();
 }
