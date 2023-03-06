@@ -9,12 +9,16 @@ fn steps() {
         .add_plugin(BigBrainPlugin)
         .init_resource::<GlobalState>()
         .add_startup_system(setup)
-        .add_system_to_stage(CoreStage::First, no_failure_score)
+        .add_system(
+            no_failure_score
+                .in_base_set(CoreSet::First)
+                .before(BigBrainSet::Scorers),
+        )
         .add_system(action1)
         .add_system(action2)
         .add_system(exit_action)
         .add_system(failure_action)
-        .add_system_to_stage(CoreStage::Last, last)
+        .add_system(last.in_base_set(CoreSet::Last).before(BigBrainSet::Cleanup))
         .run();
     println!("end");
 }

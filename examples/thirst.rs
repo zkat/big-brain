@@ -170,7 +170,7 @@ fn main() {
         // Big Brain has specific stages for Scorers and Actions. If
         // determinism matters a lot to you, you should add your action and
         // scorer systems to these stages.
-        .add_system_to_stage(BigBrainStage::Actions, drink_action_system)
-        .add_system_to_stage(BigBrainStage::Scorers, thirsty_scorer_system)
+        .add_system(drink_action_system.in_set(BigBrainSet::Actions))
+        .add_system(thirsty_scorer_system.in_set(BigBrainSet::Scorers))
         .run();
 }
