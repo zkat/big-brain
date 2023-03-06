@@ -1,5 +1,12 @@
 # `big-brain` Release Changelog
 
+<a name="0.17.0"></a>
+## 0.17.0 (2023-03-06)
+
+### Features
+
+* **bevy:** Update to bevy 0.10 (#72) ([66ece025](https://github.com/zkat/big-brain/commit/66ece025a0b296decf8a0fe4c301b78bd0971d77))
+
 <a name="0.16.0"></a>
 ## 0.16.0 (2023-01-30)
 
