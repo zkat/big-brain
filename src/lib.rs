@@ -223,16 +223,18 @@ pub struct BigBrainPlugin;
 
 impl Plugin for BigBrainPlugin {
     fn build(&self, app: &mut App) {
-        app.configure_sets((
-            BigBrainSet::Scorers.in_base_set(CoreSet::First),
-            BigBrainSet::Thinkers
-                .in_base_set(CoreSet::First)
-                .after(BigBrainSet::Scorers),
-            BigBrainSet::Actions.in_base_set(CoreSet::PreUpdate),
-            BigBrainSet::Cleanup.in_base_set(CoreSet::Last),
-        ));
+        app.configure_sets(
+            First,
+            (
+                BigBrainSet::Scorers,
+                BigBrainSet::Thinkers.after(BigBrainSet::Scorers),
+            ),
+        );
+        app.configure_set(PreUpdate, BigBrainSet::Actions);
+        app.configure_set(Last, BigBrainSet::Cleanup);
 
         app.add_systems(
+            Update,
             (
                 scorers::fixed_score_system,
                 scorers::measured_scorers_system,
@@ -245,13 +247,18 @@ impl Plugin for BigBrainPlugin {
                 .in_set(BigBrainSet::Scorers),
         );
 
-        app.add_system(thinker::thinker_system.in_set(BigBrainSet::Thinkers));
+        app.add_systems(
+            Update,
+            thinker::thinker_system.in_set(BigBrainSet::Thinkers),
+        );
 
         app.add_systems(
+            Update,
             (actions::steps_system, actions::concurrent_system).in_set(BigBrainSet::Actions),
         );
 
         app.add_systems(
+            Update,
             (
                 thinker::thinker_component_attach_system,
                 thinker::thinker_component_detach_system,
@@ -264,7 +271,7 @@ impl Plugin for BigBrainPlugin {
 
 /// [`BigBrainPlugin`] system sets. Use these to schedule your own
 /// actions/scorers/etc.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, SystemSet, Reflect)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, SystemSet, Reflect)]
 pub enum BigBrainSet {
     /// Scorers are evaluated in this set.
     Scorers,
