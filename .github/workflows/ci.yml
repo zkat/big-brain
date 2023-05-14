@@ -10,14 +10,12 @@ jobs:
     name: Check fmt & build docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: stable
           components: rustfmt
-          override: true
       - name: rustfmt
         run: cargo fmt --all -- --check
       - name: docs
@@ -32,14 +30,12 @@ jobs:
         os: [ubuntu-latest, macOS-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust }}
           components: clippy
-          override: true
       - if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev
       - name: Clippy
