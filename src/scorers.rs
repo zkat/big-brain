@@ -35,6 +35,12 @@ impl Score {
         }
         self.0 = value;
     }
+
+    /// Set the `Score`'s value. Allows values outside the range `0.0..=1.0`
+    /// Note: it is up to you to make sure your scorers are using the same units!
+    pub fn set_unchecked(&mut self, value: f32) {
+        self.0 = value;
+    }
 }
 
 /// Trait that must be defined by types in order to be `ScorerBuilder`s.
