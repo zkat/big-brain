@@ -117,11 +117,13 @@ Once all that's done, we just add our systems and off we go!
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(BigBrainPlugin)
-        .add_startup_system(init_entities)
-        .add_system(thirst_system)
-        .add_system_to_stage(BigBrainStage::Actions, drink_action_system)
-        .add_system_to_stage(BigBrainStage::Scorers, thirsty_scorer_system)
+        .add_plugins(BigBrainPlugin::new(PreUpdate))
+        .add_systems(Startup, init_entities)
+        .add_systems(Update, thirst_system)
+        .add_systems(PreUpdate, (
+            drink_action_system.in_set(BigBrainSet::Actions),
+            thirsty_scorer_system.in_set(BigBrainSet::Scorers),
+        ))
         .run();
 }
 ```
