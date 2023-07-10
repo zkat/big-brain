@@ -133,9 +133,14 @@ fn main() {
             filter: "big_brain=warn,concurrent=debug".to_string(),
             ..default()
         }))
-        .add_plugin(BigBrainPlugin)
-        .add_startup_system(init_entities)
-        .add_system(guess_number_action.in_set(BigBrainSet::Actions))
-        .add_system(dummy_scorer_system.in_set(BigBrainSet::Scorers))
+        .add_plugins(BigBrainPlugin::new(PreUpdate))
+        .add_systems(Startup, init_entities)
+        .add_systems(
+            PreUpdate,
+            (
+                guess_number_action.in_set(BigBrainSet::Actions),
+                dummy_scorer_system.in_set(BigBrainSet::Scorers),
+            ),
+        )
         .run();
 }

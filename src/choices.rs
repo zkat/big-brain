@@ -10,6 +10,7 @@ use crate::{
 
 /// Contains different types of Considerations and Actions
 #[derive(Debug, Clone, Reflect)]
+#[reflect(from_reflect = false)]
 pub struct Choice {
     pub(crate) scorer: Scorer,
     #[reflect(ignore)]
@@ -28,6 +29,7 @@ impl Choice {
 
 /// Builds a new [`Choice`].
 #[derive(Debug, Reflect)]
+#[reflect(from_reflect = false)]
 pub struct ChoiceBuilder {
     when_label: Option<String>,
     #[reflect(ignore)]

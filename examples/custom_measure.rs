@@ -193,10 +193,11 @@ fn main() {
             filter: "big_brain=debug,custom_measure=debug".to_string(),
             ..default()
         }))
-        .add_plugin(BigBrainPlugin)
-        .add_startup_system(init_entities)
-        .add_system(eat_dessert)
+        .add_plugins(BigBrainPlugin::new(PreUpdate))
+        .add_systems(Startup, init_entities)
+        .add_systems(Update, eat_dessert)
         .add_systems(
+            PreUpdate,
             (
                 eat_thing_action::<EatPancakes, Pancakes>,
                 eat_thing_action::<EatWaffles, Waffles>,
@@ -204,6 +205,7 @@ fn main() {
                 .in_set(BigBrainSet::Actions),
         )
         .add_systems(
+            PreUpdate,
             (
                 craving_food_scorer::<CravingPancakes, Pancakes>,
                 craving_food_scorer::<CravingWaffles, Waffles>,
