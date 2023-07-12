@@ -726,6 +726,7 @@ impl ScorerBuilder for WinningScorerBuilder {
 /// # }
 /// ```
 #[derive(Component, Debug, Reflect)]
+#[reflect(from_reflect = false)]
 pub struct EvaluatingScorer {
     scorer: Scorer,
     evaluator_string: String,
@@ -777,6 +778,7 @@ pub fn evaluating_scorer_system(
 }
 
 #[derive(Debug, Reflect)]
+#[reflect(from_reflect = false)]
 pub struct EvaluatingScorerBuilder {
     #[reflect(ignore)]
     scorer: Arc<dyn ScorerBuilder>,
@@ -855,6 +857,7 @@ impl ScorerBuilder for EvaluatingScorerBuilder {
 /// ```
 
 #[derive(Component, Debug, Reflect)]
+#[reflect(from_reflect = false)]
 pub struct MeasuredScorer {
     threshold: f32,
     #[reflect(ignore)]
@@ -917,6 +920,7 @@ pub fn measured_scorers_system(
 }
 
 #[derive(Debug, Reflect)]
+#[reflect(from_reflect = false)]
 pub struct MeasuredScorerBuilder {
     threshold: f32,
     #[reflect(ignore)]
