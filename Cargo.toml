@@ -15,7 +15,7 @@ homepage = "https://github.com/zkat/big-brain"
 
 [dependencies]
 bevy = { version = "0.11", default-features = false }
-big-brain-derive = { version = "=0.17.0", path = "./derive" }
+big-brain-derive = { version = "=0.18.0", path = "./derive" }
 
 [dev-dependencies]
 bevy = { version = "0.11", default-features = true }
