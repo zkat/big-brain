@@ -28,7 +28,7 @@ use crate::{
 #[derive(Debug, Clone, Component, Copy, Reflect)]
 pub struct Actor(pub Entity);
 
-#[derive(Debug, Clone, Copy, Reflect, FromReflect)]
+#[derive(Debug, Clone, Copy, Reflect)]
 pub struct Action(pub Entity);
 
 impl Action {
@@ -61,7 +61,7 @@ impl ActionSpan {
     }
 }
 
-#[derive(Debug, Clone, Copy, Reflect, FromReflect)]
+#[derive(Debug, Clone, Copy, Reflect)]
 pub struct Scorer(pub Entity);
 
 #[derive(Debug, Clone, Component)]
@@ -128,6 +128,7 @@ impl ScorerSpan {
 /// }
 /// ```
 #[derive(Component, Debug, Reflect)]
+#[reflect(from_reflect = false)]
 pub struct Thinker {
     #[reflect(ignore)]
     picker: Arc<dyn Picker>,

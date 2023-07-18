@@ -5,20 +5,15 @@ use big_brain::{pickers, prelude::*};
 fn steps() {
     println!("steps test");
     App::new()
-        .add_plugins(MinimalPlugins)
-        .add_plugin(BigBrainPlugin)
+        .add_plugins((MinimalPlugins, BigBrainPlugin::new(PreUpdate)))
         .init_resource::<GlobalState>()
-        .add_startup_system(setup)
-        .add_system(
-            no_failure_score
-                .in_base_set(CoreSet::First)
-                .before(BigBrainSet::Scorers),
+        .add_systems(Startup, setup)
+        .add_systems(Update, no_failure_score.before(BigBrainSet::Scorers))
+        .add_systems(
+            PreUpdate,
+            (action1, action2, exit_action, failure_action).in_set(BigBrainSet::Actions),
         )
-        .add_system(action1)
-        .add_system(action2)
-        .add_system(exit_action)
-        .add_system(failure_action)
-        .add_system(last.in_base_set(CoreSet::Last).before(BigBrainSet::Cleanup))
+        .add_systems(Last, last.before(BigBrainSet::Cleanup))
         .run();
     println!("end");
 }

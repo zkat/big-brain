@@ -76,12 +76,15 @@ fn main() {
             filter: "big_brain=debug,one_off=debug".to_string(),
             ..default()
         }))
-        .add_plugin(BigBrainPlugin)
-        .add_startup_system(init_entities)
-        .add_system(thirst_system)
-        // Big Brain has specific stages for Scorers and Actions. If
+        .add_plugins(BigBrainPlugin::new(PreUpdate))
+        .add_systems(Startup, init_entities)
+        .add_systems(Update, thirst_system)
+        // Big Brain has specific sets for Scorers and Actions. If
         // determinism matters a lot to you, you should add your action and
         // scorer systems to these stages.
-        .add_system(one_off_action_system.in_set(BigBrainSet::Actions))
+        .add_systems(
+            PreUpdate,
+            one_off_action_system.in_set(BigBrainSet::Actions),
+        )
         .run();
 }

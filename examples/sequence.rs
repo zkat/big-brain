@@ -286,12 +286,13 @@ fn main() {
             filter: "big_brain=debug,sequence=debug".to_string(),
             ..default()
         }))
-        .add_plugin(BigBrainPlugin)
-        .add_startup_system(init_entities)
-        .add_system(thirst_system)
+        .add_plugins(BigBrainPlugin::new(PreUpdate))
+        .add_systems(Startup, init_entities)
+        .add_systems(Update, thirst_system)
         .add_systems(
+            PreUpdate,
             (drink_action_system, move_to_water_source_action_system).in_set(BigBrainSet::Actions),
         )
-        .add_system(thirsty_scorer_system.in_set(BigBrainSet::Scorers))
+        .add_systems(First, thirsty_scorer_system)
         .run();
 }

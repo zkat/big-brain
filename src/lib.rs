@@ -134,11 +134,11 @@
 //! fn main() {
 //!     App::new()
 //!         .add_plugins(DefaultPlugins)
-//!         .add_plugin(BigBrainPlugin)
-//!         .add_startup_system(init_entities)
-//!         .add_system(thirst_system)
-//!         .add_system(drink_action_system.in_set(BigBrainSet::Actions))
-//!         .add_system(thirsty_scorer_system.in_set(BigBrainSet::Scorers))
+//!         .add_plugins(BigBrainPlugin::new(PreUpdate))
+//!         .add_systems(Startup, init_entities)
+//!         .add_systems(Update, thirst_system)
+//!         .add_systems(PreUpdate, drink_action_system.in_set(BigBrainSet::Actions))
+//!         .add_systems(PreUpdate, thirsty_scorer_system.in_set(BigBrainSet::Scorers))
 //!         .run();
 //! }
 //! ```
@@ -202,7 +202,7 @@ pub mod prelude {
     };
 }
 
-use bevy::prelude::*;
+use bevy::{ecs::schedule::ScheduleLabel, prelude::*};
 
 /// Core [`Plugin`] for Big Brain behavior. Required for any of the
 /// [`Thinker`](thinker::Thinker)-related magic to work.
@@ -215,24 +215,49 @@ use bevy::prelude::*;
 ///
 /// App::new()
 ///     .add_plugins(DefaultPlugins)
-///     .add_plugin(BigBrainPlugin)
+///     .add_plugin(BigBrainPlugin::new(Update))
 ///     // ...insert entities and other systems.
 ///     .run();
 #[derive(Debug, Clone, Reflect)]
-pub struct BigBrainPlugin;
+#[reflect(from_reflect = false)]
+pub struct BigBrainPlugin {
+    #[reflect(ignore)]
+    schedule: Box<dyn ScheduleLabel>,
+    #[reflect(ignore)]
+    cleanup_schedule: Box<dyn ScheduleLabel>,
+}
+
+impl BigBrainPlugin {
+    /// Create the BigBrain plugin which runs the scorers, thinker and actions in the specified
+    /// schedule
+    pub fn new(schedule: impl ScheduleLabel) -> Self {
+        Self {
+            schedule: Box::new(schedule),
+            cleanup_schedule: Box::new(Last),
+        }
+    }
+
+    /// Overwrite the Schedule that is used to run cleanup tasks. By default this happens in Last.
+    pub fn set_cleanup_schedule(mut self, cleanup_schedule: impl ScheduleLabel) -> Self {
+        self.cleanup_schedule = Box::new(cleanup_schedule);
+        self
+    }
+}
 
 impl Plugin for BigBrainPlugin {
     fn build(&self, app: &mut App) {
-        app.configure_sets((
-            BigBrainSet::Scorers.in_base_set(CoreSet::First),
-            BigBrainSet::Thinkers
-                .in_base_set(CoreSet::First)
-                .after(BigBrainSet::Scorers),
-            BigBrainSet::Actions.in_base_set(CoreSet::PreUpdate),
-            BigBrainSet::Cleanup.in_base_set(CoreSet::Last),
-        ));
-
-        app.add_systems(
+        app.configure_sets(
+            self.schedule.dyn_clone(),
+            (
+                BigBrainSet::Scorers,
+                BigBrainSet::Thinkers,
+                BigBrainSet::Actions,
+            )
+                .chain(),
+        )
+        .configure_set(self.cleanup_schedule.dyn_clone(), BigBrainSet::Cleanup)
+        .add_systems(
+            self.schedule.dyn_clone(),
             (
                 scorers::fixed_score_system,
                 scorers::measured_scorers_system,
@@ -243,15 +268,17 @@ impl Plugin for BigBrainPlugin {
                 scorers::evaluating_scorer_system,
             )
                 .in_set(BigBrainSet::Scorers),
-        );
-
-        app.add_system(thinker::thinker_system.in_set(BigBrainSet::Thinkers));
-
-        app.add_systems(
+        )
+        .add_systems(
+            self.schedule.dyn_clone(),
+            thinker::thinker_system.in_set(BigBrainSet::Thinkers),
+        )
+        .add_systems(
+            self.schedule.dyn_clone(),
             (actions::steps_system, actions::concurrent_system).in_set(BigBrainSet::Actions),
-        );
-
-        app.add_systems(
+        )
+        .add_systems(
+            self.cleanup_schedule.dyn_clone(),
             (
                 thinker::thinker_component_attach_system,
                 thinker::thinker_component_detach_system,
