@@ -35,6 +35,14 @@ impl Score {
         }
         self.0 = value;
     }
+
+    /// Set the `Score`'s value. Allows values outside the range `0.0..=1.0`
+    /// WARNING: `Scorer`s are significantly harder to compose when there
+    /// isn't a set scale. Avoid using unless it's not feasible to rescale
+    /// and use `set` instead.
+    pub fn set_unchecked(&mut self, value: f32) {
+        self.0 = value;
+    }
 }
 
 /// Trait that must be defined by types in order to be `ScorerBuilder`s.
