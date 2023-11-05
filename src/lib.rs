@@ -202,7 +202,7 @@ pub mod prelude {
     };
 }
 
-use bevy::{ecs::schedule::ScheduleLabel, prelude::*};
+use bevy::{ecs::schedule::ScheduleLabel, prelude::*, utils::intern::Interned};
 
 /// Core [`Plugin`] for Big Brain behavior. Required for any of the
 /// [`Thinker`](thinker::Thinker)-related magic to work.
@@ -222,9 +222,9 @@ use bevy::{ecs::schedule::ScheduleLabel, prelude::*};
 #[reflect(from_reflect = false)]
 pub struct BigBrainPlugin {
     #[reflect(ignore)]
-    schedule: Box<dyn ScheduleLabel>,
+    schedule: Interned<dyn ScheduleLabel>,
     #[reflect(ignore)]
-    cleanup_schedule: Box<dyn ScheduleLabel>,
+    cleanup_schedule: Interned<dyn ScheduleLabel>,
 }
 
 impl BigBrainPlugin {
@@ -232,14 +232,14 @@ impl BigBrainPlugin {
     /// schedule
     pub fn new(schedule: impl ScheduleLabel) -> Self {
         Self {
-            schedule: Box::new(schedule),
-            cleanup_schedule: Box::new(Last),
+            schedule: schedule.intern(),
+            cleanup_schedule: Last.intern(),
         }
     }
 
     /// Overwrite the Schedule that is used to run cleanup tasks. By default this happens in Last.
     pub fn set_cleanup_schedule(mut self, cleanup_schedule: impl ScheduleLabel) -> Self {
-        self.cleanup_schedule = Box::new(cleanup_schedule);
+        self.cleanup_schedule = cleanup_schedule.intern();
         self
     }
 }
@@ -247,7 +247,7 @@ impl BigBrainPlugin {
 impl Plugin for BigBrainPlugin {
     fn build(&self, app: &mut App) {
         app.configure_sets(
-            self.schedule.dyn_clone(),
+            self.schedule.intern(),
             (
                 BigBrainSet::Scorers,
                 BigBrainSet::Thinkers,
@@ -255,9 +255,9 @@ impl Plugin for BigBrainPlugin {
             )
                 .chain(),
         )
-        .configure_set(self.cleanup_schedule.dyn_clone(), BigBrainSet::Cleanup)
+        .configure_sets(self.cleanup_schedule.intern(), BigBrainSet::Cleanup)
         .add_systems(
-            self.schedule.dyn_clone(),
+            self.schedule.intern(),
             (
                 scorers::fixed_score_system,
                 scorers::measured_scorers_system,
@@ -270,15 +270,15 @@ impl Plugin for BigBrainPlugin {
                 .in_set(BigBrainSet::Scorers),
         )
         .add_systems(
-            self.schedule.dyn_clone(),
+            self.schedule.intern(),
             thinker::thinker_system.in_set(BigBrainSet::Thinkers),
         )
         .add_systems(
-            self.schedule.dyn_clone(),
+            self.schedule.intern(),
             (actions::steps_system, actions::concurrent_system).in_set(BigBrainSet::Actions),
         )
         .add_systems(
-            self.cleanup_schedule.dyn_clone(),
+            self.cleanup_schedule.intern(),
             (
                 thinker::thinker_component_attach_system,
                 thinker::thinker_component_detach_system,
