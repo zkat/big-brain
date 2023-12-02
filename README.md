@@ -130,7 +130,7 @@ fn main() {
 
 #### bevy version
 
-The current version of `big-brain` is compatible with `bevy` 0.11.0.
+The current version of `big-brain` is compatible with `bevy` 0.12.1.
 
 #### Contributing
 
