@@ -803,7 +803,7 @@ impl ScorerBuilder for EvaluatingScorerBuilder {
 
     fn build(&self, cmd: &mut Commands, scorer: Entity, actor: Entity) {
         let inner_scorer = spawn_scorer(&*self.scorer, cmd, actor);
-        let scorers = vec![inner_scorer];
+        let scorers = [inner_scorer];
         cmd.entity(scorer)
             .push_children(&scorers[..])
             .insert(EvaluatingScorer {

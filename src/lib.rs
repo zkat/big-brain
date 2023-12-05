@@ -214,8 +214,7 @@ use bevy::{ecs::schedule::ScheduleLabel, prelude::*, utils::intern::Interned};
 /// use big_brain::prelude::*;
 ///
 /// App::new()
-///     .add_plugins(DefaultPlugins)
-///     .add_plugin(BigBrainPlugin::new(Update))
+///     .add_plugins((DefaultPlugins, BigBrainPlugin::new(Update)))
 ///     // ...insert entities and other systems.
 ///     .run();
 #[derive(Debug, Clone, Reflect)]
