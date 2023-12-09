@@ -14,7 +14,8 @@
 //! perform actual behaviors upon the world). No other code is needed for
 //! actual AI behavior.
 //!
-//! See [the documentation](https://docs.rs/big-brain) for more details.
+//! See [the documentation](https://docs.rs/big-brain), alone with [the
+//! tutorial][_tutorial::chapter_0] for more details.
 //!
 //! ### Features
 //!
@@ -24,124 +25,6 @@
 //! * Highly composable and reusable.
 //! * State machine-style continuous actions/behaviors.
 //! * Action cancellation.
-//!
-//! ### Example
-//!
-//! As a developer, you write application-dependent code to define
-//! [`Scorers`](#scorers) and [`Actions`](#actions), and then put it all
-//! together like building blocks, using [`Thinkers`](#thinkers) that will
-//! define the actual behavior.
-//!
-//! #### Scorers
-//!
-//! `Scorer`s are entities that look at the world and evaluate into `Score`
-//! values. You can think of them as the "eyes" of the AI system. They're a
-//! highly-parallel way of being able to look at the `World` and use it to
-//! make some decisions later.
-//!
-//! ```rust
-//! use bevy::prelude::*;
-//! use big_brain::prelude::*;
-//! # #[derive(Component, Debug)]
-//! # struct Thirst { thirst: f32 }
-//!
-//! #[derive(Debug, Clone, Component, ScorerBuilder)]
-//! pub struct Thirsty;
-//!
-//! pub fn thirsty_scorer_system(
-//!     thirsts: Query<&Thirst>,
-//!     mut query: Query<(&Actor, &mut Score), With<Thirsty>>,
-//! ) {
-//!     for (Actor(actor), mut score) in query.iter_mut() {
-//!         if let Ok(thirst) = thirsts.get(*actor) {
-//!             score.set(thirst.thirst);
-//!         }
-//!     }
-//! }
-//! ```
-//!
-//! #### Actions
-//!
-//! `Action`s are the actual things your entities will _do_. They are
-//! connected to `ActionState`s that represent the current execution state of
-//! the state machine.
-//!
-//! ```rust
-//! use bevy::prelude::*;
-//! use big_brain::prelude::*;
-//! # #[derive(Component, Debug)]
-//! # struct Thirst { thirst: f32 }
-//!
-//! #[derive(Debug, Clone, Component, ActionBuilder)]
-//! pub struct Drink;
-//!
-//! fn drink_action_system(
-//!     mut thirsts: Query<&mut Thirst>,
-//!     mut query: Query<(&Actor, &mut ActionState), With<Drink>>,
-//! ) {
-//!     for (Actor(actor), mut state) in query.iter_mut() {
-//!         if let Ok(mut thirst) = thirsts.get_mut(*actor) {
-//!             match *state {
-//!                 ActionState::Requested => {
-//!                     thirst.thirst = 10.0;
-//!                     *state = ActionState::Success;
-//!                 }
-//!                 ActionState::Cancelled => {
-//!                     *state = ActionState::Failure;
-//!                 }
-//!                 _ => {}
-//!             }
-//!         }
-//!     }
-//! }
-//! ```
-//!
-//! #### Thinkers
-//!
-//! Finally, you can use it when define the `Thinker`, which you can attach as
-//! a regular Component:
-//!
-//! ```rust
-//! # use bevy::prelude::*;
-//! # use big_brain::prelude::*;
-//! # #[derive(Debug, Component)]
-//! # struct Thirst(f32, f32);
-//! # #[derive(Debug, Clone, Component, ScorerBuilder)]
-//! # struct Thirsty;
-//! # #[derive(Debug, Clone, Component, ActionBuilder)]
-//! # struct Drink;
-//! fn spawn_entity(cmd: &mut Commands) {
-//!     cmd.spawn((
-//!         Thirst(70.0, 2.0),
-//!         Thinker::build()
-//!             .picker(FirstToScore { threshold: 0.8 })
-//!             .when(Thirsty, Drink),
-//!     ));
-//! }
-//! ```
-//!
-//! #### App
-//!
-//! Once all that's done, we just add our systems and off we go!
-//!
-//! ```no_run
-//! # use bevy::prelude::*;
-//! # use big_brain::prelude::*;
-//! # fn init_entities() {}
-//! # fn thirst_system() {}
-//! # fn drink_action_system() {}
-//! # fn thirsty_scorer_system() {}
-//! fn main() {
-//!     App::new()
-//!         .add_plugins(DefaultPlugins)
-//!         .add_plugins(BigBrainPlugin::new(PreUpdate))
-//!         .add_systems(Startup, init_entities)
-//!         .add_systems(Update, thirst_system)
-//!         .add_systems(PreUpdate, drink_action_system.in_set(BigBrainSet::Actions))
-//!         .add_systems(PreUpdate, thirsty_scorer_system.in_set(BigBrainSet::Scorers))
-//!         .run();
-//! }
-//! ```
 //!
 //! ### bevy version and MSRV
 //!
@@ -179,6 +62,11 @@ pub mod choices;
 pub mod measures;
 pub mod scorers;
 pub mod thinker;
+
+//#[cfg(feature = "documentation")]
+pub mod _topic;
+//#[cfg(feature = "documentation")]
+pub mod _tutorial;
 
 pub mod prelude {
     /*!
