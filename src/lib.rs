@@ -145,7 +145,7 @@
 //!
 //! ### bevy version and MSRV
 //!
-//! The current version of `big-brain` is compatible with `bevy` 0.9.0.
+//! The current version of `big-brain` is compatible with `bevy` 0.12.1.
 //!
 //! The Minimum Supported Rust Version for `big-brain` should be considered to
 //! be the same as `bevy`'s, which as of the time of this writing was "the
@@ -214,7 +214,7 @@ use bevy::{ecs::schedule::ScheduleLabel, prelude::*, utils::intern::Interned};
 /// use big_brain::prelude::*;
 ///
 /// App::new()
-///     .add_plugins((DefaultPlugins, BigBrainPlugin::new(Update)))
+///     .add_plugins((DefaultPlugins, BigBrainPlugin::new(PreUpdate)))
 ///     // ...insert entities and other systems.
 ///     .run();
 #[derive(Debug, Clone, Reflect)]

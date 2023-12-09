@@ -1,8 +1,9 @@
-# `big-brain`
+# `big-brain``
 
 [![crates.io](https://img.shields.io/crates/v/big-brain.svg)](https://crates.io/crates/big-brain)
 [![docs.rs](https://docs.rs/big-brain/badge.svg)](https://docs.rs/big-brain)
-[![Apache 2.0](https://img.shields.io/badge/license-Apache-blue.svg)](./LICENSE.md)
+[![Apache
+2.0](https://img.shields.io/badge/license-Apache-blue.svg)](./LICENSE.md)
 
 `big-brain` is a [Utility
 AI](https://en.wikipedia.org/wiki/Utility_system) library for games, built
@@ -120,17 +121,29 @@ fn main() {
         .add_plugins(BigBrainPlugin::new(PreUpdate))
         .add_systems(Startup, init_entities)
         .add_systems(Update, thirst_system)
-        .add_systems(PreUpdate, (
-            drink_action_system.in_set(BigBrainSet::Actions),
-            thirsty_scorer_system.in_set(BigBrainSet::Scorers),
-        ))
+        .add_systems(PreUpdate, drink_action_system.in_set(BigBrainSet::Actions))
+        .add_systems(PreUpdate, thirsty_scorer_system.in_set(BigBrainSet::Scorers))
         .run();
 }
 ```
 
-#### bevy version
+#### bevy version and MSRV
 
 The current version of `big-brain` is compatible with `bevy` 0.12.1.
+
+The Minimum Supported Rust Version for `big-brain` should be considered to
+be the same as `bevy`'s, which as of the time of this writing was "the
+latest stable release".
+
+#### Reflection
+
+All relevant `big-brain` types implement the bevy `Reflect` trait, so you
+should be able to get some useful display info while using things like
+[`bevy_inspector_egui`](https://crates.io/crates/bevy_inspector_egui).
+
+This implementation should **not** be considered stable, and individual
+fields made visible may change at **any time** and not be considered
+towards semver. Please use this feature **only for debugging**.
 
 #### Contributing
 
