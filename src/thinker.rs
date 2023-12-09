@@ -160,7 +160,7 @@ impl Thinker {
 
 /// This is what you actually use to configure Thinker behavior. It's a plain
 /// old [`ActionBuilder`], as well.
-#[derive(Component, Debug, Default)]
+#[derive(Component, Clone, Debug, Default)]
 pub struct ThinkerBuilder {
     picker: Option<Arc<dyn Picker>>,
     otherwise: Option<ActionBuilderWrapper>,

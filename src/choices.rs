@@ -28,7 +28,7 @@ impl Choice {
 }
 
 /// Builds a new [`Choice`].
-#[derive(Debug, Reflect)]
+#[derive(Clone, Debug, Reflect)]
 #[reflect(from_reflect = false)]
 pub struct ChoiceBuilder {
     when_label: Option<String>,
