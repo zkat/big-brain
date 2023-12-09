@@ -263,7 +263,9 @@ pub fn thinker_component_detach_system(
     q: Query<(Entity, &HasThinker), Without<ThinkerBuilder>>,
 ) {
     for (actor, HasThinker(thinker)) in q.iter() {
-        cmd.entity(*thinker).despawn_recursive();
+        if let Some(ent) = cmd.get_entity(*thinker) {
+            ent.despawn_recursive();
+        }
         cmd.entity(actor).remove::<HasThinker>();
     }
 }
@@ -276,7 +278,9 @@ pub fn actor_gone_cleanup(
     for (child, Actor(actor)) in q.iter() {
         if actors.get(*actor).is_err() {
             // Actor is gone. Let's clean up.
-            cmd.entity(child).despawn_recursive();
+            if let Some(ent) = cmd.get_entity(child) {
+                ent.despawn_recursive();
+            }
         }
     }
 }
@@ -350,7 +354,9 @@ pub fn thinker_system(
                     match state {
                         ActionState::Success | ActionState::Failure => {
                             debug!("Action already wrapped up on its own. Cleaning up action in Thinker.");
-                            cmd.entity(current.0 .0).despawn_recursive();
+                            if let Some(ent) = cmd.get_entity(current.0 .0) {
+                                ent.despawn_recursive();
+                            }
                             thinker.current_action = None;
                         }
                         ActionState::Cancelled => {
@@ -430,7 +436,9 @@ pub fn thinker_system(
                             "Action completed and nothing was picked. Despawning action entity.",
                         );
                         // Despawn the action itself.
-                        cmd.entity(action_ent.0).despawn_recursive();
+                        if let Some(ent) = cmd.get_entity(action_ent.0) {
+                            ent.despawn_recursive();
+                        }
                         thinker.current_action = None;
                     } else if *curr_action_state == ActionState::Init {
                         *curr_action_state = ActionState::Requested;
@@ -536,7 +544,9 @@ fn exec_picked_action(
                 ActionState::Init | ActionState::Success | ActionState::Failure => {
                     debug!("Previous action already completed. Despawning action entity.",);
                     // Despawn the action itself.
-                    cmd.entity(action_ent.0).despawn_recursive();
+                    if let Some(ent) = cmd.get_entity(action_ent.0) {
+                        ent.despawn_recursive();
+                    }
                     if let Some((Scorer(ent), score)) = scorer_info {
                         let scorer_span = scorer_spans.get(*ent).expect("Where is it?");
                         let _guard = scorer_span.span.enter();

@@ -287,8 +287,9 @@ pub fn steps_system(
                         let step_state = step_state.clone();
                         let mut seq_state = states.get_mut(seq_ent).expect("idk");
                         *seq_state = step_state;
-                        cmd.entity(steps_action.active_ent.entity())
-                            .despawn_recursive();
+                        if let Some(ent) = cmd.get_entity(steps_action.active_ent.entity()) {
+                            ent.despawn_recursive();
+                        }
                     }
                     Success if steps_action.active_step == steps_action.steps.len() - 1 => {
                         // We're done! Let's just be successful
@@ -297,15 +298,17 @@ pub fn steps_system(
                         let step_state = step_state.clone();
                         let mut seq_state = states.get_mut(seq_ent).expect("idk");
                         *seq_state = step_state;
-                        cmd.entity(steps_action.active_ent.entity())
-                            .despawn_recursive();
+                        if let Some(ent) = cmd.get_entity(steps_action.active_ent.entity()) {
+                            ent.despawn_recursive();
+                        }
                     }
                     Success => {
                         #[cfg(feature = "trace")]
                         trace!("Step succeeded, but there's more steps. Spawning next action.");
                         // Deactivate current step and go to the next step
-                        cmd.entity(steps_action.active_ent.entity())
-                            .despawn_recursive();
+                        if let Some(ent) = cmd.get_entity(steps_action.active_ent.entity()) {
+                            ent.despawn_recursive();
+                        }
 
                         steps_action.active_step += 1;
                         let step_builder = steps_action.steps[steps_action.active_step].clone();
