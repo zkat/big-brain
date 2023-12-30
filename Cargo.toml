@@ -4,6 +4,7 @@ version = "0.18.0"
 authors = ["Kat Marchán <kzm@zkat.tech>"]
 edition = "2021"
 description = "Rusty Utility AI library"
+exclude = ["assets/"]
 license = "Apache-2.0"
 readme = "README.md"
 keywords = ["utility-ai", "bevy", "ai", "ecs"]
@@ -20,6 +21,9 @@ big-brain-derive = { version = "=0.18.0", path = "./derive" }
 [dev-dependencies]
 bevy = { version = "0.12.1", default-features = true }
 rand = { version = "0.8.5", features = ["small_rng"] }
+bevy-scene-hook = "9.0.0"
+# TODO: Remove
+bevy_editor_pls = "0.7.0"
 
 [features]
 trace = []
