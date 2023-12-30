@@ -6,7 +6,7 @@ use bevy_scene_hook::{HookPlugin, HookedSceneBundle, SceneHook};
 use big_brain::prelude::*;
 use big_brain_derive::ActionBuilder;
 
-const DEFAULT_COLOR: Color = Color::PINK;
+const DEFAULT_COLOR: Color = Color::BLACK;
 const SLEEP_COLOR: Color = Color::RED;
 const FARM_COLOR: Color = Color::BLUE;
 const MAX_DISTANCE: f32 = 0.1;
@@ -27,10 +27,18 @@ pub struct Inventory {
     pub items: f32,
 }
 
+#[derive(Component)]
+pub struct MoneyText;
+
+#[derive(Component)]
+pub struct FatigueText;
+
+#[derive(Component)]
+pub struct InventoryText;
+
 // ================================================================================
 //  Sleepiness 😴
 // ================================================================================
-
 #[derive(Component, Debug, Reflect)]
 pub struct Fatigue {
     pub is_sleeping: bool,
@@ -175,18 +183,12 @@ pub struct WorkNeedScorer;
 
 pub fn work_need_scorer_system(
     actors: Query<&Inventory>,
-    mut query: Query<(&Actor, &mut Score, &ScorerSpan), With<WorkNeedScorer>>,
+    mut query: Query<(&Actor, &mut Score), With<WorkNeedScorer>>,
 ) {
-    for (Actor(actor), mut score, span) in &mut query {
+    for (Actor(actor), mut score) in &mut query {
         if let Ok(inventory) = actors.get(*actor) {
             if inventory.items >= MAX_INVENTORY_ITEMS {
                 score.set(0.0);
-                span.span().in_scope(|| {
-                    debug!(
-                        "Inventory full! Score: {}",
-                        inventory.items / MAX_INVENTORY_ITEMS
-                    )
-                });
             } else {
                 score.set(0.6);
             }
@@ -238,18 +240,12 @@ pub struct SellNeedScorer;
 
 pub fn sell_need_scorer_system(
     actors: Query<&Inventory>,
-    mut query: Query<(&Actor, &mut Score, &ScorerSpan), With<SellNeedScorer>>,
+    mut query: Query<(&Actor, &mut Score), With<SellNeedScorer>>,
 ) {
-    for (Actor(actor), mut score, span) in &mut query {
+    for (Actor(actor), mut score) in &mut query {
         if let Ok(inventory) = actors.get(*actor) {
             if inventory.items >= MAX_INVENTORY_ITEMS {
                 score.set(0.6);
-                span.span().in_scope(|| {
-                    debug!(
-                        "Inventory full! Score: {}",
-                        inventory.items / MAX_INVENTORY_ITEMS
-                    )
-                });
             } else {
                 score.set(0.0);
             }
@@ -263,8 +259,8 @@ pub fn sell_need_scorer_system(
 
 #[derive(Clone, Component, Debug)]
 pub struct MoveToNearest<T: Component + std::fmt::Debug + Clone> {
-    speed: f32,
     _marker: std::marker::PhantomData<T>,
+    speed: f32,
 }
 
 impl<T> ActionBuilder for MoveToNearest<T>
@@ -278,8 +274,8 @@ where
 
 pub fn move_to_nearest_system<T: Component + std::fmt::Debug + Clone>(
     time: Res<Time>,
-    mut type_ts: Query<&mut Transform, With<T>>,
-    mut without_ts: Query<&mut Transform, Without<T>>,
+    mut query: Query<&mut Transform, With<T>>,
+    mut thinkers: Query<&mut Transform, (With<HasThinker>, Without<T>)>,
     mut action_query: Query<(&Actor, &mut ActionState, &MoveToNearest<T>, &ActionSpan)>,
 ) {
     for (actor, mut action_state, move_to, span) in &mut action_query {
@@ -292,9 +288,8 @@ pub fn move_to_nearest_system<T: Component + std::fmt::Debug + Clone>(
                 *action_state = ActionState::Executing;
             }
             ActionState::Executing => {
-                let mut actor_transform =
-                    without_ts.get_mut(actor.0).expect("actor has no position");
-                let goal_transform = type_ts
+                let mut actor_transform = thinkers.get_mut(actor.0).unwrap();
+                let goal_transform = query
                     .iter_mut()
                     .map(|t| (t.translation, t))
                     .min_by(|(a, _), (b, _)| {
@@ -302,11 +297,8 @@ pub fn move_to_nearest_system<T: Component + std::fmt::Debug + Clone>(
                         let delta_b = *b - actor_transform.translation;
                         delta_a.length().partial_cmp(&delta_b.length()).unwrap()
                     })
-                    .expect("no entities of type found")
+                    .unwrap()
                     .1;
-
-                trace!("Actor position: {:?}", actor_transform.translation);
-
                 let delta = goal_transform.translation - actor_transform.translation;
                 let distance = delta.xz().length();
 
@@ -334,6 +326,52 @@ pub fn move_to_nearest_system<T: Component + std::fmt::Debug + Clone>(
     }
 }
 
+// ================================================================================
+//  UI
+// ================================================================================
+
+fn update_ui(
+    actor_query: Query<(&Inventory, &Fatigue)>,
+    mut money_query: Query<
+        &mut Text,
+        (
+            With<MoneyText>,
+            Without<FatigueText>,
+            Without<InventoryText>,
+        ),
+    >,
+    mut fatigue_query: Query<
+        &mut Text,
+        (
+            With<FatigueText>,
+            Without<InventoryText>,
+            Without<MoneyText>,
+        ),
+    >,
+    mut inventory_query: Query<
+        &mut Text,
+        (
+            With<InventoryText>,
+            Without<FatigueText>,
+            Without<MoneyText>,
+        ),
+    >,
+) {
+    for (inventory, fatigue) in &mut actor_query.iter() {
+        for mut text in &mut money_query {
+            text.sections[0].value = format!("Money: {}", inventory.money as u32);
+        }
+
+        for mut text in &mut fatigue_query {
+            text.sections[0].value = format!("Fatigue: {}", fatigue.level as u32);
+        }
+
+        for mut text in &mut inventory_query {
+            text.sections[0].value = format!("Inventory: {}", inventory.items as u32);
+        }
+    }
+}
+
 fn init_entities(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -351,22 +389,26 @@ fn init_entities(
         brightness: 1.0,
     });
 
-    commands.spawn(SpotLightBundle {
-        spot_light: SpotLight {
-            intensity: 5_000.0,
-            range: 100.0,
+    commands.spawn((
+        Name::new("Light"),
+        SpotLightBundle {
+            spot_light: SpotLight {
+                shadows_enabled: true,
+                intensity: 5_000.0,
+                range: 100.0,
+                ..default()
+            },
+            transform: Transform::from_xyz(2.0, 10.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
-        transform: Transform::from_xyz(2.0, 10.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..default()
-    });
+    ));
 
     commands.spawn((
         Name::new("Town"),
         HookedSceneBundle {
             scene: SceneBundle {
                 scene: asset_server.load("models/town.glb#Scene0"),
-                ..Default::default()
+                ..default()
             },
             hook: SceneHook::new(|entity, cmds| {
                 match entity.get::<Name>().map(|t| t.as_str()) {
@@ -415,11 +457,11 @@ fn init_entities(
             mesh: meshes.add(Mesh::from(shape::Capsule {
                 depth: 0.3,
                 radius: 0.1,
-                ..Default::default()
+                ..default()
             })),
             material: materials.add(DEFAULT_COLOR.into()),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
-            ..Default::default()
+            ..default()
         },
         Fatigue {
             is_sleeping: false,
@@ -437,6 +479,57 @@ fn init_entities(
             .when(WorkNeedScorer, move_and_farm)
             .when(SellNeedScorer, move_and_sell),
     ));
+
+    let font_size = 40.0;
+
+    // scoreboard
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                justify_content: JustifyContent::End,
+                align_items: AlignItems::FlexStart,
+                padding: UiRect::all(Val::Px(20.0)),
+                ..default()
+            },
+            ..default()
+        })
+        .with_children(|builder| {
+            builder.spawn((
+                TextBundle::from_section(
+                    "",
+                    TextStyle {
+                        font_size,
+                        ..default()
+                    },
+                ),
+                MoneyText,
+            ));
+
+            builder.spawn((
+                TextBundle::from_section(
+                    "",
+                    TextStyle {
+                        font_size,
+                        ..default()
+                    },
+                ),
+                FatigueText,
+            ));
+
+            builder.spawn((
+                TextBundle::from_section(
+                    "",
+                    TextStyle {
+                        font_size,
+                        ..default()
+                    },
+                ),
+                InventoryText,
+            ));
+        });
 }
 
 fn main() {
@@ -447,7 +540,7 @@ fn main() {
             // Use `RUST_LOG=big_brain=trace,farming_sim=trace cargo run --example
             // farming_sim --features=trace` to see extra tracing output.
             // filter: "big_brain=debug,farming_sim=trace".to_string(),
-            ..Default::default()
+            ..default()
         }))
         .register_type::<Fatigue>()
         .register_type::<Inventory>()
@@ -455,7 +548,7 @@ fn main() {
         .add_plugins(HookPlugin)
         .add_plugins(BigBrainPlugin::new(PreUpdate))
         .add_systems(Startup, init_entities)
-        .add_systems(Update, (fatigue_system,))
+        .add_systems(Update, (fatigue_system, update_ui))
         .add_systems(
             PreUpdate,
             (
