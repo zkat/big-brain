@@ -1,7 +1,12 @@
-//! Simple example of a utility ai farming agent
+//! An intermediate example of a utility AI agent for a farmer
+//!
+//! The farmer agent will:
+//! - Get tired over time, indicated by their [Fatigue] component
+//! - When tired, find the house and sleep to reduce fatigue
+//! - When not tired, find the farm field and harvest items over time
+//! - When inventory is full, find the market and sell items for money
 
 use bevy::{log::LogPlugin, prelude::*};
-use bevy_editor_pls::EditorPlugin;
 use bevy_scene_hook::{HookPlugin, HookedSceneBundle, SceneHook};
 use big_brain::prelude::*;
 use big_brain_derive::ActionBuilder;
@@ -11,41 +16,60 @@ const SLEEP_COLOR: Color = Color::RED;
 const FARM_COLOR: Color = Color::BLUE;
 const MAX_DISTANCE: f32 = 0.1;
 const MAX_INVENTORY_ITEMS: f32 = 20.0;
+const WORK_NEED_SCORE: f32 = 0.6;
+const SELL_NEED_SCORE: f32 = 0.6;
 
+/// A marker for our spawned gltf indicating the farm's field location.
 #[derive(Component, Debug, Clone)]
 pub struct Field;
 
+/// A marker for our spawned gltf indicating the market's location.
 #[derive(Component, Debug, Clone)]
 pub struct Market;
 
+/// A marker for our spawned gltf indicating the house's location.
 #[derive(Component, Debug, Clone)]
 pub struct House;
 
+/// The farmer's inventory.
 #[derive(Component, Reflect)]
 pub struct Inventory {
+    /// How much money this entity has.
     pub money: u32,
+    /// How many items the entity has.
+    // We use a float here to simplify the math in the farming action.
     pub items: f32,
 }
 
+/// A marker for our money UI text.
 #[derive(Component)]
 pub struct MoneyText;
 
+/// A marker for our fatigue UI text.
 #[derive(Component)]
 pub struct FatigueText;
 
+/// A marker for our inventory UI text.
 #[derive(Component)]
 pub struct InventoryText;
 
 // ================================================================================
 //  Sleepiness 😴
 // ================================================================================
+
+// This is not an AI component, but a standard Bevy component that increases an
+// entity's fatigue over time. The AI will interact with this component later.
 #[derive(Component, Debug, Reflect)]
 pub struct Fatigue {
+    /// A boolean indicating whether the entity is currently sleeping.
     pub is_sleeping: bool,
+    /// The rate at which the fatigue level increases per second.
     pub per_second: f32,
+    /// The current fatigue level of the entity.
     pub level: f32,
 }
 
+/// Increases an entity's fatigue over time
 pub fn fatigue_system(time: Res<Time>, mut fatigues: Query<&mut Fatigue>) {
     for mut fatigue in &mut fatigues {
         fatigue.level += fatigue.per_second * time.delta_seconds();
@@ -56,21 +80,49 @@ pub fn fatigue_system(time: Res<Time>, mut fatigues: Query<&mut Fatigue>) {
     }
 }
 
+// The second step is to define an action. What can the AI do, and how does it
+// do it? This is the first bit involving Big Brain itself, and there's a few
+// pieces you need:
+//
+// 1. An Action Component. This is just a plain Component we will query
+//    against later.
+// 2. An ActionBuilder. This is anything that implements the ActionBuilder
+//    trait.
+// 3. A System that will run Action code.
+//
+// These actions will be spawned and queued by the game engine when their
+// conditions trigger (we'll configure what these are later).
+//
+// In most cases, the ActionBuilder just attaches the Action component to the
+// actor entity. In this case, you can use the derive macro `ActionBuilder`
+// to make your Action Component implement the ActionBuilder trait.
+// You need your type to implement Clone and Debug (necessary for ActionBuilder)
 #[derive(Clone, Component, Debug, ActionBuilder)]
 pub struct Sleep {
+    /// The fatigue level at which the entity will stop sleeping.
     until: f32,
+    /// The rate at which the fatigue level decreases while sleeping.
     per_second: f32,
 }
 
+// This system manages the sleeping action of entities. It reduces the fatigue
+// level of the entity as it sleeps and updates the entity's state based on
+// the Sleep component's parameters.
 fn sleep_action_system(
     time: Res<Time>,
     mut fatigues: Query<(&mut Fatigue, &Handle<StandardMaterial>)>,
+    // Resource used to modify the appearance of the farmer.
     mut materials: ResMut<Assets<StandardMaterial>>,
+    // We execute actions by querying for their associated Action Component
+    // (Sleep in this case). You'll always need both Actor and ActionState.
     mut query: Query<(&Actor, &mut ActionState, &Sleep, &ActionSpan)>,
 ) {
     for (Actor(actor), mut state, sleep, span) in &mut query {
+        // This sets up the tracing scope. Any `debug` calls here will be
+        // spanned together in the output.
         let _guard = span.span().enter();
 
+        // Use the sleep_action's actor to look up the corresponding Fatigue Component.
         if let Ok((mut fatigue, material)) = fatigues.get_mut(*actor) {
             match *state {
                 ActionState::Requested => {
@@ -84,12 +136,15 @@ fn sleep_action_system(
                     materials.get_mut(material).unwrap().base_color = SLEEP_COLOR;
 
                     if fatigue.level <= sleep.until {
+                        // To "finish" an action, we set its state to Success or
+                        // Failure.
                         debug!("Woke up well-rested!");
                         materials.get_mut(material).unwrap().base_color = DEFAULT_COLOR;
                         fatigue.is_sleeping = false;
                         *state = ActionState::Success;
                     }
                 }
+                // All Actions should make sure to handle cancellations!
                 ActionState::Cancelled => {
                     debug!("Sleep was interrupted. Still tired.");
                     materials.get_mut(material).unwrap().base_color = DEFAULT_COLOR;
@@ -102,9 +157,12 @@ fn sleep_action_system(
     }
 }
 
+/// This component serves as a scorer for evaluating the entity's need to sleep based on its fatigue level.
 #[derive(Clone, Component, Debug, ScorerBuilder)]
 pub struct FatigueScorer;
 
+// This system calculates a score based on the entity's fatigue level. The higher the fatigue, the higher
+// the score, indicating a greater need for the entity to sleep.
 pub fn fatigue_scorer_system(
     mut last_score: Local<Option<f32>>,
     fatigues: Query<&Fatigue>,
@@ -135,16 +193,24 @@ pub fn fatigue_scorer_system(
 //  Farming 🚜
 // ================================================================================
 
+/// Represents the farming action. When the farmer decides to farm, this component
+/// is used to track and manage the farming process.
 #[derive(Clone, Component, Debug, ActionBuilder)]
 pub struct Farm {
+    /// The threshold at which the farmer stops farming (e.g., when the inventory is full).
     pub until: f32,
+    /// The rate at which items are added to the inventory per second while farming.
     pub per_second: f32,
 }
 
+// The system that executes the farming action. It updates the inventory based on the
+// Farm component's parameters and changes the entity's appearance to indicate the farming action.
 fn farm_action_system(
     time: Res<Time>,
     mut actors: Query<(&mut Inventory, &Handle<StandardMaterial>)>,
+    // Resource used to modify the appearance of the farmer.
     mut materials: ResMut<Assets<StandardMaterial>>,
+    // Query to manage the state of the farming action.
     mut query: Query<(&Actor, &mut ActionState, &Farm, &ActionSpan)>,
 ) {
     for (Actor(actor), mut state, farm, span) in &mut query {
@@ -178,9 +244,11 @@ fn farm_action_system(
     }
 }
 
+/// This component serves as a scorer for evaluating the entity's need to farm based on its inventory level.
 #[derive(Clone, Component, Debug, ScorerBuilder)]
 pub struct WorkNeedScorer;
 
+// This scorer returns a score of the default work need score if the entity's inventory is not full and 0.0 otherwise.
 pub fn work_need_scorer_system(
     actors: Query<&Inventory>,
     mut query: Query<(&Actor, &mut Score), With<WorkNeedScorer>>,
@@ -190,7 +258,7 @@ pub fn work_need_scorer_system(
             if inventory.items >= MAX_INVENTORY_ITEMS {
                 score.set(0.0);
             } else {
-                score.set(0.6);
+                score.set(WORK_NEED_SCORE);
             }
         }
     }
@@ -200,9 +268,13 @@ pub fn work_need_scorer_system(
 //  Selling 💰
 // ================================================================================
 
+/// Represents the selling action. When the farmer decides to sell, this component
+/// is used to track and manage the selling process.
 #[derive(Clone, Component, Debug, ActionBuilder)]
 pub struct Sell;
 
+/// The system that executes the selling action. It updates the inventory based on the
+/// Sell component's parameters and changes the entity's appearance to indicate the selling action.
 fn sell_action_system(
     mut actors: Query<&mut Inventory>,
     mut query: Query<(&Actor, &mut ActionState, &Sell, &ActionSpan)>,
@@ -223,6 +295,8 @@ fn sell_action_system(
 
                     debug!("Sold! Money: {}", inventory.money);
 
+                    // Notice we immediately set the state to Success. This is because
+                    // we treat selling as instantaneous.
                     *state = ActionState::Success;
                 }
                 ActionState::Cancelled => {
@@ -235,9 +309,11 @@ fn sell_action_system(
     }
 }
 
+// This component serves as a scorer for evaluating the entity's need to sell based on its inventory level.
 #[derive(Clone, Component, Debug, ScorerBuilder)]
 pub struct SellNeedScorer;
 
+// This scorer returns a score of the default sell need score if the entity's inventory is full and 0.0 otherwise.
 pub fn sell_need_scorer_system(
     actors: Query<&Inventory>,
     mut query: Query<(&Actor, &mut Score), With<SellNeedScorer>>,
@@ -245,7 +321,7 @@ pub fn sell_need_scorer_system(
     for (Actor(actor), mut score) in &mut query {
         if let Ok(inventory) = actors.get(*actor) {
             if inventory.items >= MAX_INVENTORY_ITEMS {
-                score.set(0.6);
+                score.set(SELL_NEED_SCORE);
             } else {
                 score.set(0.0);
             }
@@ -257,24 +333,36 @@ pub fn sell_need_scorer_system(
 //  Movement 🚶
 // ================================================================================
 
+// This is a component that will be attached to the actor entity when it is
+// moving to a location. It's not an AI component, but a standard Bevy component
 #[derive(Clone, Component, Debug)]
 pub struct MoveToNearest<T: Component + std::fmt::Debug + Clone> {
     _marker: std::marker::PhantomData<T>,
     speed: f32,
 }
 
+// We cannot use the derive macro here because we need to be generic over 'T'.
+// Instead we manually implement the ActionBuilder trait.
 impl<T> ActionBuilder for MoveToNearest<T>
 where
     T: Component + std::fmt::Debug + Clone,
 {
+    // An action builder needs to implement this method. It's used to attach
+    // the Action component to the actor entity.
     fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
         cmd.entity(action).insert(MoveToNearest::<T>::clone(self));
     }
 }
 
+// This system manages the movement of entities. It moves the entity towards the
+// nearest entity with the specified component and updates the entity's state
+// based on the MoveToNearest component's parameters.
 pub fn move_to_nearest_system<T: Component + std::fmt::Debug + Clone>(
     time: Res<Time>,
+    // This will be generic over 'T', so we can look up any marker component we want.
     mut query: Query<&mut Transform, With<T>>,
+    // We filter on HasThinker since otherwise we'd be querying for every
+    // entity in the world with a transform!
     mut thinkers: Query<&mut Transform, (With<HasThinker>, Without<T>)>,
     mut action_query: Query<(&Actor, &mut ActionState, &MoveToNearest<T>, &ActionSpan)>,
 ) {
@@ -289,10 +377,12 @@ pub fn move_to_nearest_system<T: Component + std::fmt::Debug + Clone>(
             }
             ActionState::Executing => {
                 let mut actor_transform = thinkers.get_mut(actor.0).unwrap();
+                // The goal is the nearest entity with the specified component.
                 let goal_transform = query
                     .iter_mut()
                     .map(|t| (t.translation, t))
                     .min_by(|(a, _), (b, _)| {
+                        // We need partial_cmp here because f32 doesn't implement Ord.
                         let delta_a = *a - actor_transform.translation;
                         let delta_b = *b - actor_transform.translation;
                         delta_a.length().partial_cmp(&delta_b.length()).unwrap()
@@ -310,6 +400,7 @@ pub fn move_to_nearest_system<T: Component + std::fmt::Debug + Clone>(
                     let step_size = time.delta_seconds() * move_to.speed;
                     let step = delta.normalize() * step_size.min(distance);
 
+                    // We only care about moving in the XZ plane.
                     actor_transform.translation.x += step.x;
                     actor_transform.translation.z += step.z;
                 } else {
@@ -330,8 +421,11 @@ pub fn move_to_nearest_system<T: Component + std::fmt::Debug + Clone>(
 //  UI
 // ================================================================================
 
+// This system updates the UI to reflect the state of the farmer.
 fn update_ui(
     actor_query: Query<(&Inventory, &Fatigue)>,
+    // Our queries must be "disjoint", so we use the `Without` component to
+    // ensure that we do not query for the same entity twice.
     mut money_query: Query<
         &mut Text,
         (
@@ -372,17 +466,18 @@ fn update_ui(
     }
 }
 
+// Now that we have all that defined, it's time to add a Thinker to an entity and setup our environment.
 fn init_entities(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands.spawn((Camera3dBundle {
+    commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(6.0, 6.0, 4.0)
             .looking_at(Vec3::new(0.0, -1.0, 0.0), Vec3::Y),
         ..default()
-    },));
+    });
 
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
@@ -403,6 +498,9 @@ fn init_entities(
         },
     ));
 
+    // We use a HookedSceneBundle to attach a SceneHook to the entity. This hook
+    // will be called when the entity is spawned, and will allow us to insert
+    // additional components into the spawned entities.
     commands.spawn((
         Name::new("Town"),
         HookedSceneBundle {
@@ -420,6 +518,11 @@ fn init_entities(
             }),
         },
     ));
+
+    // We'll use `Steps` to execute a sequence of actions.
+    // First, we'll move to the nearest house and sleep, then we'll move to the
+    // nearest field and farm, then we'll move to the nearest market and sell.
+    // See the `sequence.rs` example for more details.
 
     let move_and_sleep = Steps::build()
         .label("MoveAndSleep")
@@ -474,15 +577,19 @@ fn init_entities(
         },
         Thinker::build()
             .label("My Thinker")
+            // Selects the action with the highest score that is above the threshold.
             .picker(FirstToScore::new(0.6))
             .when(FatigueScorer, move_and_sleep)
             .when(WorkNeedScorer, move_and_farm)
             .when(SellNeedScorer, move_and_sell),
     ));
 
-    let font_size = 40.0;
+    let style = TextStyle {
+        font_size: 40.0,
+        ..default()
+    };
 
-    // scoreboard
+    // Our scoreboard.
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -497,54 +604,21 @@ fn init_entities(
             ..default()
         })
         .with_children(|builder| {
-            builder.spawn((
-                TextBundle::from_section(
-                    "",
-                    TextStyle {
-                        font_size,
-                        ..default()
-                    },
-                ),
-                MoneyText,
-            ));
-
-            builder.spawn((
-                TextBundle::from_section(
-                    "",
-                    TextStyle {
-                        font_size,
-                        ..default()
-                    },
-                ),
-                FatigueText,
-            ));
-
-            builder.spawn((
-                TextBundle::from_section(
-                    "",
-                    TextStyle {
-                        font_size,
-                        ..default()
-                    },
-                ),
-                InventoryText,
-            ));
+            builder.spawn((TextBundle::from_section("", style.clone()), MoneyText));
+            builder.spawn((TextBundle::from_section("", style.clone()), FatigueText));
+            builder.spawn((TextBundle::from_section("", style.clone()), InventoryText));
         });
 }
 
 fn main() {
     App::new()
-        // .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPlugins.set(LogPlugin {
             level: bevy::log::Level::WARN,
             // Use `RUST_LOG=big_brain=trace,farming_sim=trace cargo run --example
             // farming_sim --features=trace` to see extra tracing output.
-            // filter: "big_brain=debug,farming_sim=trace".to_string(),
+            filter: "big_brain=debug,farming_sim=debug".to_string(),
             ..default()
         }))
-        .register_type::<Fatigue>()
-        .register_type::<Inventory>()
-        .add_plugins(EditorPlugin::default())
         .add_plugins(HookPlugin)
         .add_plugins(BigBrainPlugin::new(PreUpdate))
         .add_systems(Startup, init_entities)
