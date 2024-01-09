@@ -184,7 +184,7 @@ impl ActionBuilder for StepsBuilder {
     }
 
     fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity) {
-        if let Some(step) = self.steps.get(0) {
+        if let Some(step) = self.steps.first() {
             let child_action = spawn_action(step.as_ref(), cmd, actor);
             cmd.entity(action)
                 .insert(Name::new("Steps Action"))
