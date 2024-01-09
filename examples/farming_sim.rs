@@ -18,6 +18,7 @@ const MAX_DISTANCE: f32 = 0.1;
 const MAX_INVENTORY_ITEMS: f32 = 20.0;
 const WORK_NEED_SCORE: f32 = 0.6;
 const SELL_NEED_SCORE: f32 = 0.6;
+const MOVEMENT_SPEED: f32 = 1.5;
 
 /// A marker for our spawned gltf indicating the farm's field location.
 #[derive(Component, Debug, Clone)]
@@ -528,18 +529,18 @@ fn init_entities(
     let move_and_sleep = Steps::build()
         .label("MoveAndSleep")
         .step(MoveToNearest::<House> {
-            speed: 1.0,
+            speed: MOVEMENT_SPEED,
             _marker: std::marker::PhantomData,
         })
         .step(Sleep {
             until: 10.0,
-            per_second: 10.0,
+            per_second: 15.0,
         });
 
     let move_and_farm = Steps::build()
         .label("MoveAndFarm")
         .step(MoveToNearest::<Field> {
-            speed: 1.0,
+            speed: MOVEMENT_SPEED,
             _marker: std::marker::PhantomData,
         })
         .step(Farm {
@@ -550,7 +551,7 @@ fn init_entities(
     let move_and_sell = Steps::build()
         .label("MoveAndSell")
         .step(MoveToNearest::<Market> {
-            speed: 1.0,
+            speed: MOVEMENT_SPEED,
             _marker: std::marker::PhantomData,
         })
         .step(Sell);
@@ -569,7 +570,7 @@ fn init_entities(
         },
         Fatigue {
             is_sleeping: false,
-            per_second: 2.0,
+            per_second: 4.0,
             level: 0.0,
         },
         Inventory {
