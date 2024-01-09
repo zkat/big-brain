@@ -422,6 +422,7 @@ pub fn move_to_nearest_system<T: Component + std::fmt::Debug + Clone>(
 // ================================================================================
 
 // This system updates the UI to reflect the state of the farmer.
+#[allow(clippy::type_complexity)]
 fn update_ui(
     actor_query: Query<(&Inventory, &Fatigue)>,
     // Our queries must be "disjoint", so we use the `Without` component to
@@ -453,7 +454,7 @@ fn update_ui(
 ) {
     for (inventory, fatigue) in &mut actor_query.iter() {
         for mut text in &mut money_query {
-            text.sections[0].value = format!("Money: {}", inventory.money as u32);
+            text.sections[0].value = format!("Money: {}", inventory.money);
         }
 
         for mut text in &mut fatigue_query {
@@ -617,7 +618,6 @@ fn main() {
             // Use `RUST_LOG=big_brain=trace,farming_sim=trace cargo run --example
             // farming_sim --features=trace` to see extra tracing output.
             filter: "big_brain=debug,farming_sim=debug".to_string(),
-            ..default()
         }))
         .add_plugins(HookPlugin)
         .add_plugins(BigBrainPlugin::new(PreUpdate))
