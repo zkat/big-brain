@@ -1,5 +1,20 @@
 # `big-brain` Release Changelog
 
+<a name="0.19.0"></a>
+## 0.19.0 (2024-01-19)
+
+### Features
+
+* **set_unchecked:** Add `set_unchecked` method to `Score` (#78) ([e179cb53](https://github.com/zkat/big-brain/commit/e179cb53fa981a0cf08352590ce36799f7ee0235))
+* **bevy:** Migrated to Bevy 0.12 (#86) ([69c3a4a5](https://github.com/zkat/big-brain/commit/69c3a4a506fb5bcb94e26d87cccdb27cc180429a))
+* **bevy:** Update to bevy 0.12.1 (#87) ([6befa384](https://github.com/zkat/big-brain/commit/6befa3844aec54b31886ff52f3e9f596ea57e088))
+* **thinker:** make ThinkerBuilder be Clone ([2e493d6b](https://github.com/zkat/big-brain/commit/2e493d6bb7339bd278a597555b707aa379eebbcb))
+* **generics:** support generic actions (#88) ([7f5a3845](https://github.com/zkat/big-brain/commit/7f5a3845947e40f5a2c6460060eaef3ec5649804))
+
+### Bug Fixes
+
+* **despawn:** don't try to despawn if an entity doesn't exist ([bdf51c32](https://github.com/zkat/big-brain/commit/bdf51c3206e9afa6b35c1f5a199c6465c3086217))
+
 <a name="0.18.0"></a>
 ## 0.18.0 (2023-07-16)
 
