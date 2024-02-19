@@ -340,8 +340,8 @@ pub fn sell_need_scorer_system(
 #[action_label = "MyGenericLabel"]
 pub struct MoveToNearest<T: Component + std::fmt::Debug + Clone> {
     // We use a PhantomData to store the type of the component we're moving to.
-    pub _marker: std::marker::PhantomData<T>,
-    pub speed: f32,
+    _marker: std::marker::PhantomData<T>,
+    speed: f32,
 }
 
 impl<T: Component + std::fmt::Debug + Clone> MoveToNearest<T> {
