@@ -158,12 +158,13 @@ pub fn init_entities(mut cmd: Commands) {
 fn main() {
     // Once all that's done, we just add our systems and off we go!
     App::new()
-        .add_plugins(DefaultPlugins.set(LogPlugin {
+        .add_plugins(MinimalPlugins)
+        .add_plugins(LogPlugin {
             // Use `RUST_LOG=big_brain=trace,thirst=trace cargo run --example
             // thirst --features=trace` to see extra tracing output.
             filter: "big_brain=debug,thirst=debug".to_string(),
             ..default()
-        }))
+        })
         .add_plugins(BigBrainPlugin::new(PreUpdate))
         .add_systems(Startup, init_entities)
         .add_systems(Update, thirst_system)
