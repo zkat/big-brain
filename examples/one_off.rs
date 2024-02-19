@@ -70,12 +70,13 @@ pub fn thirst_system(
 fn main() {
     // Once all that's done, we just add our systems and off we go!
     App::new()
-        .add_plugins(DefaultPlugins.set(LogPlugin {
-            // Use `RUST_LOG=big_brain=trace,thirst=trace cargo run --example
+        .add_plugins(MinimalPlugins)
+        .add_plugins(LogPlugin {
+            // Use `RUST_LOG=big_brain=trace,one_off=trace cargo run --example
             // one_off --features=trace` to see extra tracing output.
             filter: "big_brain=debug,one_off=debug".to_string(),
             ..default()
-        }))
+        })
         .add_plugins(BigBrainPlugin::new(PreUpdate))
         .add_systems(Startup, init_entities)
         .add_systems(Update, thirst_system)
