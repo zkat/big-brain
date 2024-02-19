@@ -336,22 +336,20 @@ pub fn sell_need_scorer_system(
 
 // This is a component that will be attached to the actor entity when it is
 // moving to a location. It's not an AI component, but a standard Bevy component
-#[derive(Clone, Component, Debug)]
+#[derive(Debug, Clone, Component, ActionBuilder)]
+#[action_label = "MyGenericLabel"]
 pub struct MoveToNearest<T: Component + std::fmt::Debug + Clone> {
+    // We use a PhantomData to store the type of the component we're moving to.
     _marker: std::marker::PhantomData<T>,
     speed: f32,
 }
 
-// We cannot use the derive macro here because we need to be generic over 'T'.
-// Instead we manually implement the ActionBuilder trait.
-impl<T> ActionBuilder for MoveToNearest<T>
-where
-    T: Component + std::fmt::Debug + Clone,
-{
-    // An action builder needs to implement this method. It's used to attach
-    // the Action component to the actor entity.
-    fn build(&self, cmd: &mut Commands, action: Entity, _actor: Entity) {
-        cmd.entity(action).insert(MoveToNearest::<T>::clone(self));
+impl<T: Component + std::fmt::Debug + Clone> MoveToNearest<T> {
+    pub fn new(speed: f32) -> Self {
+        Self {
+            _marker: std::marker::PhantomData,
+            speed,
+        }
     }
 }
 
@@ -483,7 +481,7 @@ fn init_entities(
 
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
-        brightness: 1.0,
+        brightness: 700.0,
     });
 
     commands.spawn((
@@ -491,7 +489,7 @@ fn init_entities(
         SpotLightBundle {
             spot_light: SpotLight {
                 shadows_enabled: true,
-                intensity: 5_000.0,
+                intensity: 500_000.0,
                 range: 100.0,
                 ..default()
             },
@@ -528,10 +526,7 @@ fn init_entities(
 
     let move_and_sleep = Steps::build()
         .label("MoveAndSleep")
-        .step(MoveToNearest::<House> {
-            speed: MOVEMENT_SPEED,
-            _marker: std::marker::PhantomData,
-        })
+        .step(MoveToNearest::<House>::new(MOVEMENT_SPEED))
         .step(Sleep {
             until: 10.0,
             per_second: 15.0,
@@ -539,10 +534,7 @@ fn init_entities(
 
     let move_and_farm = Steps::build()
         .label("MoveAndFarm")
-        .step(MoveToNearest::<Field> {
-            speed: MOVEMENT_SPEED,
-            _marker: std::marker::PhantomData,
-        })
+        .step(MoveToNearest::<Field>::new(MOVEMENT_SPEED))
         .step(Farm {
             until: 10.0,
             per_second: 10.0,
@@ -550,21 +542,18 @@ fn init_entities(
 
     let move_and_sell = Steps::build()
         .label("MoveAndSell")
-        .step(MoveToNearest::<Market> {
-            speed: MOVEMENT_SPEED,
-            _marker: std::marker::PhantomData,
-        })
+        .step(MoveToNearest::<Market>::new(MOVEMENT_SPEED))
         .step(Sell);
 
     commands.spawn((
         Name::new("Farmer"),
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Capsule {
-                depth: 0.3,
+            mesh: meshes.add(Mesh::from(Capsule3d {
+                half_length: 0.15,
                 radius: 0.1,
                 ..default()
             })),
-            material: materials.add(DEFAULT_COLOR.into()),
+            material: materials.add(DEFAULT_COLOR),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
@@ -619,6 +608,7 @@ fn main() {
             // Use `RUST_LOG=big_brain=trace,farming_sim=trace cargo run --example
             // farming_sim --features=trace` to see extra tracing output.
             filter: "big_brain=debug,farming_sim=debug".to_string(),
+            update_subscriber: None,
         }))
         .add_plugins(HookPlugin)
         .add_plugins(BigBrainPlugin::new(PreUpdate))
