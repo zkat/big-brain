@@ -325,7 +325,7 @@ pub fn steps_system(
                 #[cfg(feature = "trace")]
                 trace!("StepsAction has been cancelled. Cancelling current step {:?} before finalizing.", active_ent);
                 let mut step_state = states.get_mut(active_ent).expect("oops");
-                if *step_state == Requested || *step_state == Executing {
+                if *step_state == Requested || *step_state == Executing || *step_state == Init {
                     *step_state = Cancelled;
                 } else if *step_state == Failure || *step_state == Success {
                     *states.get_mut(seq_ent).unwrap() = step_state.clone();
