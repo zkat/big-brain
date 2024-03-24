@@ -10,14 +10,17 @@ pub fn scorer_builder_impl(input: proc_macro::TokenStream) -> proc_macro::TokenS
     let label = get_label(&input);
 
     let component_name = input.ident;
+    let generics = input.generics;
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
     let component_string = component_name.to_string();
-    let build_method = build_method(&component_name);
+    let build_method = build_method(&component_name, &ty_generics);
     let label_method = label_method(
         label.unwrap_or_else(|| LitStr::new(&component_string, component_name.span())),
     );
 
     let gen = quote! {
-        impl ::big_brain::scorers::ScorerBuilder for #component_name {
+        impl #impl_generics ::big_brain::scorers::ScorerBuilder for #component_name #ty_generics #where_clause {
             #build_method
             #label_method
         }
@@ -48,10 +51,12 @@ fn get_label(input: &DeriveInput) -> Option<LitStr> {
     label
 }
 
-fn build_method(component_name: &Ident) -> TokenStream {
+fn build_method(component_name: &Ident, ty_generics: &syn::TypeGenerics) -> TokenStream {
+    let turbofish = ty_generics.as_turbofish();
+
     quote! {
         fn build(&self, cmd: &mut ::bevy::ecs::system::Commands, scorer: ::bevy::ecs::entity::Entity, _actor: ::bevy::ecs::entity::Entity) {
-            cmd.entity(scorer).insert(#component_name::clone(self));
+            cmd.entity(scorer).insert(#component_name  #turbofish::clone(self));
         }
     }
 }
