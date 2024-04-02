@@ -28,8 +28,8 @@ fn check_generic_macro() {
 #[derive(Debug, Clone, Component, ScorerBuilder)]
 #[scorer_label = "MyGenericWhereLabel"]
 pub struct MyGenericWhereScorer<T>
-    where
-        T: Clone + Send + Sync + std::fmt::Debug + 'static,
+where
+    T: Clone + Send + Sync + std::fmt::Debug + 'static,
 {
     pub value: T,
 }
