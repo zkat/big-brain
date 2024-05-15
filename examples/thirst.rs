@@ -47,10 +47,16 @@ pub fn thirst_system(time: Res<Time>, mut thirsts: Query<&mut Thirst>) {
 // actor entity. In this case, you can use the derive macro `ActionBuilder`
 // to make your Action Component implement the ActionBuilder trait.
 // You need your type to implement Clone and Debug (necessary for ActionBuilder)
-#[derive(Clone, Component, Debug, ActionBuilder)]
+#[derive(Clone, Component, Debug)]
 pub struct Drink {
     until: f32,
     per_second: f32,
+}
+
+impl ActionBuilder for Drink {
+    fn build(&self, cmd: &mut Commands, action: Entity, actor: Entity) {
+        cmd.entity(action).insert(MyAction);
+    }
 }
 
 // Action systems execute according to a state machine, where the states are
