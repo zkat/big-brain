@@ -55,7 +55,7 @@ fn build_method(component_name: &Ident, ty_generics: &syn::TypeGenerics) -> Toke
     let turbofish = ty_generics.as_turbofish();
 
     quote! {
-        fn build(&self, cmd: &mut ::bevy::ecs::system::Commands, scorer: ::bevy::ecs::entity::Entity, _actor: ::bevy::ecs::entity::Entity) {
+        fn build(&self, cmd: &mut ::bevy::prelude::Commands, scorer: ::bevy::prelude::Entity, _actor: ::bevy::prelude::Entity) {
             cmd.entity(scorer).insert(#component_name  #turbofish::clone(self));
         }
     }
