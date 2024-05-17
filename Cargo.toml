@@ -1,6 +1,6 @@
 [package]
 name = "big-brain"
-version = "0.19.0"
+version = "0.20.0"
 authors = ["Kat Marchán <kzm@zkat.tech>"]
 edition = "2021"
 description = "Rusty Utility AI library"
@@ -16,7 +16,7 @@ homepage = "https://github.com/zkat/big-brain"
 
 [dependencies]
 bevy = { version = "0.13.2", default-features = false }
-big-brain-derive = { version = "=0.19.0", path = "./derive" }
+big-brain-derive = { version = "=0.20.0", path = "./derive" }
 
 [dev-dependencies]
 bevy = { version = "0.13.2", default-features = true }
