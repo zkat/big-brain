@@ -1,5 +1,17 @@
 # `big-brain` Release Changelog
 
+<a name="0.20.0"></a>
+## 0.20.0 (2024-05-17)
+
+### Features
+
+* **bevy:** Update for bevy 0.13 (#93) ([50415e55](https://github.com/zkat/big-brain/commit/50415e55f0a9937dc99cb8f0b0906e47cb390082))
+* **scorers:** Add support for generic types in ScorerBuilder (#96) ([98337faa](https://github.com/zkat/big-brain/commit/98337faacd5eb720cc820628fd1bfa07e6c8effa))
+
+### Bug Fixes
+
+* **derive:** using prelude rather than ecs::xyz in derive (#99) ([128f55e0](https://github.com/zkat/big-brain/commit/128f55e008c933a3eae1df44de0455f56acfdff7))
+
 <a name="0.19.0"></a>
 ## 0.19.0 (2024-01-19)
 
