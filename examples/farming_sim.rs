@@ -6,14 +6,14 @@
 //! - When not tired, find the farm field and harvest items over time
 //! - When inventory is full, find the market and sell items for money
 
-use bevy::{log::LogPlugin, prelude::*};
+use bevy::{color::palettes::css, log::LogPlugin, prelude::*};
 use bevy_scene_hook::{HookPlugin, HookedSceneBundle, SceneHook};
 use big_brain::prelude::*;
 use big_brain_derive::ActionBuilder;
 
-const DEFAULT_COLOR: Color = Color::BLACK;
-const SLEEP_COLOR: Color = Color::RED;
-const FARM_COLOR: Color = Color::BLUE;
+const DEFAULT_COLOR: Color = Color::Srgba(css::BLACK);
+const SLEEP_COLOR: Color = Color::Srgba(css::RED);
+const FARM_COLOR: Color = Color::Srgba(css::BLUE);
 const MAX_DISTANCE: f32 = 0.1;
 const MAX_INVENTORY_ITEMS: f32 = 20.0;
 const WORK_NEED_SCORE: f32 = 0.6;
@@ -608,7 +608,7 @@ fn main() {
             // Use `RUST_LOG=big_brain=trace,farming_sim=trace cargo run --example
             // farming_sim --features=trace` to see extra tracing output.
             filter: "big_brain=debug,farming_sim=debug".to_string(),
-            update_subscriber: None,
+            custom_layer: |_| None,
         }))
         .add_plugins(HookPlugin)
         .add_plugins(BigBrainPlugin::new(PreUpdate))
