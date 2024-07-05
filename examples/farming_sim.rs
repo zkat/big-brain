@@ -616,6 +616,7 @@ fn check_scene_loaded(
     for (entity, instance) in query.iter() {
         if scene_spawner.instance_is_ready(**instance) {
             commands.entity(entity).insert(SceneProcessed);
+
             let entities = scene_spawner
                 .iter_instance_entities(**instance)
                 .chain(std::iter::once(entity));
@@ -641,10 +642,10 @@ fn main() {
         // This observer will attach components to entities in the scene based on their names.
         .observe(
             |trigger: Trigger<SceneLoaded>,
-             other_query: Query<(Entity, &Name)>,
+             query: Query<(Entity, &Name)>,
              mut commands: Commands| {
                 for entity in trigger.event().entities.iter() {
-                    if let Ok((entity, name)) = other_query.get(*entity) {
+                    if let Ok((entity, name)) = query.get(*entity) {
                         let mut entity_commands = commands.entity(entity);
 
                         match name.as_str() {
