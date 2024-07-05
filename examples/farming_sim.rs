@@ -599,7 +599,8 @@ fn init_entities(
 // Define a custom event for our scene loading
 #[derive(Event)]
 struct SceneLoaded {
-    scene_entity: Entity,
+    /// The entities in this scene
+    entities: Vec<Entity>,
 }
 
 // Define a marker component to indicate what entities we've already processed
@@ -615,8 +616,12 @@ fn check_scene_loaded(
     for (entity, instance) in query.iter() {
         if scene_spawner.instance_is_ready(**instance) {
             commands.entity(entity).insert(SceneProcessed);
+            let entities = scene_spawner
+                .iter_instance_entities(**instance)
+                .chain(std::iter::once(entity));
+
             commands.trigger(SceneLoaded {
-                scene_entity: entity,
+                entities: entities.collect(),
             });
         }
     }
@@ -636,18 +641,10 @@ fn main() {
         // This observer will attach components to entities in the scene based on their names.
         .observe(
             |trigger: Trigger<SceneLoaded>,
-             scene_manager: Res<SceneSpawner>,
-             scene_query: Query<(Entity, &SceneInstance)>,
              other_query: Query<(Entity, &Name)>,
              mut commands: Commands| {
-                let scene_entity = trigger.event().scene_entity;
-                let (entity, scene_instance) = scene_query.get(scene_entity).unwrap();
-                let entities = scene_manager
-                    .iter_instance_entities(**scene_instance)
-                    .chain(std::iter::once(entity));
-
-                for entity in entities {
-                    if let Ok((entity, name)) = other_query.get(entity) {
+                for entity in trigger.event().entities.iter() {
+                    if let Ok((entity, name)) = other_query.get(*entity) {
                         let mut entity_commands = commands.entity(entity);
 
                         match name.as_str() {
