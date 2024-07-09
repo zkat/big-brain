@@ -3,6 +3,11 @@
 <a name="0.21.0"></a>
 ## 0.21.0 (2024-07-09)
 
+This is just a patch release because of a hiccup during the release process for 0.21.1, but is otherwise identical.
+
+<a name="0.21.0"></a>
+## 0.21.0 (2024-07-09)
+
 ### Features
 
 * **bevy:** Upgrade to bevy 0.14.0 (#101) ([3a952a24](https://github.com/zkat/big-brain/commit/3a952a244b01a09fa6157ae9349575935d159c91))
