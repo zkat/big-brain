@@ -6,14 +6,14 @@
 //! - When not tired, find the farm field and harvest items over time
 //! - When inventory is full, find the market and sell items for money
 
-use bevy::{log::LogPlugin, prelude::*};
-use bevy_scene_hook::{HookPlugin, HookedSceneBundle, SceneHook};
+use bevy::scene::SceneInstance;
+use bevy::{color::palettes::css, log::LogPlugin, prelude::*};
 use big_brain::prelude::*;
 use big_brain_derive::ActionBuilder;
 
-const DEFAULT_COLOR: Color = Color::BLACK;
-const SLEEP_COLOR: Color = Color::RED;
-const FARM_COLOR: Color = Color::BLUE;
+const DEFAULT_COLOR: Color = Color::Srgba(css::BLACK);
+const SLEEP_COLOR: Color = Color::Srgba(css::RED);
+const FARM_COLOR: Color = Color::Srgba(css::BLUE);
 const MAX_DISTANCE: f32 = 0.1;
 const MAX_INVENTORY_ITEMS: f32 = 20.0;
 const WORK_NEED_SCORE: f32 = 0.6;
@@ -386,8 +386,10 @@ pub fn move_to_nearest_system<T: Component + std::fmt::Debug + Clone>(
                         let delta_b = *b - actor_transform.translation;
                         delta_a.length().partial_cmp(&delta_b.length()).unwrap()
                     })
-                    .unwrap()
-                    .1;
+                    .and_then(|t| Some(t.1));
+                let Some(goal_transform) = goal_transform else {
+                    continue;
+                };
                 let delta = goal_transform.translation - actor_transform.translation;
                 let distance = delta.xz().length();
 
@@ -498,24 +500,13 @@ fn init_entities(
         },
     ));
 
-    // We use a HookedSceneBundle to attach a SceneHook to the entity. This hook
-    // will be called when the entity is spawned, and will allow us to insert
-    // additional components into the spawned entities.
+    // Loading our scene here. Note we'll still need to add components to different parts
+    // of the gltf in order to query their positions. We do this through an observer further below.
     commands.spawn((
         Name::new("Town"),
-        HookedSceneBundle {
-            scene: SceneBundle {
-                scene: asset_server.load("models/town.glb#Scene0"),
-                ..default()
-            },
-            hook: SceneHook::new(|entity, cmds| {
-                match entity.get::<Name>().map(|t| t.as_str()) {
-                    Some("Farm_Marker") => cmds.insert(Field),
-                    Some("Market_Marker") => cmds.insert(Market),
-                    Some("House_Marker") => cmds.insert(House),
-                    _ => cmds,
-                };
-            }),
+        SceneBundle {
+            scene: asset_server.load("models/town.glb#Scene0"),
+            ..default()
         },
     ));
 
@@ -601,6 +592,42 @@ fn init_entities(
         });
 }
 
+// ================================================================================
+//  Scene Loading 🏗️
+// ================================================================================
+
+// Define a custom event for our scene loading
+#[derive(Event)]
+struct SceneLoaded {
+    /// The entities in this scene
+    entities: Vec<Entity>,
+}
+
+// Define a marker component to indicate what entities we've already processed
+#[derive(Component)]
+struct SceneProcessed;
+
+// System to check if a scene has finished loading
+fn check_scene_loaded(
+    mut commands: Commands,
+    query: Query<(Entity, &SceneInstance), Without<SceneProcessed>>,
+    scene_spawner: Res<SceneSpawner>,
+) {
+    for (entity, instance) in query.iter() {
+        if scene_spawner.instance_is_ready(**instance) {
+            commands.entity(entity).insert(SceneProcessed);
+
+            let entities = scene_spawner
+                .iter_instance_entities(**instance)
+                .chain(std::iter::once(entity));
+
+            commands.trigger(SceneLoaded {
+                entities: entities.collect(),
+            });
+        }
+    }
+}
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(LogPlugin {
@@ -608,9 +635,35 @@ fn main() {
             // Use `RUST_LOG=big_brain=trace,farming_sim=trace cargo run --example
             // farming_sim --features=trace` to see extra tracing output.
             filter: "big_brain=debug,farming_sim=debug".to_string(),
-            update_subscriber: None,
+            custom_layer: |_| None,
         }))
-        .add_plugins(HookPlugin)
+        .add_event::<SceneLoaded>()
+        .add_systems(Update, check_scene_loaded)
+        // This observer will attach components to entities in the scene based on their names.
+        .observe(
+            |trigger: Trigger<SceneLoaded>,
+             query: Query<(Entity, &Name)>,
+             mut commands: Commands| {
+                for entity in trigger.event().entities.iter() {
+                    if let Ok((entity, name)) = query.get(*entity) {
+                        let mut entity_commands = commands.entity(entity);
+
+                        match name.as_str() {
+                            "Farm_Marker" => {
+                                entity_commands.insert(Field);
+                            }
+                            "Market_Marker" => {
+                                entity_commands.insert(Market);
+                            }
+                            "House_Marker" => {
+                                entity_commands.insert(House);
+                            }
+                            _ => (),
+                        }
+                    }
+                }
+            },
+        )
         .add_plugins(BigBrainPlugin::new(PreUpdate))
         .add_systems(Startup, init_entities)
         .add_systems(Update, (fatigue_system, update_ui))

@@ -202,7 +202,10 @@ pub mod prelude {
     };
 }
 
-use bevy::{ecs::schedule::ScheduleLabel, prelude::*, utils::intern::Interned};
+use bevy::{
+    ecs::{intern::Interned, schedule::ScheduleLabel},
+    prelude::*,
+};
 
 /// Core [`Plugin`] for Big Brain behavior. Required for any of the
 /// [`Thinker`](thinker::Thinker)-related magic to work.

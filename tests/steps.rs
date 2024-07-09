@@ -70,7 +70,7 @@ fn exit_action(
             *state = ActionState::Executing;
         }
         if *state == ActionState::Executing {
-            app_exit_events.send(AppExit);
+            app_exit_events.send(AppExit::Success);
         }
     }
 }
