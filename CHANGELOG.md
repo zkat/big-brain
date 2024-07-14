@@ -1,7 +1,7 @@
 # `big-brain` Release Changelog
 
-<a name="0.21.0"></a>
-## 0.21.0 (2024-07-09)
+<a name="0.21.1"></a>
+## 0.21.1 (2024-07-09)
 
 This is just a patch release because of a hiccup during the release process for 0.21.1, but is otherwise identical.
 
