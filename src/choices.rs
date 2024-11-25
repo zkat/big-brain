@@ -50,7 +50,7 @@ impl ChoiceBuilder {
 
     pub fn build(&self, cmd: &mut Commands, actor: Entity, parent: Entity) -> Choice {
         let scorer_ent = scorers::spawn_scorer(&*self.when, cmd, actor);
-        cmd.entity(parent).push_children(&[scorer_ent]);
+        cmd.entity(parent).add_children(&[scorer_ent]);
         Choice {
             scorer: Scorer(scorer_ent),
             action_label: self.then.label().map(|s| s.into()),

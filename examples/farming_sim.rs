@@ -73,7 +73,7 @@ pub struct Fatigue {
 /// Increases an entity's fatigue over time
 pub fn fatigue_system(time: Res<Time>, mut fatigues: Query<&mut Fatigue>) {
     for mut fatigue in &mut fatigues {
-        fatigue.level += fatigue.per_second * time.delta_seconds();
+        fatigue.level += fatigue.per_second * time.delta_secs();
         if fatigue.level >= 100.0 {
             fatigue.level = 100.0;
         }
@@ -111,7 +111,7 @@ pub struct Sleep {
 // the Sleep component's parameters.
 fn sleep_action_system(
     time: Res<Time>,
-    mut fatigues: Query<(&mut Fatigue, &Handle<StandardMaterial>)>,
+    mut fatigues: Query<(&mut Fatigue, &MeshMaterial3d<StandardMaterial>)>,
     // Resource used to modify the appearance of the farmer.
     mut materials: ResMut<Assets<StandardMaterial>>,
     // We execute actions by querying for their associated Action Component
@@ -133,7 +133,7 @@ fn sleep_action_system(
                 }
                 ActionState::Executing => {
                     trace!("Sleeping...");
-                    fatigue.level -= sleep.per_second * time.delta_seconds();
+                    fatigue.level -= sleep.per_second * time.delta_secs();
                     materials.get_mut(material).unwrap().base_color = SLEEP_COLOR;
 
                     if fatigue.level <= sleep.until {
@@ -208,7 +208,7 @@ pub struct Farm {
 // Farm component's parameters and changes the entity's appearance to indicate the farming action.
 fn farm_action_system(
     time: Res<Time>,
-    mut actors: Query<(&mut Inventory, &Handle<StandardMaterial>)>,
+    mut actors: Query<(&mut Inventory, &MeshMaterial3d<StandardMaterial>)>,
     // Resource used to modify the appearance of the farmer.
     mut materials: ResMut<Assets<StandardMaterial>>,
     // Query to manage the state of the farming action.
@@ -225,7 +225,7 @@ fn farm_action_system(
                 }
                 ActionState::Executing => {
                     trace!("Farming...");
-                    inventory.items += farm.per_second * time.delta_seconds();
+                    inventory.items += farm.per_second * time.delta_secs();
                     materials.get_mut(material).unwrap().base_color = FARM_COLOR;
 
                     if inventory.items >= MAX_INVENTORY_ITEMS {
@@ -398,7 +398,7 @@ pub fn move_to_nearest_system<T: Component + std::fmt::Debug + Clone>(
                 if distance > MAX_DISTANCE {
                     trace!("Stepping closer.");
 
-                    let step_size = time.delta_seconds() * move_to.speed;
+                    let step_size = time.delta_secs() * move_to.speed;
                     let step = delta.normalize() * step_size.min(distance);
 
                     // We only care about moving in the XZ plane.
@@ -455,15 +455,15 @@ fn update_ui(
 ) {
     for (inventory, fatigue) in &mut actor_query.iter() {
         for mut text in &mut money_query {
-            text.sections[0].value = format!("Money: {}", inventory.money);
+            text.0 = format!("Money: {}", inventory.money);
         }
 
         for mut text in &mut fatigue_query {
-            text.sections[0].value = format!("Fatigue: {}", fatigue.level as u32);
+            text.0 = format!("Fatigue: {}", fatigue.level as u32);
         }
 
         for mut text in &mut inventory_query {
-            text.sections[0].value = format!("Inventory: {}", inventory.items as u32);
+            text.0 = format!("Inventory: {}", inventory.items as u32);
         }
     }
 }
@@ -475,11 +475,10 @@ fn init_entities(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(6.0, 6.0, 4.0)
-            .looking_at(Vec3::new(0.0, -1.0, 0.0), Vec3::Y),
-        ..default()
-    });
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(6.0, 6.0, 4.0).looking_at(Vec3::new(0.0, -1.0, 0.0), Vec3::Y),
+    ));
 
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
@@ -488,26 +487,20 @@ fn init_entities(
 
     commands.spawn((
         Name::new("Light"),
-        SpotLightBundle {
-            spot_light: SpotLight {
-                shadows_enabled: true,
-                intensity: 500_000.0,
-                range: 100.0,
-                ..default()
-            },
-            transform: Transform::from_xyz(2.0, 10.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
+        SpotLight {
+            shadows_enabled: true,
+            intensity: 500_000.0,
+            range: 100.0,
             ..default()
         },
+        Transform::from_xyz(2.0, 10.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
     // Loading our scene here. Note we'll still need to add components to different parts
     // of the gltf in order to query their positions. We do this through an observer further below.
     commands.spawn((
         Name::new("Town"),
-        SceneBundle {
-            scene: asset_server.load("models/town.glb#Scene0"),
-            ..default()
-        },
+        SceneRoot(asset_server.load("models/town.glb#Scene0")),
     ));
 
     // We'll use `Steps` to execute a sequence of actions.
@@ -538,16 +531,13 @@ fn init_entities(
 
     commands.spawn((
         Name::new("Farmer"),
-        PbrBundle {
-            mesh: meshes.add(Mesh::from(Capsule3d {
-                half_length: 0.15,
-                radius: 0.1,
-                ..default()
-            })),
-            material: materials.add(DEFAULT_COLOR),
-            transform: Transform::from_xyz(0.0, 0.5, 0.0),
+        Mesh3d(meshes.add(Mesh::from(Capsule3d {
+            half_length: 0.15,
+            radius: 0.1,
             ..default()
-        },
+        }))),
+        MeshMaterial3d(materials.add(DEFAULT_COLOR)),
+        Transform::from_xyz(0.0, 0.5, 0.0),
         Fatigue {
             is_sleeping: false,
             per_second: 4.0,
@@ -566,29 +556,26 @@ fn init_entities(
             .when(SellNeedScorer, move_and_sell),
     ));
 
-    let style = TextStyle {
+    let font = TextFont {
         font_size: 40.0,
         ..default()
     };
 
     // Our scoreboard.
     commands
-        .spawn(NodeBundle {
-            style: Style {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::End,
-                align_items: AlignItems::FlexStart,
-                padding: UiRect::all(Val::Px(20.0)),
-                ..default()
-            },
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::End,
+            align_items: AlignItems::FlexStart,
+            padding: UiRect::all(Val::Px(20.0)),
             ..default()
         })
         .with_children(|builder| {
-            builder.spawn((TextBundle::from_section("", style.clone()), MoneyText));
-            builder.spawn((TextBundle::from_section("", style.clone()), FatigueText));
-            builder.spawn((TextBundle::from_section("", style.clone()), InventoryText));
+            builder.spawn((Text::new(""), font.clone(), MoneyText));
+            builder.spawn((Text::new(""), font.clone(), FatigueText));
+            builder.spawn((Text::new(""), font.clone(), InventoryText));
         });
 }
 
@@ -640,7 +627,7 @@ fn main() {
         .add_event::<SceneLoaded>()
         .add_systems(Update, check_scene_loaded)
         // This observer will attach components to entities in the scene based on their names.
-        .observe(
+        .add_observer(
             |trigger: Trigger<SceneLoaded>,
              query: Query<(Entity, &Name)>,
              mut commands: Commands| {
