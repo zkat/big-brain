@@ -194,7 +194,7 @@ impl ActionBuilder for StepsBuilder {
                     steps: self.steps.clone(),
                     steps_labels: self.steps_labels.clone(),
                 })
-                .push_children(&[child_action]);
+                .add_children(&[child_action]);
         }
     }
 }
@@ -315,7 +315,7 @@ pub fn steps_system(
                         let step_ent = spawn_action(step_builder.as_ref(), &mut cmd, *actor);
                         #[cfg(feature = "trace")]
                         trace!("Spawned next step: {:?}", step_ent);
-                        cmd.entity(seq_ent).push_children(&[step_ent]);
+                        cmd.entity(seq_ent).add_children(&[step_ent]);
                         steps_action.active_ent = Action(step_ent);
                     }
                 }
@@ -396,7 +396,7 @@ impl ActionBuilder for ConcurrentlyBuilder {
             .collect();
         cmd.entity(action)
             .insert(Name::new("Concurrent Action"))
-            .push_children(&children[..])
+            .add_children(&children[..])
             .insert(Concurrently {
                 actions: children.into_iter().map(Action).collect(),
                 action_labels: self.action_labels.clone(),

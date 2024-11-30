@@ -279,7 +279,7 @@ impl ScorerBuilder for AllOrNothingBuilder {
             .collect();
         cmd.entity(scorer)
             .insert(Score::default())
-            .push_children(&scorers[..])
+            .add_children(&scorers[..])
             .insert(Name::new("Scorer"))
             .insert(AllOrNothing {
                 threshold: self.threshold,
@@ -406,7 +406,7 @@ impl ScorerBuilder for SumOfScorersBuilder {
             .map(|scorer| spawn_scorer(&**scorer, cmd, actor))
             .collect();
         cmd.entity(scorer)
-            .push_children(&scorers[..])
+            .add_children(&scorers[..])
             .insert(SumOfScorers {
                 threshold: self.threshold,
                 scorers: scorers.into_iter().map(Scorer).collect(),
@@ -565,7 +565,7 @@ impl ScorerBuilder for ProductOfScorersBuilder {
             .map(|scorer| spawn_scorer(&**scorer, cmd, actor))
             .collect();
         cmd.entity(scorer)
-            .push_children(&scorers[..])
+            .add_children(&scorers[..])
             .insert(ProductOfScorers {
                 threshold: self.threshold,
                 use_compensation: self.use_compensation,
@@ -696,7 +696,7 @@ impl ScorerBuilder for WinningScorerBuilder {
             .map(|scorer| spawn_scorer(&**scorer, cmd, actor))
             .collect();
         cmd.entity(scorer)
-            .push_children(&scorers[..])
+            .add_children(&scorers[..])
             .insert(WinningScorer {
                 threshold: self.threshold,
                 scorers: scorers.into_iter().map(Scorer).collect(),
@@ -805,7 +805,7 @@ impl ScorerBuilder for EvaluatingScorerBuilder {
         let inner_scorer = spawn_scorer(&*self.scorer, cmd, actor);
         let scorers = [inner_scorer];
         cmd.entity(scorer)
-            .push_children(&scorers[..])
+            .add_children(&scorers[..])
             .insert(EvaluatingScorer {
                 evaluator: self.evaluator.clone(),
                 scorer: Scorer(inner_scorer),
@@ -978,7 +978,7 @@ impl ScorerBuilder for MeasuredScorerBuilder {
             .map(|(scorer, _)| spawn_scorer(&**scorer, cmd, actor))
             .collect();
         cmd.entity(scorer)
-            .push_children(&scorers[..])
+            .add_children(&scorers[..])
             .insert(MeasuredScorer {
                 threshold: self.threshold,
                 measure: self.measure.clone(),
