@@ -1,5 +1,13 @@
 # `big-brain` Release Changelog
 
+<a name="0.22.0"></a>
+## 0.22.0 (2024-11-30)
+
+### Features
+
+* **picker:** add HighestToScore Picker (#105) ([ab0385d5](https://github.com/zkat/big-brain/commit/ab0385d543a764f8a06013dbb69ef2193e1ef8ab))
+* **bevy:** Upgrade to bevy 0.15 (#106) ([868ebdb4](https://github.com/zkat/big-brain/commit/868ebdb4fc3116af095dcd1ea0685fa6c517ddfe))
+
 <a name="0.21.1"></a>
 ## 0.21.1 (2024-07-09)
 
