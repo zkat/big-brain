@@ -83,3 +83,45 @@ impl Picker for Highest {
         })
     }
 }
+
+/// Picker that chooses the highest `Choice` with a [`Score`] higher than its
+/// configured `threshold`.
+///
+/// ### Example
+///
+/// ```
+/// # use big_brain::prelude::*;
+/// # fn main() {
+/// Thinker::build()
+///     .picker(HighestToScore::new(0.8))
+///     // .when(...)
+/// # ;
+/// # }
+/// ```
+#[derive(Debug, Clone, Default)]
+pub struct HighestToScore {
+    pub threshold: f32,
+}
+
+impl HighestToScore {
+    pub fn new(threshold: f32) -> Self {
+        Self { threshold }
+    }
+}
+
+impl Picker for HighestToScore {
+    fn pick<'a>(&self, choices: &'a [Choice], scores: &Query<&Score>) -> Option<&'a Choice> {
+        let mut highest_score = 0f32;
+
+        choices.iter().fold(None, |acc, choice| {
+            let score = choice.calculate(scores);
+
+            if score <= self.threshold || score <= highest_score {
+                return acc;
+            }
+
+            highest_score = score;
+            Some(choice)
+        })
+    }
+}

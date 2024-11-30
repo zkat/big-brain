@@ -192,7 +192,7 @@ pub mod prelude {
     pub use big_brain_derive::{ActionBuilder, ScorerBuilder};
     pub use evaluators::{Evaluator, LinearEvaluator, PowerEvaluator, SigmoidEvaluator};
     pub use measures::{ChebyshevDistance, Measure, WeightedProduct, WeightedSum};
-    pub use pickers::{FirstToScore, Highest, Picker};
+    pub use pickers::{FirstToScore, Highest, HighestToScore, Picker};
     pub use scorers::{
         AllOrNothing, EvaluatingScorer, FixedScore, MeasuredScorer, ProductOfScorers, Score,
         ScorerBuilder, SumOfScorers, WinningScorer,
