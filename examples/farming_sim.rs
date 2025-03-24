@@ -483,6 +483,7 @@ fn init_entities(
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
         brightness: 700.0,
+        ..default()
     });
 
     commands.spawn((

@@ -8,7 +8,6 @@
 
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
-use bevy::utils::tracing::{debug, trace};
 use big_brain::prelude::*;
 
 /// First, we make a simple Position component.

@@ -1,6 +1,5 @@
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
-use bevy::utils::tracing::{debug, trace};
 use big_brain::prelude::*;
 
 // First, we define a "Thirst" component and associated system. This is NOT
