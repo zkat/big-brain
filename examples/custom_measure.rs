@@ -1,7 +1,7 @@
 //! This example demonstrates how to build a custom measure and use that
 //! in a Thinker.
 
-use bevy::ecs::component::{ComponentMutability, Mutable};
+use bevy::ecs::component::Mutable;
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use big_brain::prelude::*;

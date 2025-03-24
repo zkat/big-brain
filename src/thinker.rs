@@ -15,9 +15,6 @@ use bevy::{
     prelude::*,
 };
 
-#[cfg(feature = "trace")]
-use bevy::utils::tracing::trace;
-
 use crate::{
     actions::{self, ActionBuilder, ActionBuilderWrapper, ActionState},
     choices::{Choice, ChoiceBuilder},
