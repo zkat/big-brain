@@ -3,8 +3,6 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-#[cfg(feature = "trace")]
-use bevy::utils::tracing::trace;
 
 use crate::thinker::{Action, ActionSpan, Actor};
 
@@ -287,8 +285,8 @@ pub fn steps_system(
                         let step_state = step_state.clone();
                         let mut seq_state = states.get_mut(seq_ent).expect("idk");
                         *seq_state = step_state;
-                        if let Some(ent) = cmd.get_entity(steps_action.active_ent.entity()) {
-                            ent.despawn_recursive();
+                        if let Ok(mut ent) = cmd.get_entity(steps_action.active_ent.entity()) {
+                            ent.despawn();
                         }
                     }
                     Success if steps_action.active_step == steps_action.steps.len() - 1 => {
@@ -298,16 +296,16 @@ pub fn steps_system(
                         let step_state = step_state.clone();
                         let mut seq_state = states.get_mut(seq_ent).expect("idk");
                         *seq_state = step_state;
-                        if let Some(ent) = cmd.get_entity(steps_action.active_ent.entity()) {
-                            ent.despawn_recursive();
+                        if let Ok(mut ent) = cmd.get_entity(steps_action.active_ent.entity()) {
+                            ent.despawn();
                         }
                     }
                     Success => {
                         #[cfg(feature = "trace")]
                         trace!("Step succeeded, but there's more steps. Spawning next action.");
                         // Deactivate current step and go to the next step
-                        if let Some(ent) = cmd.get_entity(steps_action.active_ent.entity()) {
-                            ent.despawn_recursive();
+                        if let Ok(mut ent) = cmd.get_entity(steps_action.active_ent.entity()) {
+                            ent.despawn();
                         }
 
                         steps_action.active_step += 1;
