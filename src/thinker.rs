@@ -9,6 +9,7 @@ use std::{
 
 use bevy::{
     log::{
+        debug,
         tracing::{field, span, Span},
         Level,
     },

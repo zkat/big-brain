@@ -6,6 +6,8 @@ use std::{cmp::Ordering, sync::Arc};
 
 use bevy::prelude::*;
 
+use bevy::log::debug;
+
 use crate::{
     evaluators::Evaluator,
     measures::{Measure, WeightedMeasure},
