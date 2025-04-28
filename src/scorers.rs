@@ -5,8 +5,6 @@
 use std::{cmp::Ordering, sync::Arc};
 
 use bevy::prelude::*;
-#[cfg(feature = "trace")]
-use bevy::utils::tracing::trace;
 
 use crate::{
     evaluators::Evaluator,
