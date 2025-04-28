@@ -6,7 +6,6 @@
 
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
-use bevy::utils::tracing::debug;
 use big_brain::prelude::*;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
