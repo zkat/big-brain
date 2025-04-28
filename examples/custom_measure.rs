@@ -1,9 +1,9 @@
 //! This example demonstrates how to build a custom measure and use that
 //! in a Thinker.
 
+use bevy::ecs::component::Mutable;
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
-use bevy::utils::tracing::debug;
 use big_brain::prelude::*;
 use big_brain::scorers::MeasuredScorer;
 
@@ -81,7 +81,7 @@ pub struct EatWaffles;
 
 fn eat_thing_action<
     TActionMarker: std::fmt::Debug + Component,
-    TActorMarker: Component + EatFood,
+    TActorMarker: Component<Mutability = Mutable> + EatFood,
 >(
     time: Res<Time>,
     mut items: Query<&mut TActorMarker>,
