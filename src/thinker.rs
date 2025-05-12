@@ -4,7 +4,7 @@
 use std::{
     collections::VecDeque,
     sync::Arc,
-    time::{Duration, Instant},
+    time::Duration
 };
 
 use bevy::{
@@ -13,6 +13,7 @@ use bevy::{
         Level,
     },
     prelude::*,
+    platform::time::Instant
 };
 
 use crate::{
