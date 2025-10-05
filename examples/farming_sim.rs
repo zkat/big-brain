@@ -585,7 +585,7 @@ fn init_entities(
 // ================================================================================
 
 // Define a custom event for our scene loading
-#[derive(Event)]
+#[derive(Event, Message)]
 struct SceneLoaded {
     /// The entities in this scene
     entities: Vec<Entity>,
@@ -624,12 +624,13 @@ fn main() {
             // farming_sim --features=trace` to see extra tracing output.
             filter: "big_brain=debug,farming_sim=debug".to_string(),
             custom_layer: |_| None,
+            ..default()
         }))
-        .add_event::<SceneLoaded>()
+        .add_message::<SceneLoaded>()
         .add_systems(Update, check_scene_loaded)
         // This observer will attach components to entities in the scene based on their names.
         .add_observer(
-            |trigger: Trigger<SceneLoaded>,
+            |trigger: On<SceneLoaded>,
              query: Query<(Entity, &Name)>,
              mut commands: Commands| {
                 for entity in trigger.event().entities.iter() {
