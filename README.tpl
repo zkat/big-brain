@@ -1,3 +1,3 @@
-# `{{crate}}``
+# `{{crate}}`
 
 {{readme}}

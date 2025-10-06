@@ -145,7 +145,7 @@
 //!
 //! ### bevy version and MSRV
 //!
-//! The current version of `big-brain` is compatible with `bevy` 0.12.1.
+//! The current version of `big-brain` is compatible with `bevy@0.17.0`.
 //!
 //! The Minimum Supported Rust Version for `big-brain` should be considered to
 //! be the same as `bevy`'s, which as of the time of this writing was "the

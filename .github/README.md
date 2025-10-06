@@ -1,5 +1,8 @@
 # `big-brain`
 
+> [!CAUTION]
+> This project is no longer developed on GitHub. All development has moved to [`big-brain` on Codeberg](https://codeberg.org/zkat/big-brain). This repository exists only as a read-only archive and may be removed in the future.
+
 [![crates.io](https://img.shields.io/crates/v/big-brain.svg)](https://crates.io/crates/big-brain)
 [![docs.rs](https://docs.rs/big-brain/badge.svg)](https://docs.rs/big-brain)
 [![Apache

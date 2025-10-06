@@ -9,8 +9,8 @@ license = "Apache-2.0"
 readme = "README.md"
 keywords = ["utility-ai", "bevy", "ai", "ecs"]
 categories = ["game-development"]
-repository = "https://github.com/zkat/big-brain"
-homepage = "https://github.com/zkat/big-brain"
+repository = "https://codeberg.org/zkat/big-brain"
+homepage = "https://codeberg.org/zkat/big-brain"
 
 [workspace]
 
