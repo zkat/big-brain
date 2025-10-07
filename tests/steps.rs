@@ -62,7 +62,7 @@ struct ExitAction;
 
 fn exit_action(
     mut query: Query<(&Actor, &mut ActionState), With<ExitAction>>,
-    mut app_exit_events: EventWriter<AppExit>,
+    mut app_exit_events: MessageWriter<AppExit>,
 ) {
     for (Actor(_actor), mut state) in query.iter_mut() {
         println!("exit_action {state:?}");
